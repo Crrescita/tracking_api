@@ -238,9 +238,9 @@ exports.checkIn = async (req, res, next) => {
     };
 
     if (req.files && req.files.checkin_img) {
-      insert.checkin_img = req.files.checkin_img[0].path; // Adjust based on your file upload setup
+      insert.checkin_img = req.files.checkin_img[0].path;
     } else {
-      insert.checkin_img = null; // Set to null if no image is provided
+      insert.checkin_img = null;
     }
 
     const date = getCurrentDate();
