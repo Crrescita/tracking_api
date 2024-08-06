@@ -17,6 +17,8 @@ var corsOptions = {
     "http://localhost:3000/",
     "http://localhost:6000/",
     "http://localhost:60912",
+"https://emptracking.crrescita.com/",
+"https://emptracking.crrescita.com"
   ],
 };
 app.use(cors(corsOptions));

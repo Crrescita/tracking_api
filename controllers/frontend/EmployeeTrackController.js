@@ -92,6 +92,10 @@ exports.setCoordinates = async (req, res, next) => {
       date: getCurrentDate(),
       time: getCurrentTime(),
       created_at: getCurrentDateTime(),
+	gps_status:gps_status,
+	internet_status:internet_status,
+	battery_status:battery_status,
+	motion:motion,
       ...rest,
     };
 
@@ -101,6 +105,7 @@ exports.setCoordinates = async (req, res, next) => {
       status: true,
       message: "Data submitted successfully",
       data: result,
+      timer:30000
     });
   } catch (error) {
     console.error("Error during data submission:", error);
