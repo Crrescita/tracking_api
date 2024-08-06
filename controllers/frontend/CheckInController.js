@@ -131,6 +131,83 @@ exports.getCheckIn = async (req, res, next) => {
 //   }
 // };
 
+// exports.checkIn = async (req, res, next) => {
+//   try {
+//     let {
+//       emp_id,
+//       company_id,
+//       lat_check_in,
+//       long_check_in,
+//       battery_status_at_checkIn,
+//       checkin_img,
+//     } = req.body;
+
+//     if (!company_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Company ID is required" });
+//     }
+//     if (!emp_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Employee ID is required" });
+//     }
+
+//     let insert = {
+//       emp_id,
+//       company_id,
+//       lat_check_in,
+//       long_check_in,
+//       battery_status_at_checkIn,
+//     };
+
+//     if (req.files && req.files.checkin_img) {
+//       insert.checkin_img = req.files.checkin_img[0].path; // Adjust this line based on your file upload setup
+//     }
+
+//     const date = getCurrentDate();
+
+//     // Check if the employee has already checked in today
+//     const checkInDataExist = await sqlModel.select(
+//       "check_in",
+//       {},
+//       { emp_id, company_id, date }
+//     );
+
+//     if (checkInDataExist.length === 0) {
+//       const newCheckInData = {
+//         emp_id,
+//         company_id,
+//         check_in_time: getCurrentTime(),
+//         lat_check_in: insert.lat_check_in,
+//         long_check_in: insert.long_check_in,
+//         checkin_img: "null",
+//         battery_status_at_checkIn: insert.battery_status_at_checkIn,
+//         created_at: getCurrentDateTime(),
+//         checkin_status: "Check-in",
+//         date,
+//       };
+
+//       // Insert new check-in data
+//       const result = await sqlModel.insert("check_in", newCheckInData);
+
+//       return res
+//         .status(200)
+//         .send({ status: true, message: "Check-in successful", data: result });
+//     } else {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Already checked in for today" });
+//     }
+//   } catch (error) {
+//     return res.status(500).send({
+//       status: false,
+//       message: "An error occurred during check-in",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.checkIn = async (req, res, next) => {
   try {
     let {
@@ -139,10 +216,7 @@ exports.checkIn = async (req, res, next) => {
       lat_check_in,
       long_check_in,
       battery_status_at_checkIn,
-      checkin_img,
     } = req.body;
-
-    console.log("Request Body:", req.body);
 
     if (!company_id) {
       return res
@@ -164,45 +238,34 @@ exports.checkIn = async (req, res, next) => {
     };
 
     if (req.files && req.files.checkin_img) {
-      insert.checkin_img = req.files.checkin_img[0].path; // Adjust this line based on your file upload setup
+      insert.checkin_img = req.files.checkin_img[0].path; // Adjust based on your file upload setup
+    } else {
+      insert.checkin_img = null; // Set to null if no image is provided
     }
 
     const date = getCurrentDate();
-    console.log("Check-In Date:", date);
 
-    // Check if the employee has already checked in today
-    const checkInDataExist = await sqlModel.select(
-      "check_in",
-      {},
-      { emp_id, company_id, date }
-    );
+    const newCheckInData = {
+      emp_id,
+      company_id,
+      check_in_time: getCurrentTime(),
+      lat_check_in: insert.lat_check_in,
+      long_check_in: insert.long_check_in,
+      checkin_img: insert.checkin_img,
+      battery_status_at_checkIn: insert.battery_status_at_checkIn,
+      created_at: getCurrentDateTime(),
+      checkin_status: "Check-in",
+      date,
+    };
 
-    if (checkInDataExist.length === 0) {
-      const newCheckInData = {
-        emp_id,
-        company_id,
-        check_in_time: getCurrentTime(),
-        lat_check_in: insert.lat_check_in,
-        long_check_in: insert.long_check_in,
-        checkin_img: "null",
-        battery_status_at_checkIn: insert.battery_status_at_checkIn,
-        created_at: getCurrentDateTime(),
-        checkin_status: "Check-in",
-        date,
-      };
+    // Insert new check-in data
+    const result = await sqlModel.insert("check_in", newCheckInData);
 
-      // Insert new check-in data
-      const result = await sqlModel.insert("check_in", newCheckInData);
-
-      return res
-        .status(200)
-        .send({ status: true, message: "Check-in successful", data: result });
-    } else {
-      return res
-        .status(400)
-        .send({ status: false, message: "Already checked in for today" });
-    }
+    return res
+      .status(200)
+      .send({ status: true, message: "Check-in successful", data: result });
   } catch (error) {
+    console.error("Error during check-in:", error);
     return res.status(500).send({
       status: false,
       message: "An error occurred during check-in",
@@ -210,6 +273,76 @@ exports.checkIn = async (req, res, next) => {
     });
   }
 };
+
+// exports.checkOut = async (req, res, next) => {
+//   try {
+//     let {
+//       emp_id,
+//       company_id,
+//       lat_check_out,
+//       long_check_out,
+//       battery_status_at_checkout,
+//     } = req.body;
+
+//     if (!company_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Company ID is required" });
+//     }
+//     if (!emp_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Employee ID is required" });
+//     }
+
+//     let updateData = {
+//       lat_check_out,
+//       long_check_out,
+//       battery_status_at_checkout,
+//     };
+
+//     if (req.files && req.files.checkout_img) {
+//       updateData.checkout_img = req.files.checkout_img[0].path;
+//     }
+
+//     const date = getCurrentDate();
+
+//     // Check if the employee has checked in today and not yet checked out
+//     const checkInDataExist = await sqlModel.select(
+//       "check_in",
+//       {},
+//       { emp_id, company_id, date }
+//     );
+
+//     if (checkInDataExist.length > 0 && !checkInDataExist[0].check_out_time) {
+//       // Update check-out data
+//       updateData.check_out_time = getCurrentTime();
+//       updateData.checkin_status = "Check-out";
+//       updateData.updated_at = getCurrentDateTime();
+
+//       const result = await sqlModel.update("check_in", updateData, {
+//         emp_id,
+//         company_id,
+//         date,
+//       });
+
+//       return res
+//         .status(200)
+//         .send({ status: true, message: "Check-out successful", data: result });
+//     } else {
+//       return res.status(400).send({
+//         status: false,
+//         message: "No check-in record found for today or already checked out",
+//       });
+//     }
+//   } catch (error) {
+//     return res.status(500).send({
+//       status: false,
+//       message: "An error occurred during check-out",
+//       error: error.message,
+//     });
+//   }
+// };
 
 exports.checkOut = async (req, res, next) => {
   try {
@@ -240,39 +373,53 @@ exports.checkOut = async (req, res, next) => {
 
     if (req.files && req.files.checkout_img) {
       updateData.checkout_img = req.files.checkout_img[0].path;
+    } else {
+      updateData.checkout_img = null;
     }
 
     const date = getCurrentDate();
 
-    // Check if the employee has checked in today and not yet checked out
-    const checkInDataExist = await sqlModel.select(
+    const checkInData = await sqlModel.select(
       "check_in",
-      {},
-      { emp_id, company_id, date }
+      ["*"], // Fetch all columns
+      { emp_id, company_id, date },
+      "ORDER BY created_at DESC"
     );
 
-    if (checkInDataExist.length > 0 && !checkInDataExist[0].check_out_time) {
-      // Update check-out data
-      updateData.check_out_time = getCurrentTime();
-      updateData.checkin_status = "Check-out";
-      updateData.updated_at = getCurrentDateTime();
+    if (checkInData.length > 0) {
+      const lastCheckIn = checkInData[0];
 
-      const result = await sqlModel.update("check_in", updateData, {
-        emp_id,
-        company_id,
-        date,
-      });
+      if (
+        lastCheckIn.checkin_status === "Check-in" &&
+        !lastCheckIn.check_out_time
+      ) {
+        updateData.check_out_time = getCurrentTime();
+        updateData.checkin_status = "Check-out";
+        updateData.updated_at = getCurrentDateTime();
+        const updateResult = await sqlModel.update("check_in", updateData, {
+          id: lastCheckIn.id,
+        });
 
-      return res
-        .status(200)
-        .send({ status: true, message: "Check-out successful", data: result });
+        return res.status(200).send({
+          status: true,
+          message: "Check-out successful",
+          data: updateResult,
+        });
+      } else {
+        return res.status(400).send({
+          status: false,
+          message:
+            "Cannot check out: No valid check-in record found or already checked out",
+        });
+      }
     } else {
       return res.status(400).send({
         status: false,
-        message: "No check-in record found for today or already checked out",
+        message: "No check-in record found for today",
       });
     }
   } catch (error) {
+    console.error("Error during check-out:", error);
     return res.status(500).send({
       status: false,
       message: "An error occurred during check-out",
