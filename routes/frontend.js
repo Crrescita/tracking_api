@@ -88,16 +88,8 @@ router.use(verifyToken);
 // checkin
 router.get("/checkInDetail", CheckInController.getCheckIn);
 
-router.post(
-  "/checkIn",
-  upload.fields([{ name: "checkin_img", maxCount: 1 }]),
-  CheckInController.checkIn
-);
-router.post(
-  "/checkOut",
-  upload.fields([{ name: "checkout_img", maxCount: 1 }]),
-  CheckInController.checkOut
-);
+router.post("/checkIn", CheckInController.checkIn);
+router.post("/checkOut", CheckInController.checkOut);
 
 // employee coordinates
 router.post("/setCoordinates", EmployeeTrackController.setCoordinates);
