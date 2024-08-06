@@ -144,7 +144,6 @@ exports.checkIn = async (req, res, next) => {
 
     console.log("Request Body:", req.body);
 
-    // Check if essential fields are provided
     if (!company_id) {
       return res
         .status(400)
@@ -156,7 +155,6 @@ exports.checkIn = async (req, res, next) => {
         .send({ status: false, message: "Employee ID is required" });
     }
 
-    // Prepare data for insertion
     let insert = {
       emp_id,
       company_id,
@@ -165,7 +163,6 @@ exports.checkIn = async (req, res, next) => {
       battery_status_at_checkIn,
     };
 
-    // Handle file upload if present
     if (req.files && req.files.checkin_img) {
       insert.checkin_img = req.files.checkin_img[0].path; // Adjust this line based on your file upload setup
     }
@@ -180,8 +177,6 @@ exports.checkIn = async (req, res, next) => {
       { emp_id, company_id, date }
     );
 
-    console.log("Check-In Data Exist:", checkInDataExist);
-
     if (checkInDataExist.length === 0) {
       const newCheckInData = {
         emp_id,
@@ -189,14 +184,12 @@ exports.checkIn = async (req, res, next) => {
         check_in_time: getCurrentTime(),
         lat_check_in: insert.lat_check_in,
         long_check_in: insert.long_check_in,
-        checkin_img: insert.checkin_img,
+        checkin_img: "null",
         battery_status_at_checkIn: insert.battery_status_at_checkIn,
         created_at: getCurrentDateTime(),
         checkin_status: "Check-in",
         date,
       };
-
-      console.log("New Check-In Data:", newCheckInData);
 
       // Insert new check-in data
       const result = await sqlModel.insert("check_in", newCheckInData);
@@ -210,7 +203,6 @@ exports.checkIn = async (req, res, next) => {
         .send({ status: false, message: "Already checked in for today" });
     }
   } catch (error) {
-    console.error("Check-in error:", error); // Log error details
     return res.status(500).send({
       status: false,
       message: "An error occurred during check-in",
@@ -229,7 +221,6 @@ exports.checkOut = async (req, res, next) => {
       battery_status_at_checkout,
     } = req.body;
 
-    // Validate required fields
     if (!company_id) {
       return res
         .status(400)
@@ -241,7 +232,6 @@ exports.checkOut = async (req, res, next) => {
         .send({ status: false, message: "Employee ID is required" });
     }
 
-    // Prepare data for update
     let updateData = {
       lat_check_out,
       long_check_out,
@@ -249,7 +239,7 @@ exports.checkOut = async (req, res, next) => {
     };
 
     if (req.files && req.files.checkout_img) {
-      updateData.checkout_img = req.files.checkout_img[0].path; // Adjust this line based on your file upload setup
+      updateData.checkout_img = req.files.checkout_img[0].path;
     }
 
     const date = getCurrentDate();
@@ -283,7 +273,6 @@ exports.checkOut = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error("Check-out error:", error); // Log error details
     return res.status(500).send({
       status: false,
       message: "An error occurred during check-out",

@@ -64,6 +64,7 @@ exports.setCoordinates = async (req, res, next) => {
       ...rest
     } = req.body;
 
+    // Validate required fields
     const requiredFields = {
       company_id,
       emp_id,
@@ -74,15 +75,17 @@ exports.setCoordinates = async (req, res, next) => {
       internet_status,
       motion,
     };
+
     for (const [key, value] of Object.entries(requiredFields)) {
       if (!value) {
-        return res.status(200).send({
+        return res.status(400).send({
           status: false,
           message: `${key.replace("_", " ")} is required`,
         });
       }
     }
 
+    // Prepare data for insertion
     const newCheckInData = {
       company_id,
       emp_id,
@@ -92,20 +95,33 @@ exports.setCoordinates = async (req, res, next) => {
       date: getCurrentDate(),
       time: getCurrentTime(),
       created_at: getCurrentDateTime(),
-	gps_status:gps_status,
-	internet_status:internet_status,
-	battery_status:battery_status,
-	motion:motion,
+      gps_status,
+      internet_status,
+      motion,
       ...rest,
     };
 
+    // Insert tracking data
     const result = await sqlModel.insert("emp_tracking", newCheckInData);
+
+    // Determine timer value (this can be dynamic or based on some logic)
+    const timerValue = 30000; // Set or calculate the timer value as needed
+
+    // Update employee record
+    const updateData = {
+      timer: timerValue,
+    };
+
+    await sqlModel.update("employees", updateData, {
+      id: emp_id,
+      company_id,
+    });
 
     return res.status(200).send({
       status: true,
       message: "Data submitted successfully",
       data: result,
-      timer:30000
+      timer: timerValue, // Include the timer in the response
     });
   } catch (error) {
     console.error("Error during data submission:", error);
