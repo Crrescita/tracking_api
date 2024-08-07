@@ -134,7 +134,7 @@ exports.setCoordinates = async (req, res, next) => {
   }
 };
 
-exports.setOfflineCoordinates = async (req, res, next) => {
+exports.setAllCoordinates = async (req, res, next) => {
   try {
     const dataArray = req.body;
 

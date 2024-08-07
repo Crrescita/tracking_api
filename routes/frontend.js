@@ -93,10 +93,7 @@ router.post("/checkOut", CheckInController.checkOut);
 
 // employee coordinates
 router.post("/setCoordinates", EmployeeTrackController.setCoordinates);
-router.post(
-  "/setOfflineCoordinates",
-  EmployeeTrackController.setOfflineCoordinates
-);
+router.post("/setAllCoordinates", EmployeeTrackController.setAllCoordinates);
 
 router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
 
