@@ -104,24 +104,121 @@ exports.setCoordinates = async (req, res, next) => {
     // Insert tracking data
     const result = await sqlModel.insert("emp_tracking", newCheckInData);
 
-    // Determine timer value (this can be dynamic or based on some logic)
-    const timerValue = 30000; // Set or calculate the timer value as needed
-
-    // Update employee record
-    const updateData = {
-      timer: timerValue,
-    };
-
-    await sqlModel.update("employees", updateData, {
+    const employee = await sqlModel.select("employees", ["timer"], {
       id: emp_id,
       company_id,
     });
+
+    if (!employee.length) {
+      return res.status(404).send({
+        status: false,
+        message: "Employee not found",
+      });
+    }
+
+    const timerValue = employee[0].timer || 30000;
 
     return res.status(200).send({
       status: true,
       message: "Data submitted successfully",
       data: result,
       timer: timerValue, // Include the timer in the response
+    });
+  } catch (error) {
+    console.error("Error during data submission:", error);
+    return res.status(500).send({
+      status: false,
+      message: "An error occurred during data submission",
+      error: error.message,
+    });
+  }
+};
+
+exports.setOfflineCoordinates = async (req, res, next) => {
+  try {
+    const dataArray = req.body;
+
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      return res.status(400).send({
+        status: false,
+        message: "Data should be a non-empty array",
+      });
+    }
+
+    // Extract emp_id and company_id from the first item
+    const { emp_id, company_id } = dataArray[0];
+
+    // Fetch timer value from the employees table
+    const employee = await sqlModel.select("employees", ["timer"], {
+      id: emp_id,
+      company_id,
+    });
+
+    if (!employee.length) {
+      return res.status(404).send({
+        status: false,
+        message: "Employee not found",
+      });
+    }
+
+    const timerValue = employee[0].timer || 30000;
+
+    // Insert data into emp_tracking table
+    for (const item of dataArray) {
+      const {
+        company_id,
+        emp_id,
+        latitude,
+        longitude,
+        battery_status,
+        gps_status,
+        internet_status,
+        motion,
+        ...rest
+      } = item;
+
+      const requiredFields = {
+        company_id,
+        emp_id,
+        latitude,
+        longitude,
+        battery_status,
+        gps_status,
+        internet_status,
+        motion,
+      };
+
+      for (const [key, value] of Object.entries(requiredFields)) {
+        if (!value) {
+          return res.status(400).send({
+            status: false,
+            message: `${key.replace("_", " ")} is required`,
+          });
+        }
+      }
+
+      const newCheckInData = {
+        company_id,
+        emp_id,
+        latitude,
+        longitude,
+        battery_status,
+        date: getCurrentDate(),
+        time: getCurrentTime(),
+        created_at: getCurrentDateTime(),
+        gps_status,
+        internet_status,
+        motion,
+        ...rest,
+      };
+
+      await sqlModel.insert("emp_tracking", newCheckInData);
+    }
+
+    return res.status(200).send({
+      status: true,
+      message: "Data submitted successfully",
+      timer: timerValue, // Include the timer value in the response
     });
   } catch (error) {
     console.error("Error during data submission:", error);
