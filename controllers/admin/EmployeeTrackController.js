@@ -36,7 +36,7 @@ exports.getCoordinates = async (req, res, next) => {
 
 exports.getEmpLoginDetail = async (req, res, next) => {
   try {
-    const emp_id = req.params?.emp_id || "";
+    const emp_id = req.query?.emp_id || "";
     const companyId = req.query?.company_id || "";
 
     let whereClause = {};
@@ -100,7 +100,8 @@ exports.getAttendence = async (req, res, next) => {
     }
 
     // Base URL for images
-    const baseUrl = process.env.BASE_URL || "http://your-default-base-url.com/";
+    const baseUrl =
+      process.env.BASE_URL || "https://trackingapi.crrescita.com/";
 
     // Base query with LEFT JOIN to get all employees and their check-in statuses
     let query = `

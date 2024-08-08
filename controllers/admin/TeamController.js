@@ -24,6 +24,14 @@ exports.createDepartment = async (req, res, next) => {
 
     const insert = { name, slug, status };
 
+    const existingSlug = await sqlModel.select("department", ["id"], { slug });
+
+    if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Slug already exists" });
+    }
+
     if (id) {
       const departmentRecord = await sqlModel.select("department", ["name"], {
         id,
@@ -59,8 +67,15 @@ exports.createDepartment = async (req, res, next) => {
 
 exports.getDepartment = async (req, res, next) => {
   try {
-    const id = req.params?.id || "";
-    const whereClause = id ? { id } : {};
+    // const id = req.params?.id || "";
+    const whereClause = {};
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        whereClause[key] = req.query[key];
+      }
+    }
+
+    // const whereClause = id ? { id } : {};
     const data = await sqlModel.select("department", {}, whereClause);
 
     if (data.error) {
@@ -126,34 +141,36 @@ exports.deleteMultipleDepartments = async (req, res, next) => {
 };
 
 // designation
+
 exports.createDesignation = async (req, res, next) => {
   try {
     const id = req.params.id || "";
     const { name, status } = req.body;
 
-    // Validate fields
-    const validation = validateFields({ name, status });
-    if (!validation.valid) {
-      return res.status(400).send({
-        status: false,
-        message: validation.message,
-        statusCode: 1,
-      });
-    }
-
     // Create slug
-    const slug = createSlug(name);
+    let slug = "";
+    if (name) {
+      slug = createSlug(name);
+    }
 
     const insert = { name, slug, status };
 
+    const existingSlug = await sqlModel.select("designation", ["id"], { slug });
+
+    if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Slug already exists" });
+    }
+
     if (id) {
-      const designationRecord = await sqlModel.select("designation", ["name"], {
+      const departmentRecord = await sqlModel.select("designation", ["name"], {
         id,
       });
-      if (designationRecord.error || designationRecord.length === 0) {
+      if (departmentRecord.error || departmentRecord.length === 0) {
         return res
           .status(200)
-          .send({ status: false, message: "Designation not found" });
+          .send({ status: false, message: "Department not found" });
       }
 
       insert.updated_at = getCurrentDateTime();
@@ -202,9 +219,9 @@ exports.deleteDesignation = async (req, res, next) => {
   try {
     let id = req.params.id;
 
-    const designationRecord = await sqlModel.select("designation", {}, { id });
+    const departmentRecord = await sqlModel.select("designation", {}, { id });
 
-    if (designationRecord.error || designationRecord.length === 0) {
+    if (departmentRecord.error || departmentRecord.length === 0) {
       return res.status(200).send({ status: false, message: "Data not found" });
     }
 
@@ -217,5 +234,32 @@ exports.deleteDesignation = async (req, res, next) => {
     }
   } catch (error) {
     res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+exports.deleteMultipleDesignation = async (req, res, next) => {
+  try {
+    const ids = req.body.ids;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).send({ status: false, message: "Invalid input" });
+    }
+
+    const results = await Promise.all(
+      ids.map((id) => sqlModel.delete("designation", { id }))
+    );
+
+    const errors = results.filter((result) => result.error);
+    if (errors.length > 0) {
+      return res.status(200).send({
+        status: false,
+        message: "Some records could not be deleted",
+        errors,
+      });
+    } else {
+      return res.status(200).send({ status: true, message: "Records deleted" });
+    }
+  } catch (error) {
+    return res.status(500).send({ status: false, error: error.message });
   }
 };

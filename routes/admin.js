@@ -115,6 +115,11 @@ router
   )
   .delete(employeeController.deleteemployee);
 
+router.post(
+  "/employees-delete-multiple",
+  employeeController.deleteMultipleEmployees
+);
+
 // checkin
 router.get("/checkInDetail", CheckInController.getCheckIn);
 
@@ -153,6 +158,11 @@ router
   .post(TeamController.createDesignation)
   .put(TeamController.createDesignation)
   .delete(TeamController.deleteDesignation);
+
+router.post(
+  "/designation-delete-multiple",
+  TeamController.deleteMultipleDesignation
+);
 
 /* GET users listing. */
 router.get("/", function (req, res, next) {
