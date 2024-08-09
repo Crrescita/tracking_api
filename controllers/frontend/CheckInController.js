@@ -229,6 +229,33 @@ exports.checkIn = async (req, res, next) => {
         .send({ status: false, message: "Employee ID is required" });
     }
 
+    const date = getCurrentDate();
+    const currentTime = getCurrentTime();
+
+    console.log("Date:", date);
+    console.log("Current Time:", currentTime);
+
+    // Check for existing check-in record for the same date without a check-out time
+    const existingCheckIns = await sqlModel.select(
+      "check_in",
+      ["id", "check_in_time"],
+      {
+        emp_id,
+        company_id,
+        date,
+        checkin_status: "Check-in", // Look for records with no check-out time
+      }
+    );
+
+    console.log("Existing Check-Ins:", existingCheckIns);
+
+    if (existingCheckIns.length > 0) {
+      return res.status(400).send({
+        status: false,
+        message: "Please Check-out before Check In again",
+      });
+    }
+
     let insert = {
       emp_id,
       company_id,
@@ -243,12 +270,10 @@ exports.checkIn = async (req, res, next) => {
       insert.checkin_img = null;
     }
 
-    const date = getCurrentDate();
-
     const newCheckInData = {
       emp_id,
       company_id,
-      check_in_time: getCurrentTime(),
+      check_in_time: currentTime,
       lat_check_in: insert.lat_check_in,
       long_check_in: insert.long_check_in,
       checkin_img: insert.checkin_img,
@@ -273,6 +298,96 @@ exports.checkIn = async (req, res, next) => {
     });
   }
 };
+
+// exports.checkIn = async (req, res, next) => {
+//   try {
+//     let {
+//       emp_id,
+//       company_id,
+//       lat_check_in,
+//       long_check_in,
+//       battery_status_at_checkIn,
+//     } = req.body;
+
+//     if (!company_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Company ID is required" });
+//     }
+//     if (!emp_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Employee ID is required" });
+//     }
+
+//     const date = getCurrentDate();
+//     const currentTime = getCurrentTime();
+
+//     // Check for existing check-in record without a check-out time
+//     const existingCheckIn = await sqlModel.select(
+//       "check_in",
+//       ["id", "check_in_time"],
+//       {
+//         emp_id,
+//         company_id,
+//         date,
+//         check_out_time: null, // Look for records with no check-out time
+//       }
+//     );
+
+//     if (existingCheckIn.length > 0) {
+//       // Update existing check-in with check-out time
+//       const existingCheckInId = existingCheckIn[0].id;
+//       await sqlModel.update(
+//         "check_in",
+//         { check_out_time: currentTime },
+//         { id: existingCheckInId }
+//       );
+//     }
+
+//     // Prepare new check-in data
+//     let insert = {
+//       emp_id,
+//       company_id,
+//       lat_check_in,
+//       long_check_in,
+//       battery_status_at_checkIn,
+//     };
+
+//     if (req.files && req.files.checkin_img) {
+//       insert.checkin_img = req.files.checkin_img[0].path;
+//     } else {
+//       insert.checkin_img = null;
+//     }
+
+//     const newCheckInData = {
+//       emp_id,
+//       company_id,
+//       check_in_time: currentTime,
+//       lat_check_in: insert.lat_check_in,
+//       long_check_in: insert.long_check_in,
+//       checkin_img: insert.checkin_img,
+//       battery_status_at_checkIn: insert.battery_status_at_checkIn,
+//       created_at: getCurrentDateTime(),
+//       checkin_status: "Check-in",
+//       date,
+//     };
+
+//     // Insert new check-in data
+//     const result = await sqlModel.insert("check_in", newCheckInData);
+
+//     return res
+//       .status(200)
+//       .send({ status: true, message: "Check-in successful", data: result });
+//   } catch (error) {
+//     console.error("Error during check-in:", error);
+//     return res.status(500).send({
+//       status: false,
+//       message: "An error occurred during check-in",
+//       error: error.message,
+//     });
+//   }
+// };
 
 // exports.checkOut = async (req, res, next) => {
 //   try {

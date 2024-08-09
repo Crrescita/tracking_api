@@ -88,6 +88,181 @@ exports.getEmpLiveLocation = async (req, res, next) => {
   }
 };
 
+// exports.getAttendence = async (req, res, next) => {
+//   try {
+//     const { company_id, date } = req.query;
+
+//     if (!company_id || !date) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Company ID and date are required",
+//       });
+//     }
+
+//     const baseUrl =
+//       process.env.BASE_URL || "https://trackingapi.crrescita.com/";
+
+//     // Query to get all check-in data
+//     const query = `
+//     SELECT
+//       e.id,
+//       e.name,
+//       e.mobile,
+//       e.email,
+//       e.designation,
+//       e.employee_id,
+//       CASE
+//         WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+//         ELSE e.image
+//       END AS image,
+//       c.date,
+//       c.check_in_time,
+//       c.check_out_time,
+//       TIME_TO_SEC(TIMEDIFF(c.check_out_time, c.check_in_time)) AS duration_in_seconds
+//     FROM employees e
+//     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+//     WHERE e.company_id = ?
+//   `;
+
+//     const values = [baseUrl, date, company_id];
+
+//     const data = await sqlModel.customQuery(query, values);
+
+//     // Helper function to convert duration to seconds
+//     const parseDurationToSeconds = (duration) => {
+//       if (typeof duration === "string") {
+//         const match = duration.match(/(\d+)h (\d+)m (\d+)s/);
+//         if (match) {
+//           const [, hours, minutes, seconds] = match;
+//           return (
+//             parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds)
+//           );
+//         }
+//       }
+//       return 0; // Default to 0 if duration is not a valid string
+//     };
+
+//     // Helper function to format seconds into HH:MM:SS
+//     const formatDuration = (totalSeconds) => {
+//       if (isNaN(totalSeconds) || totalSeconds < 0) {
+//         console.error("Invalid totalSeconds value:", totalSeconds);
+//         return "0h 0m 0s";
+//       }
+
+//       // Calculate hours, minutes, and seconds
+//       const hours = Math.floor(totalSeconds / 3600);
+//       const minutes = Math.floor((totalSeconds % 3600) / 60);
+//       const seconds = Math.floor(totalSeconds % 60);
+
+//       // Return formatted duration string
+//       return `${hours}h ${minutes}m ${seconds}s`;
+//     };
+
+//     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
+//       const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
+//       const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
+
+//       return (checkOut - checkIn) / 1000; // duration in seconds
+//     };
+
+//     // Process data to include all check-ins per employee
+//     const processedData = data.reduce((acc, item) => {
+//       const existingEmployee = acc.find((emp) => emp.id === item.id);
+//       const checkInTime = item.check_in_time;
+//       const checkOutTime = item.check_out_time;
+
+//       if (existingEmployee) {
+//         const durationInSeconds = calculateDurationInSeconds(
+//           checkInTime,
+//           checkOutTime
+//         );
+
+//         existingEmployee.checkIns.push({
+//           check_in_time: checkInTime,
+//           check_out_time: checkOutTime,
+//           duration: formatDuration(durationInSeconds),
+//         });
+
+//         // Update total duration
+//         existingEmployee.totalDurationInSeconds += durationInSeconds;
+
+//         // Update latestCheckInTime and latestCheckOutTime
+//         existingEmployee.latestCheckInTime =
+//           existingEmployee.latestCheckInTime || checkInTime;
+//         existingEmployee.latestCheckOutTime =
+//           existingEmployee.latestCheckOutTime || checkOutTime;
+//         if (
+//           checkInTime &&
+//           new Date(`1970-01-01T${checkInTime}Z`) <
+//             new Date(`1970-01-01T${existingEmployee.latestCheckInTime}Z`)
+//         ) {
+//           existingEmployee.latestCheckInTime = checkInTime;
+//         }
+//         if (
+//           checkOutTime &&
+//           new Date(`1970-01-01T${checkOutTime}Z`) >
+//             new Date(`1970-01-01T${existingEmployee.latestCheckOutTime}Z`)
+//         ) {
+//           existingEmployee.latestCheckOutTime = checkOutTime;
+//         }
+
+//         // Update checkin_status
+//         existingEmployee.checkin_status = "Present";
+//       } else {
+//         const durationInSeconds = calculateDurationInSeconds(
+//           checkInTime,
+//           checkOutTime
+//         );
+
+//         acc.push({
+//           id: item.id,
+//           name: item.name,
+//           mobile: item.mobile,
+//           email: item.email,
+//           designation: item.designation,
+//           employee_id: item.employee_id,
+//           image: item.image,
+//           date: item.date,
+//           checkIns: [
+//             {
+//               check_in_time: checkInTime,
+//               check_out_time: checkOutTime,
+//               duration: formatDuration(durationInSeconds),
+//             },
+//           ],
+//           latestCheckInTime: checkInTime,
+//           latestCheckOutTime: checkOutTime,
+//           totalDuration: formatDuration(durationInSeconds),
+//           totalDurationInSeconds: durationInSeconds,
+//           checkin_status: checkInTime ? "Present" : "Absent",
+//         });
+//       }
+//       return acc;
+//     }, []);
+
+//     // Compute total duration for each employee
+//     processedData.forEach((employee) => {
+//       employee.totalDuration = formatDuration(employee.totalDurationInSeconds);
+//     });
+
+//     // Convert latestCheckInTime and latestCheckOutTime back to the desired format
+//     processedData.forEach((employee) => {
+//       if (employee.checkIns.length > 0) {
+//         employee.latestCheckInTime = employee.latestCheckInTime || null;
+//         employee.latestCheckOutTime = employee.latestCheckOutTime || null;
+//       }
+//     });
+
+//     if (processedData.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+
+//     res.status(200).send({ status: true, data: processedData });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getAttendence = async (req, res, next) => {
   try {
     const { company_id, date } = req.query;
@@ -95,46 +270,172 @@ exports.getAttendence = async (req, res, next) => {
     if (!company_id || !date) {
       return res.status(400).send({
         status: false,
-        message: "Company id and date are required",
+        message: "Company ID and date are required",
       });
     }
 
-    // Base URL for images
     const baseUrl =
       process.env.BASE_URL || "https://trackingapi.crrescita.com/";
 
-    // Base query with LEFT JOIN to get all employees and their check-in statuses
-    let query = `
-      SELECT e.name,
-             e.mobile,
-             e.email,
-             e.designation,
-             e.employee_id,
-             CASE
-               WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-               ELSE e.image
-             END AS image,
-             c.date,
-             c.check_in_time,
-             c.check_out_time,
-             CASE 
-               WHEN c.emp_id IS NULL THEN 'pending' 
-               ELSE c.checkin_status 
-             END AS checkin_status
-      FROM employees e
-      LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id AND c.date = ?
-      WHERE e.company_id = ?
-    `;
+    // Query to get all check-in data
+    const query = `
+    SELECT 
+      e.id,
+      e.name,
+      e.mobile,
+      e.email,
+      e.designation,
+      e.employee_id,
+      CASE
+        WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+        ELSE e.image
+      END AS image,
+      c.date,
+      c.check_in_time,
+      c.check_out_time,
+      TIME_TO_SEC(TIMEDIFF(c.check_out_time, c.check_in_time)) AS duration_in_seconds
+    FROM employees e
+    LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+    WHERE e.company_id = ?
+  `;
 
     const values = [baseUrl, date, company_id];
 
     const data = await sqlModel.customQuery(query, values);
 
-    if (data.length === 0) {
-      return res.status(200).send({ status: false, message: "No data found" });
+    // Helper function to format seconds into HH:MM:SS
+    const formatDuration = (totalSeconds) => {
+      if (isNaN(totalSeconds) || totalSeconds < 0) {
+        console.error("Invalid totalSeconds value:", totalSeconds);
+        return "0h 0m 0s";
+      }
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
+    // Helper function to calculate duration in seconds
+    const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
+      if (!checkInTime || !checkOutTime) {
+        return 0; // Return 0 if either time is null or undefined
+      }
+      const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
+      const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
+      return (checkOut - checkIn) / 1000; // duration in seconds
+    };
+
+    // Process data to include all check-ins per employee
+    const processedData = data.reduce((acc, item) => {
+      const existingEmployee = acc.find((emp) => emp.id === item.id);
+      const checkInTime = item.check_in_time;
+      const checkOutTime = item.check_out_time;
+
+      const durationInSeconds = calculateDurationInSeconds(
+        checkInTime,
+        checkOutTime
+      );
+
+      if (existingEmployee) {
+        if (checkInTime && checkOutTime) {
+          existingEmployee.checkIns.push({
+            check_in_time: checkInTime,
+            check_out_time: checkOutTime,
+            duration: formatDuration(durationInSeconds),
+          });
+        }
+
+        existingEmployee.totalDurationInSeconds += durationInSeconds;
+        existingEmployee.latestCheckInTime =
+          existingEmployee.latestCheckInTime || checkInTime;
+        existingEmployee.latestCheckOutTime =
+          existingEmployee.latestCheckOutTime || checkOutTime;
+
+        if (
+          checkInTime &&
+          new Date(`1970-01-01T${checkInTime}Z`) <
+            new Date(`1970-01-01T${existingEmployee.latestCheckInTime}Z`)
+        ) {
+          existingEmployee.latestCheckInTime = checkInTime;
+        }
+        if (
+          checkOutTime &&
+          new Date(`1970-01-01T${checkOutTime}Z`) >
+            new Date(`1970-01-01T${existingEmployee.latestCheckOutTime}Z`)
+        ) {
+          existingEmployee.latestCheckOutTime = checkOutTime;
+        }
+
+        existingEmployee.checkin_status = "Present";
+      } else {
+        acc.push({
+          id: item.id,
+          name: item.name,
+          mobile: item.mobile,
+          email: item.email,
+          designation: item.designation,
+          employee_id: item.employee_id,
+          image: item.image,
+          date: item.date,
+          checkIns:
+            checkInTime && checkOutTime
+              ? [
+                  {
+                    check_in_time: checkInTime,
+                    check_out_time: checkOutTime,
+                    duration: formatDuration(durationInSeconds),
+                  },
+                ]
+              : [],
+          latestCheckInTime: checkInTime || null,
+          latestCheckOutTime: checkOutTime || null,
+          totalDuration: formatDuration(durationInSeconds),
+          totalDurationInSeconds: durationInSeconds,
+          checkin_status: checkInTime ? "Present" : "Absent",
+        });
+      }
+      return acc;
+    }, []);
+
+    // Compute total duration for each employee
+    processedData.forEach((employee) => {
+      employee.totalDuration = formatDuration(employee.totalDurationInSeconds);
+    });
+
+    // Calculate total present and absent counts, and total employee duration
+    const totalPresent = processedData.filter(
+      (emp) => emp.checkin_status === "Present"
+    ).length;
+    const totalAbsent = processedData.filter(
+      (emp) => emp.checkin_status === "Absent"
+    ).length;
+    const totalDurationInSeconds = processedData.reduce(
+      (sum, emp) => sum + emp.totalDurationInSeconds,
+      0
+    );
+
+    // Convert total duration to the desired format
+    const totalDuration = formatDuration(totalDurationInSeconds);
+
+    if (processedData.length === 0) {
+      return res.status(200).send({
+        status: false,
+        message: "No data found",
+        totalPresent,
+        totalAbsent,
+        totalDuration,
+      });
     }
 
-    res.status(200).send({ status: true, data: data });
+    res.status(200).send({
+      status: true,
+      data: processedData,
+      attendenceCount: {
+        totalPresent,
+        totalAbsent,
+        totalDuration,
+      },
+    });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
