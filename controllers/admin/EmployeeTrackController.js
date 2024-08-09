@@ -128,40 +128,25 @@ exports.getEmpLiveLocation = async (req, res, next) => {
 
 //     const data = await sqlModel.customQuery(query, values);
 
-//     // Helper function to convert duration to seconds
-//     const parseDurationToSeconds = (duration) => {
-//       if (typeof duration === "string") {
-//         const match = duration.match(/(\d+)h (\d+)m (\d+)s/);
-//         if (match) {
-//           const [, hours, minutes, seconds] = match;
-//           return (
-//             parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds)
-//           );
-//         }
-//       }
-//       return 0; // Default to 0 if duration is not a valid string
-//     };
-
 //     // Helper function to format seconds into HH:MM:SS
 //     const formatDuration = (totalSeconds) => {
 //       if (isNaN(totalSeconds) || totalSeconds < 0) {
 //         console.error("Invalid totalSeconds value:", totalSeconds);
 //         return "0h 0m 0s";
 //       }
-
-//       // Calculate hours, minutes, and seconds
 //       const hours = Math.floor(totalSeconds / 3600);
 //       const minutes = Math.floor((totalSeconds % 3600) / 60);
 //       const seconds = Math.floor(totalSeconds % 60);
-
-//       // Return formatted duration string
 //       return `${hours}h ${minutes}m ${seconds}s`;
 //     };
 
+//     // Helper function to calculate duration in seconds
 //     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
+//       if (!checkInTime || !checkOutTime) {
+//         return 0; // Return 0 if either time is null or undefined
+//       }
 //       const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
 //       const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
-
 //       return (checkOut - checkIn) / 1000; // duration in seconds
 //     };
 
@@ -171,26 +156,26 @@ exports.getEmpLiveLocation = async (req, res, next) => {
 //       const checkInTime = item.check_in_time;
 //       const checkOutTime = item.check_out_time;
 
+//       const durationInSeconds = calculateDurationInSeconds(
+//         checkInTime,
+//         checkOutTime
+//       );
+
 //       if (existingEmployee) {
-//         const durationInSeconds = calculateDurationInSeconds(
-//           checkInTime,
-//           checkOutTime
-//         );
+//         if (checkInTime && checkOutTime) {
+//           existingEmployee.checkIns.push({
+//             check_in_time: checkInTime,
+//             check_out_time: checkOutTime,
+//             duration: formatDuration(durationInSeconds),
+//           });
+//         }
 
-//         existingEmployee.checkIns.push({
-//           check_in_time: checkInTime,
-//           check_out_time: checkOutTime,
-//           duration: formatDuration(durationInSeconds),
-//         });
-
-//         // Update total duration
 //         existingEmployee.totalDurationInSeconds += durationInSeconds;
-
-//         // Update latestCheckInTime and latestCheckOutTime
 //         existingEmployee.latestCheckInTime =
 //           existingEmployee.latestCheckInTime || checkInTime;
 //         existingEmployee.latestCheckOutTime =
 //           existingEmployee.latestCheckOutTime || checkOutTime;
+
 //         if (
 //           checkInTime &&
 //           new Date(`1970-01-01T${checkInTime}Z`) <
@@ -206,14 +191,8 @@ exports.getEmpLiveLocation = async (req, res, next) => {
 //           existingEmployee.latestCheckOutTime = checkOutTime;
 //         }
 
-//         // Update checkin_status
 //         existingEmployee.checkin_status = "Present";
 //       } else {
-//         const durationInSeconds = calculateDurationInSeconds(
-//           checkInTime,
-//           checkOutTime
-//         );
-
 //         acc.push({
 //           id: item.id,
 //           name: item.name,
@@ -223,15 +202,18 @@ exports.getEmpLiveLocation = async (req, res, next) => {
 //           employee_id: item.employee_id,
 //           image: item.image,
 //           date: item.date,
-//           checkIns: [
-//             {
-//               check_in_time: checkInTime,
-//               check_out_time: checkOutTime,
-//               duration: formatDuration(durationInSeconds),
-//             },
-//           ],
-//           latestCheckInTime: checkInTime,
-//           latestCheckOutTime: checkOutTime,
+//           checkIns:
+//             checkInTime && checkOutTime
+//               ? [
+//                   {
+//                     check_in_time: checkInTime,
+//                     check_out_time: checkOutTime,
+//                     duration: formatDuration(durationInSeconds),
+//                   },
+//                 ]
+//               : [],
+//           latestCheckInTime: checkInTime || null,
+//           latestCheckOutTime: checkOutTime || null,
 //           totalDuration: formatDuration(durationInSeconds),
 //           totalDurationInSeconds: durationInSeconds,
 //           checkin_status: checkInTime ? "Present" : "Absent",
@@ -245,19 +227,40 @@ exports.getEmpLiveLocation = async (req, res, next) => {
 //       employee.totalDuration = formatDuration(employee.totalDurationInSeconds);
 //     });
 
-//     // Convert latestCheckInTime and latestCheckOutTime back to the desired format
-//     processedData.forEach((employee) => {
-//       if (employee.checkIns.length > 0) {
-//         employee.latestCheckInTime = employee.latestCheckInTime || null;
-//         employee.latestCheckOutTime = employee.latestCheckOutTime || null;
-//       }
-//     });
+//     // Calculate total present and absent counts, and total employee duration
+//     const totalPresent = processedData.filter(
+//       (emp) => emp.checkin_status === "Present"
+//     ).length;
+//     const totalAbsent = processedData.filter(
+//       (emp) => emp.checkin_status === "Absent"
+//     ).length;
+//     const totalDurationInSeconds = processedData.reduce(
+//       (sum, emp) => sum + emp.totalDurationInSeconds,
+//       0
+//     );
+
+//     // Convert total duration to the desired format
+//     const totalDuration = formatDuration(totalDurationInSeconds);
 
 //     if (processedData.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
+//       return res.status(200).send({
+//         status: false,
+//         message: "No data found",
+//         totalPresent,
+//         totalAbsent,
+//         totalDuration,
+//       });
 //     }
 
-//     res.status(200).send({ status: true, data: processedData });
+//     res.status(200).send({
+//       status: true,
+//       data: processedData,
+//       attendenceCount: {
+//         totalPresent,
+//         totalAbsent,
+//         totalDuration,
+//       },
+//     });
 //   } catch (error) {
 //     res.status(500).send({ status: false, error: error.message });
 //   }
@@ -322,7 +325,8 @@ exports.getAttendence = async (req, res, next) => {
       }
       const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
       const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
-      return (checkOut - checkIn) / 1000; // duration in seconds
+      const durationInSeconds = (checkOut - checkIn) / 1000; // duration in seconds
+      return durationInSeconds < 0 ? 0 : durationInSeconds; // Ensure no negative durations
     };
 
     // Process data to include all check-ins per employee
