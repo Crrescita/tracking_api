@@ -63,8 +63,7 @@ exports.getCheckIn = async (req, res, next) => {
       END AS image,
       c.date,
       c.check_in_time,
-      c.check_out_time,
-      TIME_TO_SEC(TIMEDIFF(c.check_out_time, c.check_in_time)) AS duration_in_seconds
+      c.check_out_time
     FROM employees e
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
     WHERE e.id = ? AND e.company_id = ?
@@ -98,7 +97,7 @@ exports.getCheckIn = async (req, res, next) => {
     // Helper function to calculate duration in seconds
     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
       if (!checkInTime || !checkOutTime) {
-        return 0; // Return 0 if either time is null or undefined
+        return 0; // Return 0 if checkInTime or checkOutTime is null or undefined
       }
       const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
       const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
@@ -129,35 +128,26 @@ exports.getCheckIn = async (req, res, next) => {
         item.check_out_time
       );
 
-      if (item.check_in_time && item.check_out_time) {
+      if (item.check_in_time) {
         employeeData.checkIns.push({
           check_in_time: item.check_in_time,
-          check_out_time: item.check_out_time,
+          check_out_time: item.check_out_time || null, // Ensure check_out_time is set to null if not present
           duration: formatDuration(durationInSeconds),
         });
 
         employeeData.totalDurationInSeconds += durationInSeconds;
-
-        // Update latest check-in and check-out times
-        if (
-          !employeeData.latestCheckInTime ||
-          new Date(`1970-01-01T${item.check_in_time}Z`) <
-            new Date(`1970-01-01T${employeeData.latestCheckInTime}Z`)
-        ) {
-          employeeData.latestCheckInTime = item.check_in_time;
-        }
-
-        if (
-          !employeeData.latestCheckOutTime ||
-          new Date(`1970-01-01T${item.check_out_time}Z`) >
-            new Date(`1970-01-01T${employeeData.latestCheckOutTime}Z`)
-        ) {
-          employeeData.latestCheckOutTime = item.check_out_time;
-        }
-
-        employeeData.checkin_status = "Present"; // At least one check-in means present
       }
     });
+
+    // Set latestCheckInTime and latestCheckOutTime from the last entry in checkIns
+    const lastCheckIn = employeeData.checkIns[employeeData.checkIns.length - 1];
+    if (lastCheckIn) {
+      employeeData.latestCheckInTime = lastCheckIn.check_in_time;
+      employeeData.latestCheckOutTime = lastCheckIn.check_out_time || null;
+      employeeData.checkin_status = lastCheckIn.check_in_time
+        ? "Present"
+        : "Absent";
+    }
 
     // Format total duration
     employeeData.totalDuration = formatDuration(
