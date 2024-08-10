@@ -474,8 +474,7 @@ exports.getAttendence = async (req, res, next) => {
       END AS image,
       c.date,
       c.check_in_time,
-      c.check_out_time,
-      TIME_TO_SEC(TIMEDIFF(c.check_out_time, c.check_in_time)) AS duration_in_seconds
+      c.check_out_time
     FROM employees e
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
     WHERE e.company_id = ?
