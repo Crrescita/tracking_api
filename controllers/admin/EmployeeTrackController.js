@@ -525,7 +525,8 @@ exports.getAttendence = async (req, res, next) => {
         if (checkInTime) {
           existingEmployee.checkIns.push({
             check_in_time: checkInTime,
-            check_out_time: checkOutTime || null, // Leave check_out_time as null if not provided
+            check_out_time:
+              checkOutTime || new Date().toISOString().substring(11, 19), // Use current time if checkOutTime is null
             duration: formatDuration(durationInSeconds),
           });
         }
@@ -533,12 +534,24 @@ exports.getAttendence = async (req, res, next) => {
         existingEmployee.totalDurationInSeconds += durationInSeconds;
         existingEmployee.latestCheckInTime =
           existingEmployee.latestCheckInTime || checkInTime;
+        existingEmployee.latestCheckOutTime =
+          existingEmployee.latestCheckOutTime ||
+          checkOutTime ||
+          new Date().toISOString().substring(11, 19); // Use current time if checkOutTime is null
 
-        if (checkOutTime) {
-          existingEmployee.latestCheckOutTime =
-            existingEmployee.latestCheckOutTime || checkOutTime;
-        } else if (existingEmployee.checkIns.length > 0) {
-          existingEmployee.latestCheckOutTime = null; // Keep as null if no check-out time
+        if (
+          checkInTime &&
+          new Date(`1970-01-01T${checkInTime}Z`) <
+            new Date(`1970-01-01T${existingEmployee.latestCheckInTime}Z`)
+        ) {
+          existingEmployee.latestCheckInTime = checkInTime;
+        }
+        if (
+          checkOutTime &&
+          new Date(`1970-01-01T${checkOutTime}Z`) >
+            new Date(`1970-01-01T${existingEmployee.latestCheckOutTime}Z`)
+        ) {
+          existingEmployee.latestCheckOutTime = checkOutTime;
         }
 
         existingEmployee.checkin_status = "Present";
@@ -556,13 +569,15 @@ exports.getAttendence = async (req, res, next) => {
             ? [
                 {
                   check_in_time: checkInTime,
-                  check_out_time: checkOutTime || null, // Leave check_out_time as null if not provided
+                  check_out_time:
+                    checkOutTime || new Date().toISOString().substring(11, 19), // Use current time if checkOutTime is null
                   duration: formatDuration(durationInSeconds),
                 },
               ]
             : [],
           latestCheckInTime: checkInTime || null,
-          latestCheckOutTime: checkOutTime || null, // Leave as null if no check-out time
+          latestCheckOutTime:
+            checkOutTime || new Date().toISOString().substring(11, 19), // Use current time if checkOutTime is null
           totalDuration: formatDuration(durationInSeconds),
           totalDurationInSeconds: durationInSeconds,
           checkin_status: checkInTime ? "Present" : "Absent",
