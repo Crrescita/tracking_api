@@ -48,7 +48,7 @@ exports.getCheckIn = async (req, res, next) => {
       });
     }
 
-    // Query to get check-in data for a specific employee
+    // Query to get all check-in data for a specific employee on a specific date
     const query = `
     SELECT 
       e.id,
@@ -68,6 +68,7 @@ exports.getCheckIn = async (req, res, next) => {
     FROM employees e
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
     WHERE e.id = ? AND e.company_id = ?
+    ORDER BY c.check_in_time
   `;
 
     const values = [process.env.BASE_URL, date, emp_id, company_id];
@@ -105,92 +106,67 @@ exports.getCheckIn = async (req, res, next) => {
       return durationInSeconds < 0 ? 0 : durationInSeconds; // Ensure no negative durations
     };
 
-    // Process data to include all check-ins for the specific employee
-    const processedData = data.reduce((acc, item) => {
-      if (acc) {
-        const durationInSeconds = calculateDurationInSeconds(
-          item.check_in_time,
-          item.check_out_time
-        );
+    // Initialize an object to hold the processed data for the specific employee
+    const employeeData = {
+      id: data[0].id,
+      name: data[0].name,
+      mobile: data[0].mobile,
+      email: data[0].email,
+      designation: data[0].designation,
+      employee_id: data[0].employee_id,
+      image: data[0].image,
+      date: data[0].date,
+      checkIns: [],
+      latestCheckInTime: null,
+      latestCheckOutTime: null,
+      totalDurationInSeconds: 0,
+      checkin_status: "Absent", // Default status
+    };
 
-        if (item.check_in_time && item.check_out_time) {
-          acc.checkIns.push({
-            check_in_time: item.check_in_time,
-            check_out_time: item.check_out_time,
-            duration: formatDuration(durationInSeconds),
-          });
-        }
+    data.forEach((item) => {
+      const durationInSeconds = calculateDurationInSeconds(
+        item.check_in_time,
+        item.check_out_time
+      );
 
-        acc.totalDurationInSeconds += durationInSeconds;
-        acc.latestCheckInTime = acc.latestCheckInTime || item.check_in_time;
-        acc.latestCheckOutTime = acc.latestCheckOutTime || item.check_out_time;
+      if (item.check_in_time && item.check_out_time) {
+        employeeData.checkIns.push({
+          check_in_time: item.check_in_time,
+          check_out_time: item.check_out_time,
+          duration: formatDuration(durationInSeconds),
+        });
 
+        employeeData.totalDurationInSeconds += durationInSeconds;
+
+        // Update latest check-in and check-out times
         if (
-          item.check_in_time &&
+          !employeeData.latestCheckInTime ||
           new Date(`1970-01-01T${item.check_in_time}Z`) <
-            new Date(`1970-01-01T${acc.latestCheckInTime}Z`)
+            new Date(`1970-01-01T${employeeData.latestCheckInTime}Z`)
         ) {
-          acc.latestCheckInTime = item.check_in_time;
+          employeeData.latestCheckInTime = item.check_in_time;
         }
+
         if (
-          item.check_out_time &&
+          !employeeData.latestCheckOutTime ||
           new Date(`1970-01-01T${item.check_out_time}Z`) >
-            new Date(`1970-01-01T${acc.latestCheckOutTime}Z`)
+            new Date(`1970-01-01T${employeeData.latestCheckOutTime}Z`)
         ) {
-          acc.latestCheckOutTime = item.check_out_time;
+          employeeData.latestCheckOutTime = item.check_out_time;
         }
-      } else {
-        acc = {
-          id: item.id,
-          name: item.name,
-          mobile: item.mobile,
-          email: item.email,
-          designation: item.designation,
-          employee_id: item.employee_id,
-          image: item.image,
-          date: item.date,
-          checkIns:
-            item.check_in_time && item.check_out_time
-              ? [
-                  {
-                    check_in_time: item.check_in_time,
-                    check_out_time: item.check_out_time,
-                    duration: formatDuration(
-                      calculateDurationInSeconds(
-                        item.check_in_time,
-                        item.check_out_time
-                      )
-                    ),
-                  },
-                ]
-              : [],
-          latestCheckInTime: item.check_in_time || null,
-          latestCheckOutTime: item.check_out_time || null,
-          totalDuration: formatDuration(
-            calculateDurationInSeconds(item.check_in_time, item.check_out_time)
-          ),
-          totalDurationInSeconds: calculateDurationInSeconds(
-            item.check_in_time,
-            item.check_out_time
-          ),
-          checkin_status: item.check_in_time ? "Present" : "Absent",
-        };
+
+        employeeData.checkin_status = "Present"; // At least one check-in means present
       }
-      return acc;
-    }, null);
+    });
 
-    if (!processedData) {
-      return res.status(200).send({ status: false, message: "No data found" });
-    }
-
-    // Compute total duration for the employee
-    processedData.totalDuration = formatDuration(
-      processedData.totalDurationInSeconds
+    // Format total duration
+    employeeData.totalDuration = formatDuration(
+      employeeData.totalDurationInSeconds
     );
 
     res.status(200).send({
       status: true,
-      data: processedData,
+      data: employeeData,
     });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
