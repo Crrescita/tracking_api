@@ -39,14 +39,40 @@ const sqlModel = require("../../config/db");
 
 exports.getCheckIn = async (req, res, next) => {
   try {
-    const whereClause = {};
-    for (const key in req.query) {
-      if (req.query.hasOwnProperty(key)) {
-        whereClause[key] = req.query[key];
-      }
+    const { emp_id, company_id, date } = req.query;
+
+    if (!emp_id || !company_id || !date) {
+      return res.status(400).send({
+        status: false,
+        message: "Employee ID, company ID, and date are required",
+      });
     }
 
-    const data = await sqlModel.select("check_in", {}, whereClause);
+    // Query to get check-in data for a specific employee
+    const query = `
+    SELECT 
+      e.id,
+      e.name,
+      e.mobile,
+      e.email,
+      e.designation,
+      e.employee_id,
+      CASE
+        WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+        ELSE e.image
+      END AS image,
+      c.date,
+      c.check_in_time,
+      c.check_out_time,
+      TIME_TO_SEC(TIMEDIFF(c.check_out_time, c.check_in_time)) AS duration_in_seconds
+    FROM employees e
+    LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+    WHERE e.id = ? AND e.company_id = ?
+  `;
+
+    const values = [process.env.BASE_URL, date, emp_id, company_id];
+
+    const data = await sqlModel.customQuery(query, values);
 
     if (data.error) {
       return res.status(500).send(data);
@@ -79,57 +105,49 @@ exports.getCheckIn = async (req, res, next) => {
       return durationInSeconds < 0 ? 0 : durationInSeconds; // Ensure no negative durations
     };
 
-    // Process data to include all check-ins per employee
+    // Process data to include all check-ins for the specific employee
     const processedData = data.reduce((acc, item) => {
-      const existingEmployee = acc.find((emp) => emp.id === item.id);
+      if (acc) {
+        const durationInSeconds = calculateDurationInSeconds(
+          item.check_in_time,
+          item.check_out_time
+        );
 
-      const durationInSeconds = calculateDurationInSeconds(
-        item.check_in_time,
-        item.check_out_time
-      );
-
-      if (existingEmployee) {
         if (item.check_in_time && item.check_out_time) {
-          existingEmployee.checkIns.push({
+          acc.checkIns.push({
             check_in_time: item.check_in_time,
             check_out_time: item.check_out_time,
             duration: formatDuration(durationInSeconds),
           });
         }
 
-        existingEmployee.totalDurationInSeconds += durationInSeconds;
-        existingEmployee.latestCheckInTime =
-          existingEmployee.latestCheckInTime || item.check_in_time;
-        existingEmployee.latestCheckOutTime =
-          existingEmployee.latestCheckOutTime || item.check_out_time;
+        acc.totalDurationInSeconds += durationInSeconds;
+        acc.latestCheckInTime = acc.latestCheckInTime || item.check_in_time;
+        acc.latestCheckOutTime = acc.latestCheckOutTime || item.check_out_time;
 
         if (
           item.check_in_time &&
           new Date(`1970-01-01T${item.check_in_time}Z`) <
-            new Date(`1970-01-01T${existingEmployee.latestCheckInTime}Z`)
+            new Date(`1970-01-01T${acc.latestCheckInTime}Z`)
         ) {
-          existingEmployee.latestCheckInTime = item.check_in_time;
+          acc.latestCheckInTime = item.check_in_time;
         }
         if (
           item.check_out_time &&
           new Date(`1970-01-01T${item.check_out_time}Z`) >
-            new Date(`1970-01-01T${existingEmployee.latestCheckOutTime}Z`)
+            new Date(`1970-01-01T${acc.latestCheckOutTime}Z`)
         ) {
-          existingEmployee.latestCheckOutTime = item.check_out_time;
+          acc.latestCheckOutTime = item.check_out_time;
         }
-
-        existingEmployee.checkin_status = "Present";
       } else {
-        acc.push({
+        acc = {
           id: item.id,
           name: item.name,
           mobile: item.mobile,
           email: item.email,
           designation: item.designation,
           employee_id: item.employee_id,
-          image: item.checkin_img
-            ? `${process.env.BASE_URL}${item.checkin_img}`
-            : "",
+          image: item.image,
           date: item.date,
           checkIns:
             item.check_in_time && item.check_out_time
@@ -137,58 +155,42 @@ exports.getCheckIn = async (req, res, next) => {
                   {
                     check_in_time: item.check_in_time,
                     check_out_time: item.check_out_time,
-                    duration: formatDuration(durationInSeconds),
+                    duration: formatDuration(
+                      calculateDurationInSeconds(
+                        item.check_in_time,
+                        item.check_out_time
+                      )
+                    ),
                   },
                 ]
               : [],
           latestCheckInTime: item.check_in_time || null,
           latestCheckOutTime: item.check_out_time || null,
-          totalDuration: formatDuration(durationInSeconds),
-          totalDurationInSeconds: durationInSeconds,
+          totalDuration: formatDuration(
+            calculateDurationInSeconds(item.check_in_time, item.check_out_time)
+          ),
+          totalDurationInSeconds: calculateDurationInSeconds(
+            item.check_in_time,
+            item.check_out_time
+          ),
           checkin_status: item.check_in_time ? "Present" : "Absent",
-        });
+        };
       }
       return acc;
-    }, []);
+    }, null);
 
-    // Compute total duration for each employee
-    processedData.forEach((employee) => {
-      employee.totalDuration = formatDuration(employee.totalDurationInSeconds);
-    });
-
-    // Calculate total present and absent counts, and total employee duration
-    const totalPresent = processedData.filter(
-      (emp) => emp.checkin_status === "Present"
-    ).length;
-    const totalAbsent = processedData.filter(
-      (emp) => emp.checkin_status === "Absent"
-    ).length;
-    const totalDurationInSeconds = processedData.reduce(
-      (sum, emp) => sum + emp.totalDurationInSeconds,
-      0
-    );
-
-    // Convert total duration to the desired format
-    const totalDuration = formatDuration(totalDurationInSeconds);
-
-    if (processedData.length === 0) {
-      return res.status(200).send({
-        status: false,
-        message: "No data found",
-        totalPresent,
-        totalAbsent,
-        totalDuration,
-      });
+    if (!processedData) {
+      return res.status(200).send({ status: false, message: "No data found" });
     }
+
+    // Compute total duration for the employee
+    processedData.totalDuration = formatDuration(
+      processedData.totalDurationInSeconds
+    );
 
     res.status(200).send({
       status: true,
       data: processedData,
-      attendenceCount: {
-        totalPresent,
-        totalAbsent,
-        totalDuration,
-      },
     });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
