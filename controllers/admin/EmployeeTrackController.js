@@ -288,6 +288,7 @@ exports.getAttendence = async (req, res, next) => {
       e.mobile,
       e.email,
       e.designation,
+       e.department,
       e.employee_id,
       CASE
         WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
@@ -366,6 +367,7 @@ exports.getAttendence = async (req, res, next) => {
           mobile: item.mobile,
           email: item.email,
           designation: item.designation,
+          department: item.department,
           employee_id: item.employee_id,
           image: item.image,
           date: item.date,

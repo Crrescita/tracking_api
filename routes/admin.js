@@ -123,6 +123,8 @@ router.post(
 // checkin
 router.get("/checkInDetail", CheckInController.getCheckIn);
 
+router.get("/checkInDetailAllDate", CheckInController.getCheckInAllDate);
+
 // employee coordinates
 router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
 
