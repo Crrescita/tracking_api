@@ -5,7 +5,7 @@ const sqlModel = require("../config/db");
 const CheckInController = require("../controllers/frontend/CheckInController");
 const EmployeeTrackController = require("../controllers/frontend/EmployeeTrackController");
 const UserController = require("../controllers/frontend/UserController");
-const employeeController = require("../controllers/frontend/employeeController");
+const employeeController = require("../controllers/frontend/EmployeeController");
 const pageController = require("../controllers/frontend/pageController");
 
 const verifyToken = async (req, res, next) => {
