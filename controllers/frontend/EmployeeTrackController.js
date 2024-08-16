@@ -61,6 +61,8 @@ exports.setCoordinates = async (req, res, next) => {
       gps_status,
       internet_status,
       motion,
+datetime_mobile,
+row_id,
       ...rest
     } = req.body;
 
@@ -122,6 +124,7 @@ exports.setCoordinates = async (req, res, next) => {
       status: true,
       message: "Data submitted successfully",
       data: result,
+      row_id:row_id,
       timer: timerValue, // Include the timer in the response
     });
   } catch (error) {

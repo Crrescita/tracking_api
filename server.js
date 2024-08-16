@@ -5,6 +5,7 @@ require("./middleware/validation");
 
 const app = require("./app");
 //const port = process.env.PORT || 3000
+ process.env.TZ = 'Asia/Kolkata';
 const port = 3000;
 // Create HTTP server and listen on provided port, or default to 3000
 // http.createServer(app).listen(port);
