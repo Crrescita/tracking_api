@@ -124,12 +124,138 @@ exports.login = async (req, res, next) => {
   }
 };
 
+// exports.forgetPassword = async (req, res, next) => {
+//   try {
+//     const { email } = req.body;
+//     const validation = validateFields({
+//       email,
+//     });
+//     if (!validation.valid) {
+//       return res.status(400).send({
+//         status: false,
+//         message: validation.message,
+//         statusCode: 1,
+//       });
+//     }
+
+//     // if (!email) {
+//     //   return res
+//     //     .status(400)
+//     //     .send({ status: false, message: "Email is required" });
+//     // }
+
+//     const [user] = await sqlModel.select("employees", {}, { email });
+
+//     if (!user) {
+//       return res.status(404).send({ status: false, message: "User not found" });
+//     }
+
+//     const resetToken = crypto.randomBytes(20).toString("hex");
+//     const resetTokenExpires = Date.now() + 3600000; // Token expires in 1 hour
+
+//     await sqlModel.update(
+//       "employees",
+//       { reset_token: resetToken, token_expire: resetTokenExpires },
+//       { email }
+//     );
+
+//     const resetLink = `${process.env.WEBSITE_BASE_URL}auth/pass-change?user=employee&token=${resetToken}`;
+//     const data = {
+//       email,
+//       resetLink,
+//       name: user.name,
+//     };
+
+//     await sendMail.forgotPassword(data);
+
+//     return res
+//       .status(200)
+//       .send({ status: true, message: "Password reset email sent" });
+//   } catch (error) {
+//     res.status(500).send({
+//       status: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// exports.resetPassword = async (req, res, next) => {
+//   try {
+//     const { token, new_password } = req.body;
+
+//     const validation = validateFields({
+//       token,
+//       new_password,
+//     });
+
+//     if (!validation.valid) {
+//       return res.status(400).send({
+//         status: false,
+//         message: validation.message,
+//         statusCode: 1,
+//       });
+//     }
+
+//     // Validate input
+//     //   if (!token || !new_password) {
+//     //     return res.status(400).send({
+//     //       status: false,
+//     //       message: "Token and new password are required",
+//     //     });
+//     //   }
+
+//     // Find user by reset token
+//     const [user] = await sqlModel.select(
+//       "employees",
+//       {},
+//       { reset_token: token }
+//     );
+
+//     if (!user) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Invalid or expired reset token",
+//       });
+//     }
+
+//     if (user.token_expire < Date.now()) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Reset token has expired",
+//       });
+//     }
+
+//     // Hash the new password
+//     const hashedPassword = await bcrypt.hash(new_password, 10);
+
+//     // Update user's password and clear the reset token
+//     const updateData = {
+//       password: hashedPassword,
+//       reset_token: null,
+//       token_expire: null,
+//     };
+
+//     await sqlModel.update("employees", updateData, { email: user.email });
+
+//     return res.status(200).send({
+//       status: true,
+//       message: "Password reset successfull",
+//     });
+//   } catch (error) {
+//     return res.status(500).send({
+//       status: false,
+//       message: "An error occurred",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.forgetPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const validation = validateFields({
-      email,
-    });
+    const validation = validateFields({ email });
+
     if (!validation.valid) {
       return res.status(400).send({
         status: false,
@@ -138,11 +264,54 @@ exports.forgetPassword = async (req, res, next) => {
       });
     }
 
-    // if (!email) {
-    //   return res
-    //     .status(400)
-    //     .send({ status: false, message: "Email is required" });
-    // }
+    const [user] = await sqlModel.select("employees", {}, { email });
+
+    if (!user) {
+      return res.status(404).send({ status: false, message: "User not found" });
+    }
+
+    const resetCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const resetCodeExpires = Date.now() + 3600000; // Code expires in 1 hour
+
+    await sqlModel.update(
+      "employees",
+      { reset_code: resetCode, code_expire: resetCodeExpires },
+      { email }
+    );
+
+    const data = {
+      email,
+      resetCode,
+      name: user.name,
+    };
+
+    await sendMail.forgotPasswordCode(data);
+
+    return res.status(200).send({
+      status: true,
+      message: "Password reset code sent to your email",
+    });
+  } catch (error) {
+    res.status(500).send({
+      status: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.validateResetCode = async (req, res, next) => {
+  try {
+    const { email, code } = req.body;
+    const validation = validateFields({ email, code });
+
+    if (!validation.valid) {
+      return res.status(400).send({
+        status: false,
+        message: validation.message,
+        statusCode: 1,
+      });
+    }
 
     const [user] = await sqlModel.select("employees", {}, { email });
 
@@ -150,27 +319,24 @@ exports.forgetPassword = async (req, res, next) => {
       return res.status(404).send({ status: false, message: "User not found" });
     }
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    const resetTokenExpires = Date.now() + 3600000; // Token expires in 1 hour
+    if (user.reset_code !== code) {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid code",
+      });
+    }
 
-    await sqlModel.update(
-      "employees",
-      { reset_token: resetToken, token_expire: resetTokenExpires },
-      { email }
-    );
+    if (Date.now() > user.code_expire) {
+      return res.status(400).send({
+        status: false,
+        message: "Code has expired",
+      });
+    }
 
-    const resetLink = `${process.env.WEBSITE_BASE_URL}auth/pass-change?user=employee&token=${resetToken}`;
-    const data = {
-      email,
-      resetLink,
-      name: user.name,
-    };
-
-    await sendMail.forgotPassword(data);
-
-    return res
-      .status(200)
-      .send({ status: true, message: "Password reset email sent" });
+    return res.status(200).send({
+      status: true,
+      message: "Code validated successfully. You may now reset your password.",
+    });
   } catch (error) {
     res.status(500).send({
       status: false,
@@ -182,11 +348,13 @@ exports.forgetPassword = async (req, res, next) => {
 
 exports.resetPassword = async (req, res, next) => {
   try {
-    const { token, new_password } = req.body;
+    const { email, code, newPassword, confirmPassword } = req.body;
 
     const validation = validateFields({
-      token,
-      new_password,
+      email,
+      code,
+      newPassword,
+      confirmPassword,
     });
 
     if (!validation.valid) {
@@ -197,55 +365,119 @@ exports.resetPassword = async (req, res, next) => {
       });
     }
 
-    // Validate input
-    //   if (!token || !new_password) {
-    //     return res.status(400).send({
-    //       status: false,
-    //       message: "Token and new password are required",
-    //     });
-    //   }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).send({
+        status: false,
+        message: "Password and confirm password do not match",
+      });
+    }
 
-    // Find user by reset token
-    const [user] = await sqlModel.select(
-      "employees",
-      {},
-      { reset_token: token }
-    );
+    const [user] = await sqlModel.select("employees", {}, { email });
 
     if (!user) {
+      return res.status(404).send({ status: false, message: "User not found" });
+    }
+
+    if (user.reset_code !== code) {
       return res.status(400).send({
         status: false,
-        message: "Invalid or expired reset token",
+        message: "Invalid code",
       });
     }
 
-    if (user.token_expire < Date.now()) {
+    if (Date.now() > user.code_expire) {
       return res.status(400).send({
         status: false,
-        message: "Reset token has expired",
+        message: "Code has expired",
       });
     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(new_password, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user's password and clear the reset token
-    const updateData = {
-      password: hashedPassword,
-      reset_token: null,
-      token_expire: null,
-    };
-
-    await sqlModel.update("employees", updateData, { email: user.email });
+    await sqlModel.update(
+      "employees",
+      {
+        password: hashedPassword,
+        reset_code: null,
+        code_expire: null,
+        password_changed_status: "forgot_password",
+      },
+      { email }
+    );
 
     return res.status(200).send({
       status: true,
-      message: "Password reset successfull",
+      message: "Password reset successfully",
     });
   } catch (error) {
-    return res.status(500).send({
+    res.status(500).send({
       status: false,
-      message: "An error occurred",
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { email, oldPassword, newPassword, confirmPassword } = req.body;
+    const validation = validateFields({
+      email,
+      oldPassword,
+      newPassword,
+      confirmPassword,
+    });
+
+    if (!validation.valid) {
+      return res.status(400).send({
+        status: false,
+        message: validation.message,
+        statusCode: 1,
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).send({
+        status: false,
+        message: "New password and confirm password do not match",
+      });
+    }
+
+    const [user] = await sqlModel.select("employees", {}, { email });
+
+    if (!user) {
+      return res.status(404).send({ status: false, message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).send({
+        status: false,
+        message: "Incorrect old password",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await sqlModel.update(
+      "employees",
+      {
+        password: hashedPassword,
+        reset_code: null,
+        code_expire: null,
+        password_changed_status: "changed_old_password",
+      },
+      { email }
+    );
+
+    return res.status(200).send({
+      status: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      status: false,
+      message: "Internal server error",
       error: error.message,
     });
   }

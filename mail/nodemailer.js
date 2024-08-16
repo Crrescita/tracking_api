@@ -70,8 +70,27 @@ async function forgotPassword(data) {
   }
 }
 
+async function forgotPasswordCode(data) {
+  try {
+    const htmlFile = "./views/forgotPasswordCode.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    let info = await transporter.sendMail({
+      to: data.email,
+      subject: "Password Reset Request",
+      html: compiledHtml,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
 module.exports = {
   sendEmailToEmp,
   sendEmailToCompany,
   forgotPassword,
+  forgotPasswordCode,
 };
