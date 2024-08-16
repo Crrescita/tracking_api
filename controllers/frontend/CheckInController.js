@@ -591,7 +591,6 @@ exports.checkOut = async (req, res, next) => {
         }
 
         const totalformattedDuration = formatDuration(totalDurationInSeconds);
-        console.log(totalformattedDuration);
 
         const trackingData = await sqlModel.select(
           "emp_tracking",
@@ -623,7 +622,7 @@ exports.checkOut = async (req, res, next) => {
             "emp_analytics",
             {
               total_duration: totalformattedDuration,
-              total_distance: totalDistance,
+              // total_distance: totalDistance,
               updated_at: getCurrentDateTime(),
             },
             { emp_id, company_id, date }
@@ -634,7 +633,7 @@ exports.checkOut = async (req, res, next) => {
             company_id,
             date,
             total_duration: totalformattedDuration,
-            total_distance: totalDistance,
+            // total_distance: totalDistance,
             created_at: getCurrentDateTime(),
           });
         }
