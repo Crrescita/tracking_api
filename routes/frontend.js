@@ -5,8 +5,8 @@ const sqlModel = require("../config/db");
 const CheckInController = require("../controllers/frontend/CheckInController");
 const EmployeeTrackController = require("../controllers/frontend/EmployeeTrackController");
 const UserController = require("../controllers/frontend/UserController");
-const employeeController = require("../controllers/frontend/employeeController");
-const pageController = require("../controllers/frontend/pageController");
+const EmployeeController = require("../controllers/frontend/EmployeeController");
+const PageController = require("../controllers/frontend/PageController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -58,10 +58,10 @@ router.post("/resetPassword", UserController.resetPassword);
 router.post(
   "/setWelcomePageData",
   upload.fields([{ name: "image", maxCount: 1 }]),
-  pageController.WelcomePageData
+  PageController.WelcomePageData
 );
 
-router.get("/getWelcomePage", pageController.getWelcomePage);
+router.get("/getWelcomePage", PageController.getWelcomePage);
 
 router.use(verifyToken);
 
@@ -81,25 +81,25 @@ router.post("/setAllCoordinates", EmployeeTrackController.setAllCoordinates);
 router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
 
 // employee edit
-router.get("/getEmployee", employeeController.employeesGet);
+router.get("/getEmployee", EmployeeController.employeesGet);
 
 router.put(
   "/updateEmployee",
   upload.fields([{ name: "image", maxCount: 1 }]),
-  employeeController.updateEmployee
+  EmployeeController.updateEmployee
 );
 
 // employee attendance
-router.get("/getEmployeeAttendance", employeeController.getEmployeeAttendance);
+router.get("/getEmployeeAttendance", EmployeeController.getEmployeeAttendance);
 
 // employee attendance by date
 router.get(
   "/getEmployeeAttendanceByDate",
-  employeeController.getEmployeeAttendanceByDate
+  EmployeeController.getEmployeeAttendanceByDate
 );
 
 //get  employee company data
-router.get("/getEmployeeCompany", employeeController.getEmployeeCompany);
+router.get("/getEmployeeCompany", EmployeeController.getEmployeeCompany);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {

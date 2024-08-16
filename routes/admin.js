@@ -3,7 +3,7 @@ var router = express.Router();
 const upload = require("../middleware/multerConfig");
 const sqlModel = require("../config/db");
 const CompanyController = require("../controllers/admin/CompanyController");
-const employeeController = require("../controllers/admin/employeeController");
+const EmployeeController = require("../controllers/admin/EmployeeController");
 const UserController = require("../controllers/admin/UserController");
 const CheckInController = require("../controllers/admin/CheckInController");
 const EmployeeTrackController = require("../controllers/admin/EmployeeTrackController");
@@ -104,20 +104,20 @@ router
 
 router
   .route("/employees/:id?")
-  .get(employeeController.employeesGet)
+  .get(EmployeeController.employeesGet)
   .post(
     upload.fields([{ name: "image", maxCount: 1 }]),
-    employeeController.employeesInsert
+    EmployeeController.employeesInsert
   )
   .put(
     upload.fields([{ name: "image", maxCount: 1 }]),
-    employeeController.employeesInsert
+    EmployeeController.employeesInsert
   )
-  .delete(employeeController.deleteemployee);
+  .delete(EmployeeController.deleteemployee);
 
 router.post(
   "/employees-delete-multiple",
-  employeeController.deleteMultipleEmployees
+  EmployeeController.deleteMultipleEmployees
 );
 
 // checkin
