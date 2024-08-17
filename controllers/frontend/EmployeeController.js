@@ -383,6 +383,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
+
 // emp attendance by date
 exports.getEmployeeAttendanceByDate = async (req, res, next) => {
   try {

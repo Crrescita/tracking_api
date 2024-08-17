@@ -6,7 +6,7 @@ const CheckInController = require("../controllers/frontend/CheckInController");
 const EmployeeTrackController = require("../controllers/frontend/EmployeeTrackController");
 const UserController = require("../controllers/frontend/UserController");
 const EmployeeController = require("../controllers/frontend/EmployeeController");
-const PageController = require("../controllers/frontend/PageController");
+const PageController = require("../controllers/frontend/PagesController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
