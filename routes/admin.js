@@ -127,6 +127,7 @@ router.get("/checkInDetailAllDate", CheckInController.getCheckInAllDate);
 
 // employee coordinates
 router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
+router.get("/getCoordinatesv2", EmployeeTrackController.getCoordinatesv2);
 
 // get login employee details
 router.get(

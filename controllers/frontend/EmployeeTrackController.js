@@ -50,6 +50,55 @@ exports.getCoordinates = async (req, res, next) => {
   }
 };
 
+exports.getCoordinatesv2 = async (req, res, next) => {
+  try {
+    const whereClause = {};
+
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        whereClause[key] = req.query[key];
+      }
+    }
+
+    const query = `
+      SELECT t.latitude, t.longitude, t.date, t.time, subquery.cnt
+      FROM (
+          SELECT ROUND(latitude, 3) AS latitude, ROUND(longitude, 3) AS longitude, date, time, COUNT(*) AS cnt, MIN(id) AS min_id
+          FROM emp_tracking
+          WHERE emp_id = ? AND date = ?
+          GROUP BY ROUND(latitude, 3), ROUND(longitude, 3)
+      ) AS subquery
+      JOIN emp_tracking AS t ON subquery.min_id = t.id
+      ORDER BY t.id DESC
+    `;
+
+    const emp_id = whereClause.emp_id || "";
+    const date = whereClause.date || "";
+
+    // Execute the custom query
+    const data = await sqlModel.customQuery(query, [emp_id, date]);
+
+    if (data.error) {
+      return res.status(500).send(data);
+    }
+
+    if (data.length === 0) {
+      return res.status(200).send({ status: false, message: "No data found" });
+    }
+
+    const result = await Promise.all(
+      data.map(async (item) => {
+        item.image = item.image ? `${process.env.BASE_URL}${item.image}` : "";
+        return item;
+      })
+    );
+
+    res.status(200).send({ status: true, data: result });
+  } catch (error) {
+    res.status(500).send({ status: false, error: error.message });
+  }
+};
+
 exports.setCoordinates = async (req, res, next) => {
   try {
     const {
@@ -61,8 +110,8 @@ exports.setCoordinates = async (req, res, next) => {
       gps_status,
       internet_status,
       motion,
-datetime_mobile,
-row_id,
+      datetime_mobile,
+      row_id,
       ...rest
     } = req.body;
 
@@ -100,6 +149,8 @@ row_id,
       gps_status,
       internet_status,
       motion,
+      datetime_mobile,
+      row_id,
       ...rest,
     };
 
@@ -124,7 +175,7 @@ row_id,
       status: true,
       message: "Data submitted successfully",
       data: result,
-      row_id:row_id,
+      row_id: row_id,
       timer: timerValue, // Include the timer in the response
     });
   } catch (error) {
