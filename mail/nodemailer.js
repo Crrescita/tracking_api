@@ -88,9 +88,28 @@ async function forgotPasswordCode(data) {
   }
 }
 
+async function passwordUpdated(data) {
+  try {
+    const htmlFile = "./views/passwordUpdated.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    let info = await transporter.sendMail({
+      to: data.email,
+      subject: "Password Updated",
+      html: compiledHtml,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
 module.exports = {
   sendEmailToEmp,
   sendEmailToCompany,
   forgotPassword,
   forgotPasswordCode,
+  passwordUpdated,
 };

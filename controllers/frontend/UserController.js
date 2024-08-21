@@ -405,6 +405,14 @@ exports.resetPassword = async (req, res, next) => {
       { email }
     );
 
+    const data = {
+      email,
+      newPassword,
+      name: user.name,
+    };
+
+    await sendMail.passwordUpdated(data);
+
     return res.status(200).send({
       status: true,
       message: "Password reset successfully",
@@ -469,6 +477,14 @@ exports.changePassword = async (req, res, next) => {
       },
       { email }
     );
+
+    const data = {
+      email,
+      newPassword,
+      name: user.name,
+    };
+
+    await sendMail.passwordUpdated(data);
 
     return res.status(200).send({
       status: true,

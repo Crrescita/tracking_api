@@ -427,25 +427,25 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     });
 
     const query = `
-          SELECT 
-            e.id,
-            e.name,
-            e.mobile,
-            e.email,
-            e.designation,
-            e.employee_id,
-            CASE
-              WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-              ELSE e.image
-            END AS image,
-            c.date,
-            c.check_in_time,
-            c.check_out_time
-          FROM employees e
-          LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
-          WHERE e.id = ? AND e.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
-          ORDER BY c.date, c.check_in_time
-        `;
+            SELECT 
+              e.id,
+              e.name,
+              e.mobile,
+              e.email,
+              e.designation,
+              e.employee_id,
+              CASE
+                WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+                ELSE e.image
+              END AS image,
+              c.date,
+              c.check_in_time,
+              c.check_out_time
+            FROM employees e
+            LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
+            WHERE e.id = ? AND e.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+            ORDER BY c.date, c.check_in_time
+          `;
 
     const values = [process.env.BASE_URL, emp_id, company_id, month, year];
     const data = await sqlModel.customQuery(query, values);
@@ -455,12 +455,12 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     }
 
     const companyQuery = `
-          SELECT
-            check_in_time_start,
-            check_in_time_end
-          FROM company
-          WHERE id = ?
-        `;
+            SELECT
+              check_in_time_start,
+              check_in_time_end
+            FROM company
+            WHERE id = ?
+          `;
     const companyValues = [company_id];
     const companyData = await sqlModel.customQuery(companyQuery, companyValues);
 
@@ -471,12 +471,18 @@ exports.getEmployeeAttendance = async (req, res, next) => {
 
     const formatDuration = (totalSeconds) => {
       if (isNaN(totalSeconds) || totalSeconds < 0) {
-        return "0h 0m 0s";
+        return "00:00:00";
       }
+
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = Math.floor(totalSeconds % 60);
-      return `${hours}h ${minutes}m ${seconds}s`;
+
+      const formattedHours = String(hours).padStart(2, "0");
+      const formattedMinutes = String(minutes).padStart(2, "0");
+      const formattedSeconds = String(seconds).padStart(2, "0");
+
+      return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
     };
 
     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
@@ -498,7 +504,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
         latestCheckOutTime: null,
         checkin_status: "Absent",
         attendance_status: "Absent",
-        timeDifference: "0h 0m 0s",
+        timeDifference: "00:00:00",
         totalDuration: "0h 0m 0s",
       };
       return acc;
@@ -530,7 +536,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
 
       groupedData[item.date].checkIns.push({
         check_in_time: item.check_in_time,
-        check_out_time: item.check_out_time || null,
+        check_out_time: item.check_out_time || "00:00:00",
         duration: formatDuration(durationInSeconds),
       });
 
@@ -554,7 +560,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
           groupedData[item.date].latestCheckOutTime = item.check_out_time;
         }
       } else {
-        groupedData[item.date].latestCheckOutTime = null;
+        groupedData[item.date].latestCheckOutTime = "00:00:00";
       }
 
       groupedData[item.date].checkin_status = checkin_status;
@@ -565,6 +571,8 @@ exports.getEmployeeAttendance = async (req, res, next) => {
 
     const checkInDates = Object.values(groupedData).map((dateData) => ({
       ...dateData,
+      earliestCheckInTime: dateData.earliestCheckInTime || "00:00:00",
+      latestCheckOutTime: dateData.latestCheckOutTime || "00:00:00",
       totalDuration: formatDuration(dateData.totalDurationInSeconds),
     }));
 
@@ -673,15 +681,31 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
     const startDateTime = new Date(`1970-01-01T${check_in_time_start}Z`);
     const endDateTime = new Date(`1970-01-01T${check_in_time_end}Z`);
 
+    // const formatDuration = (totalSeconds) => {
+    //   if (isNaN(totalSeconds) || totalSeconds < 0) {
+    //     console.error("Invalid totalSeconds value:", totalSeconds);
+    //     return "0h 0m 0s";
+    //   }
+    //   const hours = Math.floor(totalSeconds / 3600);
+    //   const minutes = Math.floor((totalSeconds % 3600) / 60);
+    //   const seconds = Math.floor(totalSeconds % 60);
+    //   return `${hours}h ${minutes}m ${seconds}s`;
+    // };
+
     const formatDuration = (totalSeconds) => {
       if (isNaN(totalSeconds) || totalSeconds < 0) {
-        console.error("Invalid totalSeconds value:", totalSeconds);
-        return "0h 0m 0s";
+        return "00:00:00";
       }
+
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = Math.floor(totalSeconds % 60);
-      return `${hours}h ${minutes}m ${seconds}s`;
+
+      const formattedHours = String(hours).padStart(2, "0");
+      const formattedMinutes = String(minutes).padStart(2, "0");
+      const formattedSeconds = String(seconds).padStart(2, "0");
+
+      return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
     };
 
     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
@@ -760,6 +784,9 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
       groupedData.checkin_status = checkin_status;
       groupedData.timeDifference = formatDuration(timeDifferenceSeconds);
     });
+
+    //    groupedData.earliestCheckInTime = groupedData.earliestCheckInTime || "00:00:00";
+    //    groupedData.latestCheckOutTime = groupedData.latestCheckOutTime || "00:00:00";
 
     groupedData.totalDuration = formatDuration(
       groupedData.totalDurationInSeconds
