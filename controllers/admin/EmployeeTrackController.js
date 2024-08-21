@@ -251,7 +251,7 @@ exports.getCoordinatesv2 = async (req, res, next) => {
     }
 
     const query = `
-      SELECT t.latitude, t.longitude, t.date, t.time, t.battery_status,subquery.cnt, subquery.min_time, subquery.max_time
+      SELECT t.latitude, t.longitude, t.date, t.time, t.battery_status, subquery.cnt, subquery.min_time, subquery.max_time
       FROM (
           SELECT ROUND(latitude, 3) AS latitude, ROUND(longitude, 3) AS longitude, date,
                  MIN(time) AS min_time, MAX(time) AS max_time, COUNT(*) AS cnt, MIN(id) AS min_id
@@ -314,7 +314,7 @@ exports.getCoordinatesv2 = async (req, res, next) => {
       groupedData.push(currentGroup);
     }
 
-    // Calculate time differences for each group
+    // Calculate time differences and durations for each group
     const result = groupedData.map((group) => {
       const minTime = new Date(`${group[0].date}T${group[0].time}`);
       const maxTime = new Date(
@@ -338,6 +338,11 @@ exports.getCoordinatesv2 = async (req, res, next) => {
         time_difference: `${hours}h ${minutes}m ${seconds}s`,
         battery_status: group[0].battery_status,
         image: group[0].image ? `${process.env.BASE_URL}${group[0].image}` : "",
+        duration: {
+          hours,
+          minutes,
+          seconds,
+        },
       };
     });
 
