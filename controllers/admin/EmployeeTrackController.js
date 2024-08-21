@@ -24,107 +24,46 @@ const haversineDistance = (coords1, coords2) => {
   return distance;
 };
 
-// exports.getCoordinates = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
-
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         whereClause[key] = req.query[key];
-//       }
-//     }
-
-//     // for (const key in req.query) {
-//     //   if (req.query.hasOwnProperty(key)) {
-//     //     if (key === "date") {
-//     //       const startDateTime = `${req.query[key]} 00:00:00`;
-//     //       const endDateTime = `${req.query[key]} 23:59:59`;
-//     //       whereClause.time = `BETWEEN '${startDateTime}' AND '${endDateTime}'`;
-//     //     } else {
-//     //       whereClause[key] = req.query[key];
-//     //     }
-//     //   }
-//     // }
-
-//     const data = await sqlModel.select("emp_tracking", {}, whereClause);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     let totalDistance = 0;
-
-//     for (let i = 0; i < data.length - 1; i++) {
-//       const distance = haversineDistance(data[i], data[i + 1]);
-//       totalDistance += distance;
-//     }
-
-//     res.status(200).send({ status: true, totalDistance, data: data });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
 exports.getCoordinates = async (req, res, next) => {
   try {
-    const { date, emp_id } = req.query;
+    const whereClause = {};
 
-    if (!date) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Date is required" });
+    // for (const key in req.query) {
+    //   if (req.query.hasOwnProperty(key)) {
+    //     whereClause[key] = req.query[key];
+    //   }
+    // }
+
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        if (key === "date") {
+          const startDateTime = `00:00:00`;
+          const endDateTime = `23:59:59`;
+          whereClause.time = `BETWEEN '${startDateTime}' AND '${endDateTime}'`;
+        } else {
+          whereClause[key] = req.query[key];
+        }
+      }
     }
 
-    // Define the start and end of the day using date and time
-    const startDateTime = `00:00:00`;
-    const endDateTime = `23:59:59`;
+    const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
-    // Query to fetch tracking coordinates within the date and time range
-    // Assumes 'date' is stored in 'date' column and 'time' in 'time' column
-    let coordinatesQuery = `
-      SELECT * FROM emp_tracking
-      WHERE CONCAT(date, ' ', time) BETWEEN ? AND ?
-    `;
-    const coordinatesValues = [startDateTime, endDateTime];
-
-    // Add additional filter for employee ID if provided
-    if (emp_id) {
-      coordinatesQuery += " AND emp_id = ?";
-      coordinatesValues.push(emp_id);
+    if (data.error) {
+      return res.status(500).send(data);
     }
 
-    // Execute the query
-    const coordinatesData = await sqlModel.customQuery(
-      coordinatesQuery,
-      coordinatesValues
-    );
-
-    if (coordinatesData.error) {
-      return res
-        .status(500)
-        .send({ status: false, error: coordinatesData.error.message });
-    }
-
-    if (coordinatesData.length === 0) {
+    if (data.length === 0) {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
     let totalDistance = 0;
 
-    for (let i = 0; i < coordinatesData.length - 1; i++) {
-      const distance = haversineDistance(
-        coordinatesData[i],
-        coordinatesData[i + 1]
-      );
+    for (let i = 0; i < data.length - 1; i++) {
+      const distance = haversineDistance(data[i], data[i + 1]);
       totalDistance += distance;
     }
 
-    res
-      .status(200)
-      .send({ status: true, totalDistance, data: coordinatesData });
+    res.status(200).send({ status: true, totalDistance, data: data });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
