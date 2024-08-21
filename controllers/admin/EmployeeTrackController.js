@@ -28,16 +28,18 @@ exports.getCoordinates = async (req, res, next) => {
   try {
     const whereClause = {};
 
+    // for (const key in req.query) {
+    //   if (req.query.hasOwnProperty(key)) {
+    //     whereClause[key] = req.query[key];
+    //   }
+    // }
+
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
         if (key === "date") {
-          // If the query parameter is "date", add a time range filter for that date
           const startDateTime = `${req.query[key]} 00:00:00`;
           const endDateTime = `${req.query[key]} 23:59:59`;
-          whereClause.time = {
-            $gte: startDateTime,
-            $lte: endDateTime,
-          };
+          whereClause.time = `BETWEEN '${startDateTime}' AND '${endDateTime}'`;
         } else {
           whereClause[key] = req.query[key];
         }
