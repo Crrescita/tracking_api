@@ -71,30 +71,24 @@ const haversineDistance = (coords1, coords2) => {
 
 exports.getCoordinates = async (req, res, next) => {
   try {
-    let whereClause = "";
+    const whereClause = {};
 
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
         if (key === "date") {
-          // Handle date filtering for a specific date range
+          // Handle the date parameter to filter by a specific date range
           const startDateTime = `${req.query[key]} 00:00:00`;
           const endDateTime = `${req.query[key]} 23:59:59`;
-          whereClause += `time BETWEEN '${startDateTime}' AND '${endDateTime}' AND `;
+          whereClause.time = {
+            between: [startDateTime, endDateTime],
+          };
         } else {
-          whereClause += `${key} = '${req.query[key]}' AND `;
+          whereClause[key] = req.query[key];
         }
       }
     }
 
-    // Remove the last ' AND ' if present
-    if (whereClause.endsWith(" AND ")) {
-      whereClause = whereClause.slice(0, -5);
-    }
-
-    const query = `SELECT * FROM emp_tracking`;
-    const fullQuery = whereClause ? `${query} WHERE ${whereClause}` : query;
-
-    const data = await sqlModel.rawQuery(fullQuery);
+    const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
     if (data.error) {
       return res.status(500).send(data);
