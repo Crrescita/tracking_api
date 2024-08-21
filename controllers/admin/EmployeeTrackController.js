@@ -70,42 +70,61 @@ const haversineDistance = (coords1, coords2) => {
 // };
 exports.getCoordinates = async (req, res, next) => {
   try {
-    const whereClause = {};
+    const { date, emp_id } = req.query;
 
-    for (const key in req.query) {
-      if (req.query.hasOwnProperty(key)) {
-        if (key === "date") {
-          // If the query parameter is "date", add a time range filter for that date
-          const startDateTime = `${req.query[key]} 00:00:00`;
-          const endDateTime = `${req.query[key]} 23:59:59`;
-          whereClause.datetime_mobile = {
-            $gte: startDateTime,
-            $lte: endDateTime,
-          };
-        } else {
-          whereClause[key] = req.query[key];
-        }
-      }
+    if (!date) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Date is required" });
     }
 
-    const data = await sqlModel.select("emp_tracking", {}, whereClause);
+    // Define the start and end of the day using date and time
+    const startDateTime = `00:00:00`;
+    const endDateTime = `23:59:59`;
 
-    if (data.error) {
-      return res.status(500).send(data);
+    // Query to fetch tracking coordinates within the date and time range
+    // Assumes 'date' is stored in 'date' column and 'time' in 'time' column
+    let coordinatesQuery = `
+      SELECT * FROM emp_tracking
+      WHERE CONCAT(date, ' ', time) BETWEEN ? AND ?
+    `;
+    const coordinatesValues = [startDateTime, endDateTime];
+
+    // Add additional filter for employee ID if provided
+    if (emp_id) {
+      coordinatesQuery += " AND emp_id = ?";
+      coordinatesValues.push(emp_id);
     }
 
-    if (data.length === 0) {
+    // Execute the query
+    const coordinatesData = await sqlModel.customQuery(
+      coordinatesQuery,
+      coordinatesValues
+    );
+
+    if (coordinatesData.error) {
+      return res
+        .status(500)
+        .send({ status: false, error: coordinatesData.error.message });
+    }
+
+    if (coordinatesData.length === 0) {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
     let totalDistance = 0;
 
-    for (let i = 0; i < data.length - 1; i++) {
-      const distance = haversineDistance(data[i], data[i + 1]);
+    for (let i = 0; i < coordinatesData.length - 1; i++) {
+      const distance = haversineDistance(
+        coordinatesData[i],
+        coordinatesData[i + 1]
+      );
       totalDistance += distance;
     }
 
-    res.status(200).send({ status: true, totalDistance, data: data });
+    res
+      .status(200)
+      .send({ status: true, totalDistance, data: coordinatesData });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
