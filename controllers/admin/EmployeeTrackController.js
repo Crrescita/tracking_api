@@ -257,7 +257,7 @@ exports.getCoordinatesv2 = async (req, res, next) => {
                  MIN(time) AS min_time, MAX(time) AS max_time, COUNT(*) AS cnt, MIN(id) AS min_id
           FROM emp_tracking
           WHERE emp_id = ? AND date = ?
-          GROUP BY ROUND(latitude, 3), ROUND(longitude, 3)
+          GROUP BY ROUND(latitude, 3), ROUND(longitude, 3), date
       ) AS subquery
       JOIN emp_tracking AS t ON subquery.min_id = t.id
       ORDER BY t.date, t.time
@@ -314,7 +314,7 @@ exports.getCoordinatesv2 = async (req, res, next) => {
       groupedData.push(currentGroup);
     }
 
-    // Calculate time differences and durations for each group
+    // Calculate time differences for each group
     const result = groupedData.map((group) => {
       const minTime = new Date(`${group[0].date}T${group[0].time}`);
       const maxTime = new Date(
@@ -339,9 +339,9 @@ exports.getCoordinatesv2 = async (req, res, next) => {
         battery_status: group[0].battery_status,
         image: group[0].image ? `${process.env.BASE_URL}${group[0].image}` : "",
         duration: {
-          hours,
-          minutes,
-          seconds,
+          hours: hours,
+          minutes: minutes,
+          seconds: seconds,
         },
       };
     });
