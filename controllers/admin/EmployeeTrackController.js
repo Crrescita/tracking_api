@@ -24,50 +24,38 @@ const haversineDistance = (coords1, coords2) => {
   return distance;
 };
 
-// exports.getCoordinates = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
+exports.getCoordinates = async (req, res, next) => {
+  try {
+    const whereClause = {};
 
-//     // for (const key in req.query) {
-//     //   if (req.query.hasOwnProperty(key)) {
-//     //     whereClause[key] = req.query[key];
-//     //   }
-//     // }
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        whereClause[key] = req.query[key];
+      }
+    }
 
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         if (key === "date") {
-//           const startDateTime = `00:00:00`;
-//           const endDateTime = `23:59:59`;
-//           whereClause.time = `BETWEEN '${startDateTime}' AND '${endDateTime}'`;
-//         } else {
-//           whereClause[key] = req.query[key];
-//         }
-//       }
-//     }
+    const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
-//     const data = await sqlModel.select("emp_tracking", {}, whereClause);
+    if (data.error) {
+      return res.status(500).send(data);
+    }
 
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
+    if (data.length === 0) {
+      return res.status(200).send({ status: false, message: "No data found" });
+    }
 
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
+    let totalDistance = 0;
 
-//     let totalDistance = 0;
+    for (let i = 0; i < data.length - 1; i++) {
+      const distance = haversineDistance(data[i], data[i + 1]);
+      totalDistance += distance;
+    }
 
-//     for (let i = 0; i < data.length - 1; i++) {
-//       const distance = haversineDistance(data[i], data[i + 1]);
-//       totalDistance += distance;
-//     }
-
-//     res.status(200).send({ status: true, totalDistance, data: data });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
+    res.status(200).send({ status: true, totalDistance, data: data });
+  } catch (error) {
+    res.status(500).send({ status: false, error: error.message });
+  }
+};
 
 exports.getCoordinates = async (req, res, next) => {
   try {

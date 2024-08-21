@@ -3,8 +3,26 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const sendMail = require("../../mail/nodemailer");
 
+// const getCurrentDate = () => {
+//   return new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+// };
+
 const getCurrentDate = () => {
-  return new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+  const currentDate = new Date();
+
+  const options = {
+    timeZone: "Asia/Kolkata",
+  };
+  const year = currentDate.toLocaleString("en-US", {
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const day = String(currentDate.getDate()).padStart(2, "0");
+
+  const formattedDate = `${year}-${month}-${day}`;
+
+  return formattedDate;
 };
 
 exports.login = async (req, res, next) => {
