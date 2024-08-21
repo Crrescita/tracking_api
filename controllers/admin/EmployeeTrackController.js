@@ -88,6 +88,7 @@ exports.getCoordinates = async (req, res, next) => {
       }
     }
 
+    // Make sure the whereClause is correctly formed for your SQL dialect
     const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
     if (data.error) {
