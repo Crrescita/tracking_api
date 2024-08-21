@@ -331,6 +331,7 @@ exports.getCoordinatesv2 = async (req, res, next) => {
         latitude: group[0].latitude,
         longitude: group[0].longitude,
         date: group[0].date,
+        time: group[0].time,
         min_time: group[0].time,
         max_time: group[group.length - 1].time,
         cnt: group.reduce((sum, item) => sum + item.cnt, 0),
