@@ -260,7 +260,7 @@ exports.getCoordinatesv2 = async (req, res, next) => {
           GROUP BY ROUND(latitude, 3), ROUND(longitude, 3)
       ) AS subquery
       JOIN emp_tracking AS t ON subquery.min_id = t.id
-      ORDER BY t.id DESC
+      ORDER BY t.date, t.time
     `;
 
     const emp_id = whereClause.emp_id || "";
@@ -277,24 +277,36 @@ exports.getCoordinatesv2 = async (req, res, next) => {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
-    // Calculate the time difference for each group
-    const result = data.map((item) => {
-      const minTime = new Date(`${item.date} ${item.min_time}`);
-      const maxTime = new Date(`${item.date} ${item.max_time}`);
-      const timeDifference = maxTime - minTime; // Time difference in milliseconds
+    // Process the data to calculate time differences between unique coordinates
+    let lastItem = null;
+    const result = [];
 
-      // Convert milliseconds to hours, minutes, seconds
-      const hours = Math.floor(timeDifference / 3600000);
-      const minutes = Math.floor((timeDifference % 3600000) / 60000);
-      const seconds = Math.floor((timeDifference % 60000) / 1000);
+    for (const item of data) {
+      if (
+        lastItem &&
+        (lastItem.latitude !== item.latitude ||
+          lastItem.longitude !== item.longitude)
+      ) {
+        const minTime = new Date(`${lastItem.date}T${lastItem.max_time}.000Z`);
+        const maxTime = new Date(`${item.date}T${item.min_time}.000Z`);
+        const timeDifference = maxTime - minTime; // Time difference in milliseconds
 
-      item.time_difference = `${hours}h ${minutes}m ${seconds}s`;
+        // Convert milliseconds to hours, minutes, seconds
+        const hours = Math.floor(timeDifference / 3600000);
+        const minutes = Math.floor((timeDifference % 3600000) / 60000);
+        const seconds = Math.floor((timeDifference % 60000) / 1000);
 
-      // Assuming `item.image` is included in the data
-      item.image = item.image ? `${process.env.BASE_URL}${item.image}` : "";
+        lastItem.time_difference = `${hours}h ${minutes}m ${seconds}s`;
+        result.push(lastItem);
+      }
+      lastItem = item;
+    }
 
-      return item;
-    });
+    // Add the last item if it's unique
+    if (lastItem) {
+      lastItem.time_difference = "N/A"; // No time difference for the last entry
+      result.push(lastItem);
+    }
 
     res.status(200).send({ status: true, data: result });
   } catch (error) {
