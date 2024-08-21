@@ -24,27 +24,69 @@ const haversineDistance = (coords1, coords2) => {
   return distance;
 };
 
+// exports.getCoordinates = async (req, res, next) => {
+//   try {
+//     const whereClause = {};
+
+//     for (const key in req.query) {
+//       if (req.query.hasOwnProperty(key)) {
+//         whereClause[key] = req.query[key];
+//       }
+//     }
+
+//     // for (const key in req.query) {
+//     //   if (req.query.hasOwnProperty(key)) {
+//     //     if (key === "date") {
+//     //       const startDateTime = `${req.query[key]} 00:00:00`;
+//     //       const endDateTime = `${req.query[key]} 23:59:59`;
+//     //       whereClause.time = `BETWEEN '${startDateTime}' AND '${endDateTime}'`;
+//     //     } else {
+//     //       whereClause[key] = req.query[key];
+//     //     }
+//     //   }
+//     // }
+
+//     const data = await sqlModel.select("emp_tracking", {}, whereClause);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+
+//     let totalDistance = 0;
+
+//     for (let i = 0; i < data.length - 1; i++) {
+//       const distance = haversineDistance(data[i], data[i + 1]);
+//       totalDistance += distance;
+//     }
+
+//     res.status(200).send({ status: true, totalDistance, data: data });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
 exports.getCoordinates = async (req, res, next) => {
   try {
     const whereClause = {};
 
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
-        whereClause[key] = req.query[key];
+        if (key === "date") {
+          // If the query parameter is "date", add a time range filter for that date
+          const startDateTime = `${req.query[key]} 00:00:00`;
+          const endDateTime = `${req.query[key]} 23:59:59`;
+          whereClause.datetime_mobile = {
+            $gte: startDateTime,
+            $lte: endDateTime,
+          };
+        } else {
+          whereClause[key] = req.query[key];
+        }
       }
     }
-
-    // for (const key in req.query) {
-    //   if (req.query.hasOwnProperty(key)) {
-    //     if (key === "date") {
-    //       const startDateTime = `${req.query[key]} 00:00:00`;
-    //       const endDateTime = `${req.query[key]} 23:59:59`;
-    //       whereClause.time = `BETWEEN '${startDateTime}' AND '${endDateTime}'`;
-    //     } else {
-    //       whereClause[key] = req.query[key];
-    //     }
-    //   }
-    // }
 
     const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
@@ -68,32 +110,6 @@ exports.getCoordinates = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
-
-// exports.getCoordinates = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
-
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         whereClause[key] = req.query[key];
-//       }
-//     }
-
-//     const data = await sqlModel.select("emp_tracking", {}, whereClause);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     res.status(200).send({ status: true, data: data });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
 
 exports.getCoordinatesv2 = async (req, res, next) => {
   try {
