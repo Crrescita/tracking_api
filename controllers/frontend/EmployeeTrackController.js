@@ -87,6 +87,10 @@ exports.setCoordinates = async (req, res, next) => {
       }
     }
 
+    if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
+      return res.status(204).send();
+    }
+
     // Prepare data for insertion
     const newCheckInData = {
       company_id,
@@ -200,6 +204,10 @@ exports.setAllCoordinates = async (req, res, next) => {
             message: `${key.replace("_", " ")} is required`,
           });
         }
+      }
+
+      if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
+        return res.status(204).send();
       }
 
       const newCheckInData = {
