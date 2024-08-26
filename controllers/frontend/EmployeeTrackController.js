@@ -44,6 +44,9 @@ exports.getCoordinates = async (req, res, next) => {
       }
     }
 
+    whereClause["latitude"] = { $ne: 0 };
+    whereClause["longitude"] = { $ne: 0 };
+
     const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
     if (data.error) {
@@ -105,9 +108,9 @@ exports.setCoordinates = async (req, res, next) => {
       }
     }
 
-    if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
-      return res.status(204).send();
-    }
+    // if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
+    //   return res.status(204).send();
+    // }
 
     // Prepare data for insertion
     const newCheckInData = {
@@ -224,9 +227,9 @@ exports.setAllCoordinates = async (req, res, next) => {
         }
       }
 
-      if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
-        return res.status(204).send();
-      }
+      // if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
+      //   return res.status(204).send();
+      // }
 
       const newCheckInData = {
         company_id,
