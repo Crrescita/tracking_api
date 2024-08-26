@@ -3,10 +3,6 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const sendMail = require("../../mail/nodemailer");
 
-// const getCurrentDate = () => {
-//   return new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
-// };
-
 const getCurrentDate = () => {
   const currentDate = new Date();
 
