@@ -34,6 +34,9 @@ exports.getCoordinates = async (req, res, next) => {
       }
     }
 
+    whereClause["latitude"] = { $ne: 0 };
+    whereClause["longitude"] = { $ne: 0 };
+
     const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
     if (data.error) {
@@ -57,70 +60,103 @@ exports.getCoordinates = async (req, res, next) => {
   }
 };
 
-exports.getCoordinates = async (req, res, next) => {
-  try {
-    const { date, emp_id } = req.query;
+// exports.getCoordinates = async (req, res, next) => {
+//   try {
+//     const whereClause = {};
 
-    // Validate the date parameter
-    if (!date) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Date is required" });
-    }
+//     for (const key in req.query) {
+//       if (req.query.hasOwnProperty(key)) {
+//         whereClause[key] = req.query[key];
+//       }
+//     }
 
-    // Define the start and end times for the given date
-    const startTime = "00:00:00";
-    const endTime = "23:59:59";
+//     const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
-    // Build the WHERE clause dynamically
-    let whereClause = `date = ? AND time BETWEEN ? AND ?`;
-    const values = [date, startTime, endTime];
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
 
-    // Add filter for employee ID if provided
-    if (emp_id) {
-      whereClause += " AND emp_id = ?";
-      values.push(emp_id);
-    }
+//     if (data.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
 
-    // Construct the SQL query
-    const coordinatesQuery = `
-      SELECT * FROM emp_tracking
-      WHERE ${whereClause}
-    `;
+//     let totalDistance = 0;
 
-    // Execute the query
-    const coordinatesData = await sqlModel.customQuery(
-      coordinatesQuery,
-      values
-    );
+//     for (let i = 0; i < data.length - 1; i++) {
+//       const distance = haversineDistance(data[i], data[i + 1]);
+//       totalDistance += distance;
+//     }
 
-    if (coordinatesData.error) {
-      return res
-        .status(500)
-        .send({ status: false, error: coordinatesData.error.message });
-    }
+//     res.status(200).send({ status: true, totalDistance, data: data });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
 
-    if (coordinatesData.length === 0) {
-      return res.status(200).send({ status: false, message: "No data found" });
-    }
+// exports.getCoordinates = async (req, res, next) => {
+//   try {
+//     const { date, emp_id } = req.query;
 
-    // Calculate total distance
-    let totalDistance = 0;
-    for (let i = 0; i < coordinatesData.length - 1; i++) {
-      const distance = haversineDistance(
-        coordinatesData[i],
-        coordinatesData[i + 1]
-      );
-      totalDistance += distance;
-    }
+//     // Validate the date parameter
+//     if (!date) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Date is required" });
+//     }
 
-    res
-      .status(200)
-      .send({ status: true, totalDistance, data: coordinatesData });
-  } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
-  }
-};
+//     // Define the start and end times for the given date
+//     const startTime = "00:00:00";
+//     const endTime = "23:59:59";
+
+//     // Build the WHERE clause dynamically
+//     let whereClause = `date = ? AND time BETWEEN ? AND ?`;
+//     const values = [date, startTime, endTime];
+
+//     // Add filter for employee ID if provided
+//     if (emp_id) {
+//       whereClause += " AND emp_id = ?";
+//       values.push(emp_id);
+//     }
+
+//     // Construct the SQL query
+//     const coordinatesQuery = `
+//       SELECT * FROM emp_tracking
+//       WHERE ${whereClause}
+//     `;
+
+//     // Execute the query
+//     const coordinatesData = await sqlModel.customQuery(
+//       coordinatesQuery,
+//       values
+//     );
+
+//     if (coordinatesData.error) {
+//       return res
+//         .status(500)
+//         .send({ status: false, error: coordinatesData.error.message });
+//     }
+
+//     if (coordinatesData.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+
+//     // Calculate total distance
+//     let totalDistance = 0;
+//     for (let i = 0; i < coordinatesData.length - 1; i++) {
+//       const distance = haversineDistance(
+//         coordinatesData[i],
+//         coordinatesData[i + 1]
+//       );
+//       totalDistance += distance;
+//     }
+
+//     res
+//       .status(200)
+//       .send({ status: true, totalDistance, data: coordinatesData });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
 
 // exports.getCoordinatesv2 = async (req, res, next) => {
 //   try {
@@ -180,6 +216,8 @@ exports.getCoordinatesv2 = async (req, res, next) => {
         whereClause[key] = req.query[key];
       }
     }
+    whereClause["latitude"] = { $ne: 0 };
+    whereClause["longitude"] = { $ne: 0 };
 
     const query = `
       SELECT t.latitude, t.longitude, t.date, t.time,t.battery_status, subquery.cnt, subquery.min_time, subquery.max_time

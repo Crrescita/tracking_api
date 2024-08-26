@@ -24,14 +24,6 @@ exports.createDepartment = async (req, res, next) => {
 
     const insert = { name, slug, status };
 
-    const existingSlug = await sqlModel.select("department", ["id"], { slug });
-
-    if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Slug already exists" });
-    }
-
     if (id) {
       const departmentRecord = await sqlModel.select("department", ["name"], {
         id,
@@ -51,6 +43,15 @@ exports.createDepartment = async (req, res, next) => {
         return res.status(200).send({ status: true, message: "Data Updated" });
       }
     } else {
+      const existingSlug = await sqlModel.select("department", ["id"], {
+        slug,
+      });
+
+      if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Slug already exists" });
+      }
       insert.created_at = getCurrentDateTime();
       const saveData = await sqlModel.insert("department", insert);
 
@@ -155,14 +156,6 @@ exports.createDesignation = async (req, res, next) => {
 
     const insert = { name, slug, status };
 
-    const existingSlug = await sqlModel.select("designation", ["id"], { slug });
-
-    if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Slug already exists" });
-    }
-
     if (id) {
       const departmentRecord = await sqlModel.select("designation", ["name"], {
         id,
@@ -182,6 +175,16 @@ exports.createDesignation = async (req, res, next) => {
         return res.status(200).send({ status: true, message: "Data Updated" });
       }
     } else {
+      const existingSlug = await sqlModel.select("designation", ["id"], {
+        slug,
+      });
+
+      if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Slug already exists" });
+      }
+
       insert.created_at = getCurrentDateTime();
       const saveData = await sqlModel.insert("designation", insert);
 
