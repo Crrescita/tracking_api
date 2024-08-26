@@ -84,8 +84,8 @@ exports.getCoordinates = async (req, res, next) => {
 
     // Construct the SQL query
     const coordinatesQuery = `
-      SELECT * FROM emp_tracking
-      WHERE ${whereClause}
+      SELECT id,emp_id,company_id,round(latitude,6) as latitude,round(longitude,6) as longitude,date,time,datetime_mobile,row_id,battery_status,gps_status,internet_status,motion,created_at,updated_at FROM emp_tracking
+      WHERE ${whereClause}  order by datetime_mobile asc 
     `;
 
     // Execute the query
