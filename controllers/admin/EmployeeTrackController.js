@@ -80,6 +80,11 @@ exports.getCoordinates = async (req, res, next) => {
 //       return res.status(200).send({ status: false, message: "No data found" });
 //     }
 
+
+    // Construct the SQL query
+//    const coordinatesQuery = `
+//    SELECT id,emp_id,company_id,round(latitude,6) as latitude,round(longitude,6) as longitude,date,time,datetime_mobile,row_id,battery_status,gps_status,internet_status,motion,created_at,updated_at FROM emp_tracking
+//  WHERE ${whereClause}  order by datetime_mobile asc `;
 //     let totalDistance = 0;
 
 //     for (let i = 0; i < data.length - 1; i++) {
