@@ -26,18 +26,16 @@ const haversineDistance = (coords1, coords2) => {
 
 exports.getCoordinates = async (req, res, next) => {
   try {
-    const whereClause = {};
+    let query =
+      "SELECT * FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
 
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
-        whereClause[key] = req.query[key];
+        query += ` AND ${key} = '${req.query[key]}'`;
       }
     }
 
-    // whereClause["latitude"] = { $ne: 0 };
-    // whereClause["longitude"] = { $ne: 0 };
-
-    const data = await sqlModel.select("emp_tracking", {}, whereClause);
+    const data = await sqlModel.customQuery(query);
 
     if (data.error) {
       return res.status(500).send(data);
@@ -49,13 +47,16 @@ exports.getCoordinates = async (req, res, next) => {
 
     let totalDistance = 0;
 
+    // Calculate the total distance between the coordinates
     for (let i = 0; i < data.length - 1; i++) {
       const distance = haversineDistance(data[i], data[i + 1]);
       totalDistance += distance;
     }
 
+    // Send the response
     res.status(200).send({ status: true, totalDistance, data: data });
   } catch (error) {
+    console.error("Error in getCoordinates:", error);
     res.status(500).send({ status: false, error: error.message });
   }
 };
@@ -80,11 +81,6 @@ exports.getCoordinates = async (req, res, next) => {
 //       return res.status(200).send({ status: false, message: "No data found" });
 //     }
 
-
-    // Construct the SQL query
-//    const coordinatesQuery = `
-//    SELECT id,emp_id,company_id,round(latitude,6) as latitude,round(longitude,6) as longitude,date,time,datetime_mobile,row_id,battery_status,gps_status,internet_status,motion,created_at,updated_at FROM emp_tracking
-//  WHERE ${whereClause}  order by datetime_mobile asc `;
 //     let totalDistance = 0;
 
 //     for (let i = 0; i < data.length - 1; i++) {
@@ -221,8 +217,6 @@ exports.getCoordinatesv2 = async (req, res, next) => {
         whereClause[key] = req.query[key];
       }
     }
-    whereClause["latitude"] = { $ne: 0 };
-    whereClause["longitude"] = { $ne: 0 };
 
     const query = `
       SELECT t.latitude, t.longitude, t.date, t.time,t.battery_status, subquery.cnt, subquery.min_time, subquery.max_time
@@ -230,7 +224,8 @@ exports.getCoordinatesv2 = async (req, res, next) => {
           SELECT ROUND(latitude, 3) AS latitude, ROUND(longitude, 3) AS longitude, date,
                  MIN(time) AS min_time, MAX(time) AS max_time, COUNT(*) AS cnt, MIN(id) AS min_id
           FROM emp_tracking
-          WHERE emp_id = ? AND date = ?
+          WHERE emp_id = ? AND date = ? AND latitude != 0 AND longitude != 0
+        
           GROUP BY ROUND(latitude, 3), ROUND(longitude, 3), date
       ) AS subquery
       JOIN emp_tracking AS t ON subquery.min_id = t.id

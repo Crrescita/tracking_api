@@ -36,18 +36,16 @@ const getCurrentTime = () => {
 
 exports.getCoordinates = async (req, res, next) => {
   try {
-    const whereClause = {};
+    let query =
+      "SELECT * FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
 
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
-        whereClause[key] = req.query[key];
+        query += ` AND ${key} = '${req.query[key]}'`;
       }
     }
 
-    whereClause["latitude"] = { $ne: 0 };
-    whereClause["longitude"] = { $ne: 0 };
-
-    const data = await sqlModel.select("emp_tracking", {}, whereClause);
+    const data = await sqlModel.customQuery(query);
 
     if (data.error) {
       return res.status(500).send(data);
@@ -57,16 +55,18 @@ exports.getCoordinates = async (req, res, next) => {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
-    const result = await Promise.all(
-      data.map(async (item) => {
-        item.image = item.image ? `${process.env.BASE_URL}${item.image}` : "";
+    let totalDistance = 0;
 
-        return item;
-      })
-    );
+    // Calculate the total distance between the coordinates
+    for (let i = 0; i < data.length - 1; i++) {
+      const distance = haversineDistance(data[i], data[i + 1]);
+      totalDistance += distance;
+    }
 
-    res.status(200).send({ status: true, data: result });
+    // Send the response
+    res.status(200).send({ status: true, totalDistance, data: data });
   } catch (error) {
+    console.error("Error in getCoordinates:", error);
     res.status(500).send({ status: false, error: error.message });
   }
 };
