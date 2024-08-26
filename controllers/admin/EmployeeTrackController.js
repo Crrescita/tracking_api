@@ -34,8 +34,8 @@ exports.getCoordinates = async (req, res, next) => {
       }
     }
 
-    whereClause["latitude"] = { $ne: 0 };
-    whereClause["longitude"] = { $ne: 0 };
+    // whereClause["latitude"] = { $ne: 0 };
+    // whereClause["longitude"] = { $ne: 0 };
 
     const data = await sqlModel.select("emp_tracking", {}, whereClause);
 
