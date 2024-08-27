@@ -24,6 +24,27 @@ const haversineDistance = (coords1, coords2) => {
   return distance;
 };
 
+const formatDuration = (totalSeconds) => {
+  if (isNaN(totalSeconds) || totalSeconds < 0) {
+    console.error("Invalid totalSeconds value:", totalSeconds);
+    return "0h 0m 0s";
+  }
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${hours}h ${minutes}m ${seconds}s`;
+};
+
+const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
+  if (!checkInTime || !checkOutTime) {
+    return 0;
+  }
+  const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
+  const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
+  const durationInSeconds = (checkOut - checkIn) / 1000;
+  return durationInSeconds < 0 ? 0 : durationInSeconds;
+};
+
 exports.getCoordinates = async (req, res, next) => {
   try {
     let query =
@@ -60,153 +81,6 @@ exports.getCoordinates = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
-
-// exports.getCoordinates = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
-
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         whereClause[key] = req.query[key];
-//       }
-//     }
-
-//     const data = await sqlModel.select("emp_tracking", {}, whereClause);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     let totalDistance = 0;
-
-//     for (let i = 0; i < data.length - 1; i++) {
-//       const distance = haversineDistance(data[i], data[i + 1]);
-//       totalDistance += distance;
-//     }
-
-//     res.status(200).send({ status: true, totalDistance, data: data });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
-
-// exports.getCoordinates = async (req, res, next) => {
-//   try {
-//     const { date, emp_id } = req.query;
-
-//     // Validate the date parameter
-//     if (!date) {
-//       return res
-//         .status(400)
-//         .send({ status: false, message: "Date is required" });
-//     }
-
-//     // Define the start and end times for the given date
-//     const startTime = "00:00:00";
-//     const endTime = "23:59:59";
-
-//     // Build the WHERE clause dynamically
-//     let whereClause = `date = ? AND time BETWEEN ? AND ?`;
-//     const values = [date, startTime, endTime];
-
-//     // Add filter for employee ID if provided
-//     if (emp_id) {
-//       whereClause += " AND emp_id = ?";
-//       values.push(emp_id);
-//     }
-
-//     // Construct the SQL query
-//     const coordinatesQuery = `
-//       SELECT * FROM emp_tracking
-//       WHERE ${whereClause}
-//     `;
-
-//     // Execute the query
-//     const coordinatesData = await sqlModel.customQuery(
-//       coordinatesQuery,
-//       values
-//     );
-
-//     if (coordinatesData.error) {
-//       return res
-//         .status(500)
-//         .send({ status: false, error: coordinatesData.error.message });
-//     }
-
-//     if (coordinatesData.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     // Calculate total distance
-//     let totalDistance = 0;
-//     for (let i = 0; i < coordinatesData.length - 1; i++) {
-//       const distance = haversineDistance(
-//         coordinatesData[i],
-//         coordinatesData[i + 1]
-//       );
-//       totalDistance += distance;
-//     }
-
-//     res
-//       .status(200)
-//       .send({ status: true, totalDistance, data: coordinatesData });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
-
-// exports.getCoordinatesv2 = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
-
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         whereClause[key] = req.query[key];
-//       }
-//     }
-
-//     const query = `
-//       SELECT t.latitude, t.longitude, t.date, t.time, subquery.cnt
-//       FROM (
-//           SELECT ROUND(latitude, 3) AS latitude, ROUND(longitude, 3) AS longitude, date, time, COUNT(*) AS cnt, MIN(id) AS min_id
-//           FROM emp_tracking
-//           WHERE emp_id = ? AND date = ?
-//           GROUP BY ROUND(latitude, 3), ROUND(longitude, 3)
-//       ) AS subquery
-//       JOIN emp_tracking AS t ON subquery.min_id = t.id
-//       ORDER BY t.id DESC
-//     `;
-
-//     const emp_id = whereClause.emp_id || "";
-//     const date = whereClause.date || "";
-
-//     // Execute the custom query
-//     const data = await sqlModel.customQuery(query, [emp_id, date]);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     const result = await Promise.all(
-//       data.map(async (item) => {
-//         item.image = item.image ? `${process.env.BASE_URL}${item.image}` : "";
-//         return item;
-//       })
-//     );
-
-//     res.status(200).send({ status: true, data: result });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
 
 exports.getCoordinatesv2 = async (req, res, next) => {
   try {
@@ -278,120 +152,6 @@ exports.getCoordinatesv2 = async (req, res, next) => {
   }
 };
 
-// exports.getCoordinatesv2 = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
-
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         whereClause[key] = req.query[key];
-//       }
-//     }
-
-//     const query = `
-//       SELECT t.latitude, t.longitude, t.date, t.time, t.battery_status, subquery.cnt, subquery.min_time, subquery.max_time
-//       FROM (
-//           SELECT ROUND(latitude, 3) AS latitude, ROUND(longitude, 3) AS longitude, date,
-//                  MIN(time) AS min_time, MAX(time) AS max_time, COUNT(*) AS cnt, MIN(id) AS min_id
-//           FROM emp_tracking
-//           WHERE emp_id = ? AND date = ?
-//           GROUP BY ROUND(latitude, 3), ROUND(longitude, 3), date
-//       ) AS subquery
-//       JOIN emp_tracking AS t ON subquery.min_id = t.id
-//       ORDER BY t.date, t.time
-//     `;
-
-//     const emp_id = whereClause.emp_id || "";
-//     const date = whereClause.date || "";
-
-//     // Execute the custom query
-//     const data = await sqlModel.customQuery(query, [emp_id, date]);
-
-//     console.log(data);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     // Sort data by time
-//     data.sort(
-//       (a, b) =>
-//         new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)
-//     );
-
-//     // Initialize variables for grouping
-//     let groupedData = [];
-//     let currentGroup = [];
-//     let lastTime = null;
-
-//     data.forEach((item) => {
-//       const currentTime = new Date(`${item.date}T${item.time}`);
-//       const lastTimeInGroup = lastTime
-//         ? new Date(`${item.date}T${lastTime}`)
-//         : null;
-
-//       // Check if the current time is continuous with the last time
-//       if (!lastTimeInGroup || currentTime - lastTimeInGroup <= 30 * 60 * 1000) {
-//         // 30 minutes gap allowed
-//         currentGroup.push(item);
-//       } else {
-//         // Push the current group to groupedData and start a new group
-//         if (currentGroup.length > 0) {
-//           groupedData.push(currentGroup);
-//         }
-//         currentGroup = [item];
-//       }
-
-//       lastTime = item.time;
-//     });
-
-//     // Add the last group if any
-//     if (currentGroup.length > 0) {
-//       groupedData.push(currentGroup);
-//     }
-
-//     // Calculate time differences for each group
-//     const result = groupedData.map((group) => {
-//       const minTime = new Date(`${group[0].date}T${group[0].time}`);
-//       const maxTime = new Date(
-//         `${group[group.length - 1].date}T${group[group.length - 1].time}`
-//       );
-//       const timeDifference = maxTime - minTime; // Time difference in milliseconds
-
-//       // Convert milliseconds to hours, minutes, seconds
-//       const hours = Math.floor(timeDifference / 3600000);
-//       const minutes = Math.floor((timeDifference % 3600000) / 60000);
-//       const seconds = Math.floor((timeDifference % 60000) / 1000);
-
-//       return {
-//         latitude: group[0].latitude,
-//         longitude: group[0].longitude,
-//         date: group[0].date,
-//         time: group[0].time,
-//         min_time: group[0].time,
-//         max_time: group[group.length - 1].time,
-//         cnt: group.reduce((sum, item) => sum + item.cnt, 0),
-//         time_difference: `${hours}h ${minutes}m ${seconds}s`,
-//         battery_status: group[0].battery_status,
-//         image: group[0].image ? `${process.env.BASE_URL}${group[0].image}` : "",
-//         duration: {
-//           hours: hours,
-//           minutes: minutes,
-//           seconds: seconds,
-//         },
-//       };
-//     });
-
-//     res.status(200).send({ status: true, data: result });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
-
 exports.getEmpLoginDetail = async (req, res, next) => {
   try {
     const emp_id = req.query?.emp_id || "";
@@ -444,27 +204,6 @@ exports.getEmpLiveLocation = async (req, res, next) => {
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
-};
-
-const formatDuration = (totalSeconds) => {
-  if (isNaN(totalSeconds) || totalSeconds < 0) {
-    console.error("Invalid totalSeconds value:", totalSeconds);
-    return "0h 0m 0s";
-  }
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  return `${hours}h ${minutes}m ${seconds}s`;
-};
-
-const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
-  if (!checkInTime || !checkOutTime) {
-    return 0;
-  }
-  const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
-  const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
-  const durationInSeconds = (checkOut - checkIn) / 1000;
-  return durationInSeconds < 0 ? 0 : durationInSeconds;
 };
 
 exports.getAttendence = async (req, res, next) => {
@@ -542,6 +281,8 @@ exports.getAttendence = async (req, res, next) => {
       acc[item.emp_id] = {
         total_duration: item.total_duration,
         total_distance: item.total_distance,
+        checkin_status: item.checkin_status,
+        timeDifferencev2: item.time_difference,
       };
       return acc;
     }, {});
@@ -613,9 +354,11 @@ exports.getAttendence = async (req, res, next) => {
           latestCheckOutTime: checkOutTime || null,
           totalDuration: analyticsMap[item.id]?.total_duration || "0h 0m 0s",
           totalDistance: analyticsMap[item.id]?.total_distance || 0,
+          checkin_statusv2: analyticsMap[item.id]?.checkin_status || 0,
           checkin_status: checkInTime ? checkin_status : "Absent",
           attendance_status: checkInTime ? "Present" : "Absent",
           timeDifference: formatDuration(timeDifferenceSeconds),
+          timeDifferencev2: analyticsMap[item.id]?.timeDifferencev2 || 0,
         });
       }
       return acc;
@@ -628,9 +371,10 @@ exports.getAttendence = async (req, res, next) => {
       (emp) => emp.attendance_status === "Absent"
     ).length;
 
-    // Calculate total duration and distance for all employees
-    const totalDuration = processedData.reduce((sum, emp) => {
-      const durationStr = emp.totalDuration;
+    // Calculate total duration in seconds for all employees
+    const totalDurationInSeconds = processedData.reduce((sum, emp) => {
+      // Ensure total_duration is treated as a string
+      const durationStr = emp.totalDuration.toString();
       const durationParts = durationStr.match(/(\d+)h (\d+)m (\d+)s/);
       if (durationParts) {
         const hours = parseInt(durationParts[1], 10);
@@ -641,12 +385,12 @@ exports.getAttendence = async (req, res, next) => {
       return sum;
     }, 0);
 
+    const totalFormattedDuration = formatDuration(totalDurationInSeconds);
+
     const totalDistance = processedData.reduce(
       (sum, emp) => sum + (emp.totalDistance || 0),
       0
     );
-
-    const totalFormattedDuration = formatDuration(totalDuration);
 
     if (processedData.length === 0) {
       return res.status(200).send({
