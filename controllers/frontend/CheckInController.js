@@ -59,9 +59,31 @@ const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
   return durationInSeconds < 0 ? 0 : durationInSeconds;
 };
 
-const haversineDistance = (lat1, lon1, lat2, lon2) => {
+// const haversineDistance = (lat1, lon1, lat2, lon2) => {
+//   const toRad = (value) => (value * Math.PI) / 180;
+//   const R = 6371; // Radius of the Earth in kilometers
+
+//   const dLat = toRad(lat2 - lat1);
+//   const dLon = toRad(lon2 - lon1);
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos(toRad(lat1)) *
+//       Math.cos(toRad(lat2)) *
+//       Math.sin(dLon / 2) *
+//       Math.sin(dLon / 2);
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c; // Distance in kilometers
+// };
+
+const haversineDistance = (coords1, coords2) => {
   const toRad = (value) => (value * Math.PI) / 180;
-  const R = 6371; // Radius of the Earth in kilometers
+
+  const lat1 = parseFloat(coords1.latitude);
+  const lon1 = parseFloat(coords1.longitude);
+  const lat2 = parseFloat(coords2.latitude);
+  const lon2 = parseFloat(coords2.longitude);
+
+  const R = 6371; // Earth's radius in kilometers
 
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
@@ -72,7 +94,9 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in kilometers
+  const distance = R * c;
+
+  return distance;
 };
 
 exports.getCheckIn = async (req, res, next) => {
@@ -483,6 +507,25 @@ exports.checkOut = async (req, res, next) => {
 
         const totalformattedDuration = formatDuration(totalDurationInSeconds);
 
+        //   let query =
+        //   "SELECT * FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
+
+        // for (const key in req.query) {
+        //   if (req.query.hasOwnProperty(key)) {
+        //     query += ` AND ${key} = '${req.query[key]}'`;
+        //   }
+        // }
+
+        // const data = await sqlModel.customQuery(query);
+
+        // if (data.error) {
+        //   return res.status(500).send(data);
+        // }
+
+        // if (data.length === 0) {
+        //   return res.status(200).send({ status: false, message: "No data found" });
+        // }
+
         const trackingData = await sqlModel.select(
           "emp_tracking",
           ["latitude", "longitude"],
@@ -491,13 +534,21 @@ exports.checkOut = async (req, res, next) => {
         );
 
         let totalDistance = 0;
-        for (let i = 0; i < trackingData.length - 1; i++) {
-          const lat1 = trackingData[i].lat;
-          const lon1 = trackingData[i].lon;
-          const lat2 = trackingData[i + 1].lat;
-          const lon2 = trackingData[i + 1].lon;
+        // for (let i = 0; i < trackingData.length - 1; i++) {
+        //   const lat1 = trackingData[i].lat;
+        //   const lon1 = trackingData[i].lon;
+        //   const lat2 = trackingData[i + 1].lat;
+        //   const lon2 = trackingData[i + 1].lon;
 
-          totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
+        //   totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
+        // }
+
+        for (let i = 0; i < trackingData.length - 1; i++) {
+          const distance = haversineDistance(
+            trackingData[i],
+            trackingData[i + 1]
+          );
+          totalDistance += distance;
         }
 
         console.log(`Total distance: ${totalDistance} km`);
