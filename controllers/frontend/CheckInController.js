@@ -682,8 +682,7 @@ exports.checkOut = async (req, res, next) => {
     const trackingData = await sqlModel.select(
       "emp_tracking",
       ["latitude", "longitude"],
-      { emp_id, company_id, date },
-      "ORDER BY created_at ASC"
+      { emp_id, company_id, date }
     );
 
     for (let i = 0; i < trackingData.length - 1; i++) {
