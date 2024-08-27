@@ -554,7 +554,7 @@ exports.checkOut = async (req, res, next) => {
     console.error("Error during check-out:", error);
     return res.status(500).send({
       status: false,
-      totalDistance:totalDistance
+      totalDistance: totalDistance,
       message: "An error occurred during check-out",
       error: error.message,
     });
