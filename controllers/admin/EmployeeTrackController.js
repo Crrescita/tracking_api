@@ -378,7 +378,7 @@ exports.getAttendence = async (req, res, next) => {
     const totalDurationInSeconds = processedData.reduce((sum, emp) => {
       // Ensure total_duration is treated as a string
       const durationStr = emp.totalDuration.toString();
-      const durationParts = durationStr.match(/(\d+)h (\d+)m (\d+)s/);
+      const durationParts = durationStr.match(/(\d+):(\d+):(\d+)/);
       if (durationParts) {
         const hours = parseInt(durationParts[1], 10);
         const minutes = parseInt(durationParts[2], 10);
