@@ -425,9 +425,196 @@ exports.checkIn = async (req, res, next) => {
   }
 };
 
+// exports.checkOut = async (req, res, next) => {
+//   try {
+//     let {
+//       emp_id,
+//       company_id,
+//       lat_check_out,
+//       long_check_out,
+//       battery_status_at_checkout,
+//     } = req.body;
+
+//     if (!company_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Company ID is required" });
+//     }
+//     if (!emp_id) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Employee ID is required" });
+//     }
+
+//     let updateData = {
+//       lat_check_out,
+//       long_check_out,
+//       battery_status_at_checkout,
+//     };
+
+//     if (req.files && req.files.checkout_img) {
+//       updateData.checkout_img = req.files.checkout_img[0].path;
+//     } else {
+//       updateData.checkout_img = null;
+//     }
+
+//     const date = getCurrentDate();
+//     const checkOutTime = getCurrentTime();
+
+//     const checkInData = await sqlModel.select(
+//       "check_in",
+//       ["*"],
+//       { emp_id, company_id, date },
+//       "ORDER BY created_at DESC"
+//     );
+
+//     if (checkInData.length > 0) {
+//       const lastCheckIn = checkInData[0];
+
+//       if (
+//         lastCheckIn.checkin_status === "Check-in" &&
+//         !lastCheckIn.check_out_time
+//       ) {
+//         const durationInSeconds = calculateDurationInSeconds(
+//           lastCheckIn.check_in_time,
+//           checkOutTime
+//         );
+
+//         const formattedDuration = formatDuration(durationInSeconds);
+
+//         updateData.check_out_time = checkOutTime;
+//         updateData.checkin_status = "Check-out";
+//         updateData.updated_at = getCurrentDateTime();
+//         updateData.duration = formattedDuration;
+
+//         const updateResult = await sqlModel.update("check_in", updateData, {
+//           id: lastCheckIn.id,
+//         });
+
+//         let totalDurationInSeconds = 0;
+
+//         for (const checkIn of checkInData) {
+//           let checkOut = checkIn.check_out_time;
+//           if (!checkOut) {
+//             checkOut = checkOutTime;
+//           }
+//           const durationInSeconds = calculateDurationInSeconds(
+//             checkIn.check_in_time,
+//             checkOut
+//           );
+//           totalDurationInSeconds += durationInSeconds;
+//         }
+
+//         const totalformattedDuration = formatDuration(totalDurationInSeconds);
+
+//         //   let query =
+//         //   "SELECT * FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
+
+//         // for (const key in req.query) {
+//         //   if (req.query.hasOwnProperty(key)) {
+//         //     query += ` AND ${key} = '${req.query[key]}'`;
+//         //   }
+//         // }
+
+//         // const data = await sqlModel.customQuery(query);
+
+//         // if (data.error) {
+//         //   return res.status(500).send(data);
+//         // }
+
+//         // if (data.length === 0) {
+//         //   return res.status(200).send({ status: false, message: "No data found" });
+//         // }
+
+//         const trackingData = await sqlModel.select(
+//           "emp_tracking",
+//           ["latitude", "longitude"],
+//           { emp_id, company_id, date },
+//           "ORDER BY created_at ASC"
+//         );
+
+//         let totalDistance = 0;
+//         // for (let i = 0; i < trackingData.length - 1; i++) {
+//         //   const lat1 = trackingData[i].lat;
+//         //   const lon1 = trackingData[i].lon;
+//         //   const lat2 = trackingData[i + 1].lat;
+//         //   const lon2 = trackingData[i + 1].lon;
+
+//         //   totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
+//         // }
+
+//         for (let i = 0; i < trackingData.length - 1; i++) {
+//           const distance = haversineDistance(
+//             trackingData[i],
+//             trackingData[i + 1]
+//           );
+//           totalDistance += distance;
+//         }
+
+//         console.log(`Total distance: ${totalDistance} km`);
+
+//         const existingAnalytics = await sqlModel.select(
+//           "emp_analytics",
+//           ["*"],
+//           { emp_id, company_id, date }
+//         );
+
+//         if (existingAnalytics.length > 0) {
+//           await sqlModel.update(
+//             "emp_analytics",
+//             {
+//               total_duration: totalformattedDuration,
+//               total_distance: totalDistance,
+//               updated_at: getCurrentDateTime(),
+//             },
+//             { emp_id, company_id, date }
+//           );
+//         } else {
+//           await sqlModel.insert("emp_analytics", {
+//             emp_id,
+//             company_id,
+//             date,
+//             total_duration: totalformattedDuration,
+//             total_distance: totalDistance,
+//             created_at: getCurrentDateTime(),
+//           });
+//         }
+
+//         return res.status(200).send({
+//           status: true,
+//           message: "Check-out successful",
+//           data: {
+//             latestCheckOutTime: checkOutTime,
+//             totalDuration: totalformattedDuration,
+//           },
+//         });
+//       } else {
+//         return res.status(400).send({
+//           status: false,
+//           message:
+//             "Cannot check out: No valid check-in record found or already checked out",
+//         });
+//       }
+//     } else {
+//       return res.status(400).send({
+//         status: false,
+//         message: "No check-in record found for today",
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Error during check-out:", error);
+//     return res.status(500).send({
+//       status: false,
+//       totalDistance: totalDistance,
+//       message: "An error occurred during check-out",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.checkOut = async (req, res, next) => {
   try {
-    let {
+    const {
       emp_id,
       company_id,
       lat_check_out,
@@ -435,32 +622,30 @@ exports.checkOut = async (req, res, next) => {
       battery_status_at_checkout,
     } = req.body;
 
-    if (!company_id) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Company ID is required" });
-    }
-    if (!emp_id) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Employee ID is required" });
-    }
-
-    let updateData = {
-      lat_check_out,
-      long_check_out,
-      battery_status_at_checkout,
-    };
-
-    if (req.files && req.files.checkout_img) {
-      updateData.checkout_img = req.files.checkout_img[0].path;
-    } else {
-      updateData.checkout_img = null;
+    if (!company_id || !emp_id) {
+      return res.status(400).json({
+        status: false,
+        message: !company_id
+          ? "Company ID is required"
+          : "Employee ID is required",
+      });
     }
 
     const date = getCurrentDate();
     const checkOutTime = getCurrentTime();
+    const updateData = {
+      lat_check_out,
+      long_check_out,
+      battery_status_at_checkout,
+      check_out_time: checkOutTime,
+      checkin_status: "Check-out",
+      updated_at: getCurrentDateTime(),
+      checkout_img: req.files?.checkout_img
+        ? req.files.checkout_img[0].path
+        : null,
+    };
 
+    // Fetch the latest check-in data
     const checkInData = await sqlModel.select(
       "check_in",
       ["*"],
@@ -468,144 +653,96 @@ exports.checkOut = async (req, res, next) => {
       "ORDER BY created_at DESC"
     );
 
-    if (checkInData.length > 0) {
-      const lastCheckIn = checkInData[0];
-
-      if (
-        lastCheckIn.checkin_status === "Check-in" &&
-        !lastCheckIn.check_out_time
-      ) {
-        const durationInSeconds = calculateDurationInSeconds(
-          lastCheckIn.check_in_time,
-          checkOutTime
-        );
-
-        const formattedDuration = formatDuration(durationInSeconds);
-
-        updateData.check_out_time = checkOutTime;
-        updateData.checkin_status = "Check-out";
-        updateData.updated_at = getCurrentDateTime();
-        updateData.duration = formattedDuration;
-
-        const updateResult = await sqlModel.update("check_in", updateData, {
-          id: lastCheckIn.id,
-        });
-
-        let totalDurationInSeconds = 0;
-
-        for (const checkIn of checkInData) {
-          let checkOut = checkIn.check_out_time;
-          if (!checkOut) {
-            checkOut = checkOutTime;
-          }
-          const durationInSeconds = calculateDurationInSeconds(
-            checkIn.check_in_time,
-            checkOut
-          );
-          totalDurationInSeconds += durationInSeconds;
-        }
-
-        const totalformattedDuration = formatDuration(totalDurationInSeconds);
-
-        //   let query =
-        //   "SELECT * FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
-
-        // for (const key in req.query) {
-        //   if (req.query.hasOwnProperty(key)) {
-        //     query += ` AND ${key} = '${req.query[key]}'`;
-        //   }
-        // }
-
-        // const data = await sqlModel.customQuery(query);
-
-        // if (data.error) {
-        //   return res.status(500).send(data);
-        // }
-
-        // if (data.length === 0) {
-        //   return res.status(200).send({ status: false, message: "No data found" });
-        // }
-
-        const trackingData = await sqlModel.select(
-          "emp_tracking",
-          ["latitude", "longitude"],
-          { emp_id, company_id, date },
-          "ORDER BY created_at ASC"
-        );
-
-        let totalDistance = 0;
-        // for (let i = 0; i < trackingData.length - 1; i++) {
-        //   const lat1 = trackingData[i].lat;
-        //   const lon1 = trackingData[i].lon;
-        //   const lat2 = trackingData[i + 1].lat;
-        //   const lon2 = trackingData[i + 1].lon;
-
-        //   totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
-        // }
-
-        for (let i = 0; i < trackingData.length - 1; i++) {
-          const distance = haversineDistance(
-            trackingData[i],
-            trackingData[i + 1]
-          );
-          totalDistance += distance;
-        }
-
-        console.log(`Total distance: ${totalDistance} km`);
-
-        const existingAnalytics = await sqlModel.select(
-          "emp_analytics",
-          ["*"],
-          { emp_id, company_id, date }
-        );
-
-        if (existingAnalytics.length > 0) {
-          await sqlModel.update(
-            "emp_analytics",
-            {
-              total_duration: totalformattedDuration,
-              total_distance: totalDistance,
-              updated_at: getCurrentDateTime(),
-            },
-            { emp_id, company_id, date }
-          );
-        } else {
-          await sqlModel.insert("emp_analytics", {
-            emp_id,
-            company_id,
-            date,
-            total_duration: totalformattedDuration,
-            total_distance: totalDistance,
-            created_at: getCurrentDateTime(),
-          });
-        }
-
-        return res.status(200).send({
-          status: true,
-          message: "Check-out successful",
-          data: {
-            latestCheckOutTime: checkOutTime,
-            totalDuration: totalformattedDuration,
-          },
-        });
-      } else {
-        return res.status(400).send({
-          status: false,
-          message:
-            "Cannot check out: No valid check-in record found or already checked out",
-        });
-      }
-    } else {
-      return res.status(400).send({
+    if (
+      checkInData.length === 0 ||
+      checkInData[0].checkin_status !== "Check-in" ||
+      checkInData[0].check_out_time
+    ) {
+      return res.status(400).json({
         status: false,
-        message: "No check-in record found for today",
+        message:
+          "Cannot check out: No valid check-in record found or already checked out",
       });
     }
+
+    const lastCheckIn = checkInData[0];
+    const durationInSeconds = calculateDurationInSeconds(
+      lastCheckIn.check_in_time,
+      checkOutTime
+    );
+    updateData.duration = formatDuration(durationInSeconds);
+
+    // Update check-in record with check-out data
+    await sqlModel.update("check_in", updateData, { id: lastCheckIn.id });
+
+    // Calculate total duration and distance
+    let totalDurationInSeconds = 0;
+    let totalDistance = 0;
+
+    const trackingData = await sqlModel.select(
+      "emp_tracking",
+      ["latitude", "longitude"],
+      { emp_id, company_id, date },
+      "ORDER BY created_at ASC"
+    );
+
+    for (let i = 0; i < trackingData.length - 1; i++) {
+      const distance = haversineDistance(trackingData[i], trackingData[i + 1]);
+      totalDistance += distance;
+    }
+
+    for (const checkIn of checkInData) {
+      const checkOut = checkIn.check_out_time || checkOutTime;
+      const duration = calculateDurationInSeconds(
+        checkIn.check_in_time,
+        checkOut
+      );
+      totalDurationInSeconds += duration;
+    }
+
+    const totalformattedDuration = formatDuration(totalDurationInSeconds);
+
+    // Insert or update analytics data
+    const existingAnalytics = await sqlModel.select("emp_analytics", ["*"], {
+      emp_id,
+      company_id,
+      date,
+    });
+    const analyticsData = {
+      total_duration: totalformattedDuration,
+      total_distance: totalDistance,
+      updated_at: getCurrentDateTime(),
+    };
+
+    if (existingAnalytics.length > 0) {
+      await sqlModel.update("emp_analytics", analyticsData, {
+        emp_id,
+        company_id,
+        date,
+      });
+    } else {
+      await sqlModel.insert("emp_analytics", {
+        ...analyticsData,
+        emp_id,
+        company_id,
+        date,
+        created_at: getCurrentDateTime(),
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Check-out successful",
+      data: {
+        latestCheckOutTime: checkOutTime,
+        totalDuration: totalformattedDuration,
+        totalDistance: totalDistance,
+      },
+    });
   } catch (error) {
     console.error("Error during check-out:", error);
-    return res.status(500).send({
+    return res.status(500).json({
       status: false,
-      totalDistance: totalDistance,
       message: "An error occurred during check-out",
       error: error.message,
     });
