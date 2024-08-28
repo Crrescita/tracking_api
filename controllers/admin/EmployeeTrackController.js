@@ -357,11 +357,11 @@ exports.getAttendence = async (req, res, next) => {
           latestCheckOutTime: checkOutTime || null,
           totalDuration: analyticsMap[item.id]?.total_duration || "0h 0m 0s",
           totalDistance: analyticsMap[item.id]?.total_distance || 0,
-          checkin_statusv2: analyticsMap[item.id]?.checkin_status || 0,
+          checkin_statusv2: analyticsMap[item.id]?.checkin_status || "Absent",
           checkin_status: checkInTime ? checkin_status : "Absent",
           attendance_status: checkInTime ? "Present" : "Absent",
           timeDifference: formatDuration(timeDifferenceSeconds),
-          timeDifferencev2: analyticsMap[item.id]?.timeDifferencev2 || 0,
+          timeDifferencev2: analyticsMap[item.id]?.timeDifferencev2 || "-",
         });
       }
       return acc;
