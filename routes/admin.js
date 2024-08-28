@@ -10,45 +10,45 @@ const EmployeeTrackController = require("../controllers/admin/EmployeeTrackContr
 const TeamController = require("../controllers/admin/TeamController");
 
 // for testing it is comment
-const verifyToken = async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const userType = req.headers["usertype"];
+// const verifyToken = async (req, res, next) => {
+//   const authHeader = req.headers["authorization"];
+//   const userType = req.headers["usertype"];
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      status: false,
-      message: "Unauthorized: Token not provided",
-    });
-  }
+//   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+//     return res.status(401).json({
+//       status: false,
+//       message: "Unauthorized: Token not provided",
+//     });
+//   }
 
-  const token = authHeader.split(" ")[1];
+//   const token = authHeader.split(" ")[1];
 
-  try {
-    const authuserTable = userType === "company" ? "company" : "users";
+//   try {
+//     const authuserTable = userType === "company" ? "company" : "users";
 
-    const [user] = await sqlModel.select(
-      authuserTable,
-      {},
-      { api_token: token }
-    );
+//     const [user] = await sqlModel.select(
+//       authuserTable,
+//       {},
+//       { api_token: token }
+//     );
 
-    if (!user) {
-      return res.status(403).json({
-        status: false,
-        message: "Forbidden: Invalid or expired token",
-      });
-    }
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("Error querying database:", error);
-    return res.status(500).json({
-      status: false,
-      message: "Internal Server Error",
-      error: error.message,
-    });
-  }
-};
+//     if (!user) {
+//       return res.status(403).json({
+//         status: false,
+//         message: "Forbidden: Invalid or expired token",
+//       });
+//     }
+//     req.user = user;
+//     next();
+//   } catch (error) {
+//     console.error("Error querying database:", error);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Internal Server Error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 //login & regiseter
 router.post("/login", UserController.login);
@@ -60,7 +60,7 @@ router.post("/update_password", UserController.update_password);
 router.post("/forgetPass", UserController.forgetPass);
 router.post("/resetPass", UserController.resetPass);
 
-router.use(verifyToken);
+// router.use(verifyToken);
 
 router
   .route("/company/:id?")
