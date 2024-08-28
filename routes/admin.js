@@ -141,6 +141,11 @@ router.get("/getEmpLiveLocation", EmployeeTrackController.getEmpLiveLocation);
 // get employees attendence
 router.get("/getAttendence", EmployeeTrackController.getAttendence);
 
+router.get(
+  "/getEmployeeAttendance",
+  EmployeeTrackController.getEmployeeAttendance
+);
+
 // department
 router
   .route("/department/:id?")

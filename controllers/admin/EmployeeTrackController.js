@@ -420,3 +420,123 @@ exports.getAttendence = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
+
+exports.getEmployeeAttendance = async (req, res, next) => {
+  try {
+    const company_id = req.query.company_id;
+
+    if (!company_id) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Company ID is required" });
+    }
+
+    const employees = await sqlModel.select(
+      "employees",
+      [
+        "id",
+        "company_id",
+        "name",
+        "mobile",
+        "email",
+        "designation",
+        "employee_id",
+        "image",
+      ],
+      { company_id: company_id }
+    );
+
+    if (!employees.length) {
+      return res.status(404).send({
+        status: false,
+        message: "No employees found for the given company ID",
+      });
+    }
+
+    const dateParam = req.query.date;
+    const targetDate = dateParam ? new Date(dateParam) : new Date();
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth() + 1;
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const allDays = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = String(i + 1).padStart(2, "0");
+      return `${year}-${String(month).padStart(2, "0")}-${day}`;
+    });
+
+    const employeeAttendanceData = [];
+
+    for (const employee of employees) {
+      const { id: emp_id } = employee;
+
+      // Query to get last check_in_time and check_out_time for each date
+      const query = `
+        SELECT 
+          c.date,
+          MIN(c.check_in_time) AS last_check_in_time,
+          MIN(c.check_out_time) AS last_check_out_time,
+          ea.checkin_status,
+          ea.time_difference AS timeDifference,
+          ea.total_duration AS totalDuration
+        FROM check_in c
+        LEFT JOIN emp_analytics ea
+        ON c.emp_id = ea.emp_id AND c.company_id = ea.company_id AND c.date = ea.date
+        WHERE c.emp_id = ? AND c.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+        GROUP BY c.date, ea.checkin_status, ea.time_difference, ea.total_duration
+        ORDER BY c.date
+      `;
+
+      const values = [emp_id, company_id, month, year];
+      const data = await sqlModel.customQuery(query, values);
+
+      const groupedData = allDays.reduce((acc, date) => {
+        acc[date] = {
+          date,
+          checkin_status: "Absent",
+          attendance_status: "Absent",
+          timeDifference: "00:00:00",
+          totalDuration: "00:00:00",
+          last_check_in_time: "00:00:00",
+          last_check_out_time: "00:00:00",
+        };
+        return acc;
+      }, {});
+
+      data.forEach((item) => {
+        if (!groupedData[item.date]) return;
+
+        groupedData[item.date].checkin_status = item.checkin_status || "-";
+        groupedData[item.date].attendance_status = "Present";
+        groupedData[item.date].timeDifference =
+          item.timeDifference || "00:00:00";
+        groupedData[item.date].totalDuration = item.totalDuration || "00:00:00";
+        groupedData[item.date].last_check_in_time =
+          item.last_check_in_time || "00:00:00";
+        groupedData[item.date].last_check_out_time =
+          item.last_check_out_time || "00:00:00";
+      });
+
+      const checkInDates = Object.values(groupedData);
+
+      const employeeData = {
+        id: employee.id,
+        name: employee.name,
+        mobile: employee.mobile,
+        email: employee.email,
+        designation: employee.designation,
+        employee_id: employee.employee_id,
+        image: employee.image,
+        attendance: checkInDates,
+      };
+
+      employeeAttendanceData.push(employeeData);
+    }
+
+    res.status(200).send({
+      status: true,
+      data: employeeAttendanceData,
+    });
+  } catch (error) {
+    res.status(500).send({ status: false, error: error.message });
+  }
+};
