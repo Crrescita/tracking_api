@@ -9,6 +9,7 @@ const CheckInController = require("../controllers/admin/CheckInController");
 const EmployeeTrackController = require("../controllers/admin/EmployeeTrackController");
 const TeamController = require("../controllers/admin/TeamController");
 
+// for testing it is comment
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const userType = req.headers["usertype"];
@@ -20,7 +21,7 @@ const verifyToken = async (req, res, next) => {
     });
   }
 
-  const token = authHeader.split(" ")[1]; // Extract token after "Bearer "
+  const token = authHeader.split(" ")[1];
 
   try {
     const authuserTable = userType === "company" ? "company" : "users";
@@ -37,8 +38,6 @@ const verifyToken = async (req, res, next) => {
         message: "Forbidden: Invalid or expired token",
       });
     }
-
-    // Optionally attach the user to the request object for further use
     req.user = user;
     next();
   } catch (error) {
@@ -50,32 +49,6 @@ const verifyToken = async (req, res, next) => {
     });
   }
 };
-
-// const verifyToken = async (req, res, next) => {
-//   const authHeader = req.headers["authorization"];
-//   if (authHeader && authHeader.startsWith("Bearer ")) {
-//     const token = authHeader.split(" ")[1]; // Extract token after "Bearer "
-//     try {
-//       const user = await sqlModel.select("users", {}, { api_token: token });
-//       if (user.length > 0) {
-//         next();
-//       } else {
-//         return res.status(403).send({
-//           status: false,
-//           error: "",
-//           message: "Forbidden: Token expired",
-//         });
-//       }
-//     } catch (error) {
-//       console.error("Error querying database:", error);
-//       return res.status(500).send({ status: false, error: error });
-//     }
-//   } else {
-//     return res
-//       .status(401)
-//       .json({ message: "Unauthorized: Token not provided" });
-//   }
-// };
 
 //login & regiseter
 router.post("/login", UserController.login);
