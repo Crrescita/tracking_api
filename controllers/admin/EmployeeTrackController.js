@@ -474,7 +474,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
         SELECT 
           c.date,
           MIN(c.check_in_time) AS last_check_in_time,
-          MIN(c.check_out_time) AS last_check_out_time,
+          MAX(c.check_out_time) AS last_check_out_time,
           ea.checkin_status,
           ea.time_difference AS timeDifference,
           ea.total_duration AS totalDuration
@@ -535,6 +535,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     res.status(200).send({
       status: true,
       data: employeeAttendanceData,
+      daysInMonth: daysInMonth,
     });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
