@@ -464,6 +464,22 @@ exports.getEmployeeAttendance = async (req, res, next) => {
       return `${year}-${String(month).padStart(2, "0")}-${day}`;
     });
 
+    // const today = new Date();
+    // console.log(today);
+    // const year = today.getFullYear(); // Get the current year
+    // const month = today.getMonth() + 1;
+    // console.log(month);
+    const dateDayInMonth = Array.from({ length: daysInMonth }, (_, i) => {
+      const date = new Date(year, month - 1, i + 1);
+      const dayOfWeek = date.toLocaleString("en-US", {
+        weekday: "short",
+      });
+      return {
+        date: String(i + 1).padStart(2, "0"),
+        day: dayOfWeek,
+      };
+    });
+
     const employeeAttendanceData = [];
 
     for (const employee of employees) {
@@ -535,7 +551,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     res.status(200).send({
       status: true,
       data: employeeAttendanceData,
-      daysInMonth: daysInMonth,
+      daysInMonth: dateDayInMonth,
     });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
