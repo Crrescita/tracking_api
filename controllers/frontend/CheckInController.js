@@ -105,9 +105,9 @@ const haversineDistance = (coords1, coords2) => {
   const distanceInKm = R * c;
 
   // Convert distance to meters
-  const distanceInMeters = distanceInKm * 1000;
+  // const distanceInMeters = distanceInKm * 1000;
 
-  return distanceInMeters;
+  return distanceInKm;
 };
 
 exports.getCheckIn = async (req, res, next) => {
