@@ -280,7 +280,6 @@ exports.getAttendence = async (req, res, next) => {
     const endDateTime = new Date(`1970-01-01T${check_in_time_end}Z`);
 
     const analyticsMap = analyticsData.reduce((acc, item) => {
-      console.log(item.checkin_status);
       acc[item.emp_id] = {
         total_duration: item.total_duration,
         total_distance: item.total_distance,
