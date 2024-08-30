@@ -59,7 +59,7 @@ const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
   return durationInSeconds < 0 ? 0 : durationInSeconds;
 };
 
-/const haversineDistance = (coords1, coords2) => {
+const haversineDistance = (coords1, coords2) => {
   const toRad = (value) => (value * Math.PI) / 180;
 
   const lat1 = parseFloat(coords1.latitude);
@@ -450,4 +450,3 @@ exports.checkOut = async (req, res, next) => {
     });
   }
 };
-
