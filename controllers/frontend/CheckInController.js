@@ -374,11 +374,11 @@ exports.checkOut = async (req, res, next) => {
     //   totalDistance += distance;
     // }
 
-    const trackingData = await sqlModel.select(
-      "emp_tracking",
-      ["latitude", "longitude"],
-      { emp_id, company_id, date }
-    );
+    const trackingData = await sqlModel.select("emp_tracking", ["*"], {
+      emp_id,
+      company_id,
+      date,
+    });
 
     // Filter out coordinates with 0.0 values for consistency
     const filteredTrackingData = trackingData.filter(
