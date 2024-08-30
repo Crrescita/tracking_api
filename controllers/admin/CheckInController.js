@@ -342,8 +342,10 @@ exports.getCheckInAllDate = async (req, res, next) => {
       });
     }
 
+    // Define the base URL for image concatenation
     const baseUrl = process.env.BASE_URL || "";
 
+    // Query to fetch employee details and their check-in data
     const mainQuery = `
       SELECT 
         e.id,
@@ -368,14 +370,17 @@ exports.getCheckInAllDate = async (req, res, next) => {
     const mainValues = [baseUrl, emp_id, company_id];
     const mainData = await sqlModel.customQuery(mainQuery, mainValues);
 
+    // Handle query errors
     if (mainData.error) {
       return res.status(500).send(mainData);
     }
 
+    // Handle case when no data is found
     if (mainData.length === 0) {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
+    // Query to fetch all analytics data for the employee and company
     const analyticsQuery = `
       SELECT
         emp_id,
@@ -395,10 +400,12 @@ exports.getCheckInAllDate = async (req, res, next) => {
       analyticsValues
     );
 
+    // Handle analytics query errors
     if (analyticsData.error) {
       return res.status(500).send(analyticsData);
     }
 
+    // Create a map of date to analytics data for quick lookup
     const analyticsMap = analyticsData.reduce((acc, item) => {
       acc[item.date] = {
         checkin_status: item.checkin_status,
@@ -409,23 +416,40 @@ exports.getCheckInAllDate = async (req, res, next) => {
       return acc;
     }, {});
 
-    // Group check-in data by date
+    // Group check-in data by date and calculate earliest and latest times
     const groupedData = mainData.reduce((acc, item) => {
       if (!acc[item.date]) {
         acc[item.date] = {
           date: item.date,
           checkIns: [],
+          earliestCheckInTime: item.check_in_time,
+          latestCheckOutTime: item.check_out_time || null,
         };
-      }
+      } else {
+        acc[item.date].checkIns.push({
+          check_in_time: item.check_in_time,
+          check_out_time: item.check_out_time || null,
+        });
 
-      acc[item.date].checkIns.push({
-        check_in_time: item.check_in_time,
-        check_out_time: item.check_out_time || null,
-      });
+        // Update earliestCheckInTime
+        if (item.check_in_time < acc[item.date].earliestCheckInTime) {
+          acc[item.date].earliestCheckInTime = item.check_in_time;
+        }
+
+        // Update latestCheckOutTime
+        if (
+          item.check_out_time &&
+          (!acc[item.date].latestCheckOutTime ||
+            item.check_out_time > acc[item.date].latestCheckOutTime)
+        ) {
+          acc[item.date].latestCheckOutTime = item.check_out_time;
+        }
+      }
 
       return acc;
     }, {});
 
+    // Combine check-in data with analytics data
     const checkInDates = Object.values(groupedData).map((dateData) => {
       const analytics = analyticsMap[dateData.date] || {
         checkin_status: "Absent",
@@ -433,15 +457,22 @@ exports.getCheckInAllDate = async (req, res, next) => {
         total_duration: "0h 0m 0s",
         total_distance: 0,
       };
+
+      // Determine attendance_status
+      const attendance_status =
+        dateData.checkIns.length > 0 ? "Present" : "Absent";
+
       return {
         ...dateData,
         checkin_status: analytics.checkin_status,
         timeDifferencev2: analytics.time_difference,
         total_duration: analytics.total_duration,
         total_distance: analytics.total_distance,
+        attendance_status,
       };
     });
 
+    // Construct the final employee data object
     const employeeData = {
       id: mainData[0].id,
       name: mainData[0].name,
@@ -453,11 +484,13 @@ exports.getCheckInAllDate = async (req, res, next) => {
       checkInsByDate: checkInDates,
     };
 
+    // Send the response
     res.status(200).send({
       status: true,
       data: employeeData,
     });
   } catch (error) {
+    // Handle unexpected errors
     res.status(500).send({ status: false, error: error.message });
   }
 };
