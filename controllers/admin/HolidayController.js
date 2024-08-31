@@ -79,16 +79,11 @@ exports.getHoliday = async (req, res, next) => {
       }
     }
 
-    const orderBy = {
-      field: "date",
-      direction: "ASC",
-    };
-
     const data = await sqlModel.select(
       "company_holidays",
       {},
       whereClause,
-      orderBy
+      "ORDER BY date ASC"
     );
 
     if (data.error) {
