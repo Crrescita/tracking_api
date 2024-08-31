@@ -15,12 +15,12 @@ exports.createHoliday = async (req, res, next) => {
   try {
     const id = req.params.id || "";
     const { name, date, status } = req.body;
-    const insert = { name, date, status };
 
     let slug = "";
     if (name) {
       slug = createSlug(name);
     }
+    const insert = { name, date, slug, status };
 
     if (id) {
       const holidayRecord = await sqlModel.select(
