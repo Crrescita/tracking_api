@@ -164,14 +164,14 @@ router.post(
 
 router
   .route("/leave/:id?")
-  .get(LeaveManagmentController.getHoliday)
-  .post(LeaveManagmentController.createHoliday)
-  .put(LeaveManagmentController.createHoliday)
-  .delete(LeaveManagmentController.deleteHoliday);
+  .get(LeaveManagmentController.getLeaveType)
+  .post(LeaveManagmentController.createLeaveType)
+  .put(LeaveManagmentController.createLeaveType)
+  .delete(LeaveManagmentController.deleteLeaveType);
 
 router.post(
-  "/holidays-delete-multiple",
-  LeaveManagmentController.deleteMultipleHolidays
+  "/leave-delete-multiple",
+  LeaveManagmentController.deleteMultipleLeaveType
 );
 
 /* GET users listing. */
