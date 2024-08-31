@@ -9,6 +9,7 @@ const CheckInController = require("../controllers/admin/CheckInController");
 const EmployeeTrackController = require("../controllers/admin/EmployeeTrackController");
 const TeamController = require("../controllers/admin/TeamController");
 const HolidayController = require("../controllers/admin/HolidayController");
+const LeaveManagmentController = require("../controllers/admin/LeaveManagementController");
 
 // for testing it is comment
 // const verifyToken = async (req, res, next) => {
@@ -157,6 +158,20 @@ router
 router.post(
   "/holidays-delete-multiple",
   HolidayController.deleteMultipleHolidays
+);
+
+// leave
+
+router
+  .route("/leave/:id?")
+  .get(LeaveManagmentController.getHoliday)
+  .post(LeaveManagmentController.createHoliday)
+  .put(LeaveManagmentController.createHoliday)
+  .delete(LeaveManagmentController.deleteHoliday);
+
+router.post(
+  "/holidays-delete-multiple",
+  LeaveManagmentController.deleteMultipleHolidays
 );
 
 /* GET users listing. */
