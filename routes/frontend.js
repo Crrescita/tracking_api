@@ -7,6 +7,7 @@ const EmployeeTrackController = require("../controllers/frontend/EmployeeTrackCo
 const UserController = require("../controllers/frontend/UserController");
 const EmployeeController = require("../controllers/frontend/EmployeeController");
 const PageController = require("../controllers/frontend/PagesController");
+const LeaveController = require("../controllers/frontend/LeaveController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -100,6 +101,16 @@ router.get(
 
 //get  employee company data
 router.get("/getEmployeeCompany", EmployeeController.getEmployeeCompany);
+
+//leave api
+router
+  .route("/leave/:id?")
+  .post(LeaveController.createLeaveRequest)
+  .put(LeaveController.createLeaveRequest);
+// .delete(LeaveController.deleteDesignation);
+
+// router.post("/leave", LeaveController.setLeaveRequest);
+// router.put("/leave/:id", LeaveController.setLeaveRequest);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {

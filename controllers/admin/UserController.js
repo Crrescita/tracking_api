@@ -5,55 +5,6 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const baseDir = path.join(__dirname, "uploads");
 const saltRounds = 10;
-//const validation = require("../../middelwere/admin/homepage_validation")
-// exports.login = async (req, res, next) => {
-//   try {
-//     var email = req.body.email;
-//     var password = req.body.password;
-//     var user_type = req.body.user_type;
-//     var table = administrator ? "users" : "company";
-
-//     const [data] = await sqlModel.select(table, {}, { email: email });
-
-//     if (data) {
-//       const idString_pre = String(password);
-//       const buffer_pre = Buffer.from(idString_pre);
-//       const pass = buffer_pre.toString("base64");
-
-//       if (pass == data.password) {
-//         let token = crypto.randomBytes(20).toString("hex");
-//         let insert = {
-//           api_token: token,
-//         };
-//         await sqlModel.update(table, insert, { id: data.id });
-//         const [result] = await sqlModel.select(table, {}, { email: email });
-
-//         resMsg = {
-//           status: true,
-//           data: result,
-//           message: "login successfully",
-//           statusCode: 3,
-//         };
-//       } else {
-//         resMsg = {
-//           status: false,
-//           message: "Email and password does not match",
-//           statusCode: 3,
-//         };
-//       }
-//       return res.status(200).send(resMsg);
-//     } else {
-//       resMsg = {
-//         status: false,
-//         message: "Email Not Exist",
-//         statusCode: 4,
-//       };
-//       res.status(200).send(resMsg);
-//     }
-//   } catch (error) {
-//     res.status(200).send({ status: false, error: error.message });
-//   }
-// };
 
 exports.login = async (req, res, next) => {
   try {

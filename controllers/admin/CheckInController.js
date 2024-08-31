@@ -452,7 +452,7 @@ exports.getCheckInAllDate = async (req, res, next) => {
     // Combine check-in data with analytics data
     const checkInDates = Object.values(groupedData).map((dateData) => {
       const analytics = analyticsMap[dateData.date] || {
-        checkin_status: "Absent",
+        checkin_status: "-",
         time_difference: "0h 0m 0s",
         total_duration: "0h 0m 0s",
         total_distance: 0,

@@ -78,7 +78,7 @@ exports.updateEmployee = async (req, res, next) => {
       {},
       { api_token: token }
     );
-    console.log(employee);
+
     if (!employee) {
       return res
         .status(404)
@@ -89,7 +89,7 @@ exports.updateEmployee = async (req, res, next) => {
     const updateData = { ...req.body };
     const companyId = employee.company_id;
     let plainPassword = updateData.password;
-    console.log(updateData);
+
     // Fetch the company record to validate the company ID
     const [company] = await sqlModel.select("company", {}, { id: companyId });
 
