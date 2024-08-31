@@ -79,7 +79,17 @@ exports.getHoliday = async (req, res, next) => {
       }
     }
 
-    const data = await sqlModel.select("company_holidays", {}, whereClause);
+    const orderBy = {
+      field: "date",
+      direction: "ASC",
+    };
+
+    const data = await sqlModel.select(
+      "company_holidays",
+      {},
+      whereClause,
+      orderBy
+    );
 
     if (data.error) {
       return res.status(500).send(data);
