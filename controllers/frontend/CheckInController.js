@@ -227,7 +227,7 @@ exports.checkIn = async (req, res, next) => {
     }
 
     // Check if analytics data for the employee on the same date already exists
-    const existingAnalytics = await sqlModel.select("emp_analytics", ["id"], {
+    const existingAnalytics = await sqlModel.select("emp_attendance", ["id"], {
       emp_id,
       company_id,
       date,
@@ -243,7 +243,7 @@ exports.checkIn = async (req, res, next) => {
       };
 
       // Insert analytics data
-      await sqlModel.insert("emp_analytics", empAnalyticsData);
+      await sqlModel.insert("emp_attendance", empAnalyticsData);
     }
 
     // Handle check-in image if provided
@@ -405,7 +405,7 @@ exports.checkOut = async (req, res, next) => {
     const totalformattedDuration = formatDuration(totalDurationInSeconds);
 
     // Insert or update analytics data
-    const existingAnalytics = await sqlModel.select("emp_analytics", ["*"], {
+    const existingAnalytics = await sqlModel.select("emp_attendance", ["*"], {
       emp_id,
       company_id,
       date,
@@ -417,13 +417,13 @@ exports.checkOut = async (req, res, next) => {
     };
 
     if (existingAnalytics.length > 0) {
-      await sqlModel.update("emp_analytics", analyticsData, {
+      await sqlModel.update("emp_attendance", analyticsData, {
         emp_id,
         company_id,
         date,
       });
     } else {
-      await sqlModel.insert("emp_analytics", {
+      await sqlModel.insert("emp_attendance", {
         ...analyticsData,
         emp_id,
         company_id,

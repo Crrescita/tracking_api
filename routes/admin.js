@@ -10,7 +10,7 @@ const EmployeeTrackController = require("../controllers/admin/EmployeeTrackContr
 const TeamController = require("../controllers/admin/TeamController");
 const HolidayController = require("../controllers/admin/HolidayController");
 const LeaveManagmentController = require("../controllers/admin/LeaveManagementController");
-
+const EmployeeAttendanceController = require("../controllers/admin/EmployeeAttendanceController");
 // for testing it is comment
 // const verifyToken = async (req, res, next) => {
 //   const authHeader = req.headers["authorization"];
@@ -104,21 +104,25 @@ router.get("/checkInDetailAllDate", CheckInController.getCheckInAllDate);
 router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
 router.get("/getCoordinatesv2", EmployeeTrackController.getCoordinatesv2);
 
+// attendance
 // get login employee details
 router.get(
   "/getEmpLoginDetail/:emp_id?",
-  EmployeeTrackController.getEmpLoginDetail
+  EmployeeAttendanceController.getEmpLoginDetail
 );
 
 // get employee live location
-router.get("/getEmpLiveLocation", EmployeeTrackController.getEmpLiveLocation);
+router.get(
+  "/getEmpLiveLocation",
+  EmployeeAttendanceController.getEmpLiveLocation
+);
 
 // get employees attendence
-router.get("/getAttendence", EmployeeTrackController.getAttendence);
+router.get("/getAttendence", EmployeeAttendanceController.getAttendance);
 
 router.get(
-  "/getEmployeeAttendance",
-  EmployeeTrackController.getEmployeeAttendance
+  "/getEmployeeMonthlyAttendance",
+  EmployeeAttendanceController.getEmployeeMonthlyAttendance
 );
 
 // department
@@ -172,6 +176,19 @@ router
 router.post(
   "/leave-delete-multiple",
   LeaveManagmentController.deleteMultipleLeaveType
+);
+
+// leave request
+router
+  .route("/leaveRequest/:id?")
+  .get(LeaveManagmentController.getLeaveRequest)
+  .post(LeaveManagmentController.createLeaveRequest)
+  .put(LeaveManagmentController.createLeaveRequest)
+  .delete(LeaveManagmentController.deleteLeaveType);
+
+router.put(
+  "/updateleaveRequestStatus/:id?",
+  LeaveManagmentController.updateLeaveRequestStatus
 );
 
 /* GET users listing. */
