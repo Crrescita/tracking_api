@@ -125,7 +125,7 @@ exports.getCheckIn = async (req, res, next) => {
       ["id", "company_id"],
       { api_token: token }
     );
-    console.log(employee);
+
     if (!employee) {
       return res
         .status(404)
@@ -141,20 +141,20 @@ exports.getCheckIn = async (req, res, next) => {
       });
     }
 
-    // Determine the date to use
-    const queryDate = req.query.date || new Date().toISOString().split("T")[0]; // Default to current date if no query param
+    const queryDate = req.query.date || new Date().toISOString().split("T")[0];
 
     const query = `
       SELECT 
         ea.date, 
         ea.total_duration,
-        MIN(c.check_in_time) AS last_check_in_time, 
-        MAX(c.check_out_time) AS last_check_out_time
+        MIN(c.check_in_time) AS earliestCheckInTime, 
+        MAX(c.check_out_time) AS latestCheckOutTime,
+        MAX(c.checkin_status) AS checkin_status
       FROM emp_attendance ea
       LEFT JOIN check_in c 
         ON ea.emp_id = c.emp_id 
         AND ea.company_id = c.company_id 
-        AND DATE(c.check_in_time) = ?
+        AND DATE(c.date) = ?
       WHERE ea.emp_id = ? 
         AND ea.company_id = ?
         AND ea.date = ?
@@ -172,19 +172,7 @@ exports.getCheckIn = async (req, res, next) => {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
-    const result = await Promise.all(
-      data.map(async (item) => {
-        item.checkin_img = item.checkin_img
-          ? `${process.env.BASE_URL}${item.checkin_img}`
-          : "";
-        item.checkout_img = item.checkout_img
-          ? `${process.env.BASE_URL}${item.checkout_img}`
-          : "";
-        return item;
-      })
-    );
-
-    res.status(200).send({ status: true, data: result });
+    res.status(200).send({ status: true, data: data });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
