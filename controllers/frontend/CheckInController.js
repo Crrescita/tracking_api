@@ -112,15 +112,57 @@ const haversineDistance = (coords1, coords2) => {
 
 exports.getCheckIn = async (req, res, next) => {
   try {
-    const whereClause = {};
+    const token = req.headers.authorization?.split(" ")[1];
 
-    for (const key in req.query) {
-      if (req.query.hasOwnProperty(key)) {
-        whereClause[key] = req.query[key];
-      }
+    if (!token) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Token is required" });
     }
 
-    const data = await sqlModel.select("check_in", {}, whereClause);
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
+    console.log(employee);
+    if (!employee) {
+      return res
+        .status(404)
+        .send({ status: false, message: "Employee not found" });
+    }
+
+    const { id: emp_id, company_id } = employee;
+
+    if (!emp_id || !company_id) {
+      return res.status(400).send({
+        status: false,
+        message: "Employee ID and company ID are required",
+      });
+    }
+
+    // Determine the date to use
+    const queryDate = req.query.date || new Date().toISOString().split("T")[0]; // Default to current date if no query param
+
+    const query = `
+      SELECT 
+        ea.date, 
+        ea.total_duration,
+        MIN(c.check_in_time) AS last_check_in_time, 
+        MAX(c.check_out_time) AS last_check_out_time
+      FROM emp_attendance ea
+      LEFT JOIN check_in c 
+        ON ea.emp_id = c.emp_id 
+        AND ea.company_id = c.company_id 
+        AND DATE(c.check_in_time) = ?
+      WHERE ea.emp_id = ? 
+        AND ea.company_id = ?
+        AND ea.date = ?
+      GROUP BY ea.date, ea.total_duration;
+    `;
+
+    const values = [queryDate, emp_id, company_id, queryDate];
+    const data = await sqlModel.customQuery(query, values);
 
     if (data.error) {
       return res.status(500).send(data);

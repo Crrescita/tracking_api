@@ -140,36 +140,6 @@ exports.deleteMultipleLeaveType = async (req, res, next) => {
 };
 
 // leave request
-// exports.getLeaveRequest = async (req, res, next) => {
-//   try {
-//     const { company_id } = req.query;
-
-//     if (!company_id) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Company ID are required",
-//       });
-//     }
-
-//     const query = `SELECT  lr.leave_type, lr.from_date , lr.to_date, lr.status,lr.reason,lr.created_at, lr.id , e.name, e.designation, CASE WHEN e.image IS NOT NULL THEN CONCAT(?,e.image) END AS image
-//    FROM leave_request lr LEFT JOIN employees e ON lr.emp_id = e.id AND lr.company_id = e.company_id WHERE lr.company_id = ? AND lr.status = 'Pending' `;
-
-//     const values = [process.env.BASE_URL, company_id];
-
-//     const data = await sqlModel.customQuery(query, values);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length == 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-//     res.status(200).send({ status: true, data: data });
-//   } catch (error) {
-//     return res.status(500).send({ status: false, error: error.message });
-//   }
-// };
 exports.getLeaveRequest = async (req, res, next) => {
   try {
     const { company_id } = req.query;
@@ -351,6 +321,88 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
     }
 
     return res.status(200).send({ status: true, message: "Data Updated" });
+  } catch (error) {
+    return res.status(500).send({ status: false, error: error.message });
+  }
+};
+
+// leave setting
+exports.createLeaveSetting = async (req, res, next) => {
+  try {
+    const {
+      company_id,
+      totalannual_leavedays,
+      carry_forword_status,
+      carry_forword_leaves,
+    } = req.body;
+
+    const insert = {
+      company_id,
+      totalannual_leavedays,
+      carry_forword_status,
+      carry_forword_leaves,
+    };
+
+    insert.remaining_leavedays = totalannual_leavedays;
+
+    const existingRecord = await sqlModel.select("leave_settings", ["id"], {
+      company_id,
+    });
+
+    if (existingRecord.error) {
+      return res
+        .status(500)
+        .send({ status: false, message: "Error checking for existing record" });
+    }
+
+    if (existingRecord.length > 0) {
+      const leaveTypeId = existingRecord[0].id;
+      insert.updated_at = getCurrentDateTime();
+
+      const updateData = await sqlModel.update("leave_settings", insert, {
+        id: leaveTypeId,
+      });
+
+      if (updateData.error) {
+        return res.status(500).send(updateData);
+      } else {
+        return res.status(200).send({ status: true, message: "Data Updated" });
+      }
+    } else {
+      insert.created_at = getCurrentDateTime();
+
+      const saveData = await sqlModel.insert("leave_settings", insert);
+
+      if (saveData.error) {
+        return res.status(500).send(saveData);
+      } else {
+        return res.status(200).send({ status: true, message: "Data Saved" });
+      }
+    }
+  } catch (err) {
+    return res.status(500).send({ status: false, error: error.message });
+  }
+};
+
+exports.getLeaveSetting = async (req, res, next) => {
+  try {
+    const whereClause = {};
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        whereClause[key] = req.query[key];
+      }
+    }
+
+    const data = await sqlModel.select("leave_settings", {}, whereClause);
+
+    if (data.error) {
+      return res.status(500).send(data);
+    }
+
+    if (data.length === 0) {
+      return res.status(200).send({ status: false, message: "No data found" });
+    }
+    res.status(200).send({ status: true, data: [data] });
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
   }

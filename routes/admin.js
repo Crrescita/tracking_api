@@ -167,14 +167,14 @@ router.post(
 // leave
 
 router
-  .route("/leave/:id?")
+  .route("/leaveType/:id?")
   .get(LeaveManagmentController.getLeaveType)
   .post(LeaveManagmentController.createLeaveType)
   .put(LeaveManagmentController.createLeaveType)
   .delete(LeaveManagmentController.deleteLeaveType);
 
 router.post(
-  "/leave-delete-multiple",
+  "/leaveType-delete-multiple",
   LeaveManagmentController.deleteMultipleLeaveType
 );
 
@@ -190,6 +190,12 @@ router.put(
   "/updateleaveRequestStatus/:id?",
   LeaveManagmentController.updateLeaveRequestStatus
 );
+
+// leave setting
+router
+  .route("/leaveSetting/:id?")
+  .get(LeaveManagmentController.getLeaveSetting)
+  .post(LeaveManagmentController.createLeaveSetting);
 
 /* GET users listing. */
 router.get("/", function (req, res, next) {
