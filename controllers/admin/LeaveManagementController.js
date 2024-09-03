@@ -140,6 +140,36 @@ exports.deleteMultipleLeaveType = async (req, res, next) => {
 };
 
 // leave request
+// exports.getLeaveRequest = async (req, res, next) => {
+//   try {
+//     const { company_id } = req.query;
+
+//     if (!company_id) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Company ID are required",
+//       });
+//     }
+
+//     const query = `SELECT  lr.leave_type, lr.from_date , lr.to_date, lr.status,lr.reason,lr.created_at, lr.id , e.name, e.designation, CASE WHEN e.image IS NOT NULL THEN CONCAT(?,e.image) END AS image
+//    FROM leave_request lr LEFT JOIN employees e ON lr.emp_id = e.id AND lr.company_id = e.company_id WHERE lr.company_id = ? AND lr.status = 'Pending' `;
+
+//     const values = [process.env.BASE_URL, company_id];
+
+//     const data = await sqlModel.customQuery(query, values);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length == 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+//     res.status(200).send({ status: true, data: data });
+//   } catch (error) {
+//     return res.status(500).send({ status: false, error: error.message });
+//   }
+// };
 exports.getLeaveRequest = async (req, res, next) => {
   try {
     const { company_id } = req.query;
@@ -147,24 +177,54 @@ exports.getLeaveRequest = async (req, res, next) => {
     if (!company_id) {
       return res.status(400).send({
         status: false,
-        message: "Company ID are required",
+        message: "Company ID is required",
       });
     }
 
-    const query = `SELECT  lr.leave_type, lr.from_date , lr.to_date, lr.status,lr.reason,lr.created_at, lr.id , e.name, e.designation, CASE WHEN e.image IS NOT NULL THEN CONCAT(?,e.image) END AS image
-   FROM leave_request lr LEFT JOIN employees e ON lr.emp_id = e.id AND lr.company_id = e.company_id WHERE lr.company_id = ? AND lr.status = 'Pending' `;
+    const currentDate = new Date().toISOString().split("T")[0];
+
+    const updateExpiredQuery = `
+        UPDATE leave_request 
+        SET status = 'Expired' 
+        WHERE company_id = ? 
+        AND status = 'Pending' 
+        AND from_date <= ?
+      `;
+    await sqlModel.customQuery(updateExpiredQuery, [company_id, currentDate]);
+
+    const query = `
+        SELECT 
+          lr.leave_type, 
+          lr.from_date, 
+          lr.to_date, 
+          lr.status, 
+          lr.reason, 
+          lr.created_at, 
+          lr.id, 
+          e.name, 
+          e.designation, 
+          CASE 
+            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image) 
+          END AS image
+        FROM leave_request lr 
+        LEFT JOIN employees e 
+        ON lr.emp_id = e.id 
+        AND lr.company_id = e.company_id 
+        WHERE lr.company_id = ? 
+        AND lr.status = 'Pending'
+      `;
 
     const values = [process.env.BASE_URL, company_id];
-
     const data = await sqlModel.customQuery(query, values);
 
     if (data.error) {
       return res.status(500).send(data);
     }
 
-    if (data.length == 0) {
+    if (data.length === 0) {
       return res.status(200).send({ status: false, message: "No data found" });
     }
+
     res.status(200).send({ status: true, data: data });
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });

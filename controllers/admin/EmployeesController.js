@@ -113,7 +113,7 @@ exports.employeesInsert = async (req, res, next) => {
       const employeeRecord = await sqlModel.select(
         "employees",
         ["email", "password"],
-        { id }
+        { id, company_id: companyId }
       );
 
       if (employeeRecord.error || employeeRecord.length === 0) {
@@ -129,7 +129,7 @@ exports.employeesInsert = async (req, res, next) => {
         const existingemployeesWithEmail = await sqlModel.select(
           "employees",
           ["id"],
-          { email: req.body.email }
+          { email: req.body.email, company_id: companyId }
         );
         if (
           existingemployeesWithEmail.length > 0 &&
@@ -145,7 +145,7 @@ exports.employeesInsert = async (req, res, next) => {
         const existingemployeesWithId = await sqlModel.select(
           "employees",
           ["id"],
-          { employee_id: req.body.employee_id }
+          { employee_id: req.body.employee_id, company_id: companyId }
         );
         if (
           existingemployeesWithId.length > 0 &&
@@ -160,6 +160,7 @@ exports.employeesInsert = async (req, res, next) => {
       if (req.fileFullPath && req.fileFullPath.length > 0) {
         const employeesRecord = await sqlModel.select("employees", ["image"], {
           id,
+          company_id: companyId,
         });
 
         if (employeesRecord.error || employeesRecord.length === 0) {
@@ -207,7 +208,7 @@ exports.employeesInsert = async (req, res, next) => {
       const existingemployeesWithEmail = await sqlModel.select(
         "employees",
         ["id"],
-        { email: req.body.email }
+        { email: req.body.email, company_id: companyId }
       );
       if (existingemployeesWithEmail.length > 0) {
         return res
