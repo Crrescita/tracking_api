@@ -86,9 +86,8 @@ exports.getAttendance = async (req, res, next) => {
       e.name,
       e.mobile,
       e.email,
-      e.designation,
-
       d.name AS department,
+      de.name AS designation,
       e.employee_id,
       CASE
         WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
@@ -104,6 +103,7 @@ exports.getAttendance = async (req, res, next) => {
       c.duration
     FROM employees e
     LEFT JOIN department d ON e.department = d.id
+    LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
     WHERE e.company_id = ?
