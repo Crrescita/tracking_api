@@ -77,24 +77,24 @@ exports.getRecord = async (req, res, next) => {
     const response = [
       {
         title: "Hour Worked",
-        icon: process.env.BASE_URL, // Add icon URL or path if needed
-        hour_worked: data.total_duration || "00:00:00", // Default value if null
+        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/clock.png",
+        hour_worked: data.total_duration || "00:00:00",
       },
       {
         title: "Attendance",
-        icon: process.env.BASE_URL, // Add icon URL or path if needed
+        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/User.png",
         attendance_percentage:
-          ((data.total_checkins / 30) * 100).toFixed(2) + "%", // Assuming 30 days in a month
+          ((data.total_checkins / 30) * 100).toFixed(2) + "%",
       },
       {
         title: "Distance Covered",
-        icon: process.env.BASE_URL, // Add icon URL or path if needed
-        total_distance: data.total_distance || "0", // Default value if null
+        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/location.png",
+        total_distance: data.total_distance || "0",
       },
       {
         title: "Remaining Leaves",
-        icon: process.env.BASE_URL, // Add icon URL or path if needed
-        remaining_leave: data.remaining_leave_days || "0", // Default value if null
+        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/Date.png",
+        remaining_leave: data.remaining_leave_days || "0",
       },
     ];
 
