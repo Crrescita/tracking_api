@@ -8,6 +8,7 @@ const UserController = require("../controllers/frontend/UserController");
 const EmployeeController = require("../controllers/frontend/EmployeeController");
 const PageController = require("../controllers/frontend/PagesController");
 const LeaveController = require("../controllers/frontend/LeaveController");
+const MyRecordController = require("../controllers/frontend/MyRecordController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -111,6 +112,9 @@ router
 
 // router.post("/leave", LeaveController.setLeaveRequest);
 // router.put("/leave/:id", LeaveController.setLeaveRequest);
+
+// my record
+router.get("/myRecord", MyRecordController.getRecord);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
