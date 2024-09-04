@@ -1,4 +1,5 @@
 const sqlModel = require("../../config/db");
+const cron = require("node-cron");
 
 // const getCurrentDate = () => {
 //   return new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
@@ -143,23 +144,41 @@ exports.getCheckIn = async (req, res, next) => {
 
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
 
+    // const query = `
+    //   SELECT
+    //     ea.date,
+    //     ea.total_duration,
+    //     MIN(c.check_in_time) AS earliestCheckInTime,
+    //     MAX(c.check_out_time) AS latestCheckOutTime,
+    //     MAX(c.checkin_status) AS checkin_status
+    //   FROM emp_attendance ea
+    //   LEFT JOIN check_in c
+    //     ON ea.emp_id = c.emp_id
+    //     AND ea.company_id = c.company_id
+    //     AND DATE(c.date) = ?
+    //   WHERE ea.emp_id = ?
+    //     AND ea.company_id = ?
+    //     AND ea.date = ?
+    //   GROUP BY ea.date, ea.total_duration;
+    // `;
+
     const query = `
-      SELECT 
-        ea.date, 
-        ea.total_duration,
-        MIN(c.check_in_time) AS earliestCheckInTime, 
-        MAX(c.check_out_time) AS latestCheckOutTime,
-        MAX(c.checkin_status) AS checkin_status
-      FROM emp_attendance ea
-      LEFT JOIN check_in c 
-        ON ea.emp_id = c.emp_id 
-        AND ea.company_id = c.company_id 
-        AND DATE(c.date) = ?
-      WHERE ea.emp_id = ? 
-        AND ea.company_id = ?
-        AND ea.date = ?
-      GROUP BY ea.date, ea.total_duration;
-    `;
+  SELECT 
+    ea.date, 
+    IFNULL(ea.total_duration, '00:00:00') AS total_duration,
+    IFNULL(MIN(c.check_in_time), '00:00:00') AS earliestCheckInTime, 
+    IFNULL(MAX(c.check_out_time), '00:00:00') AS latestCheckOutTime,
+    MAX(c.checkin_status) AS checkin_status
+  FROM emp_attendance ea
+  LEFT JOIN check_in c 
+    ON ea.emp_id = c.emp_id 
+    AND ea.company_id = c.company_id 
+    AND DATE(c.date) = ?
+  WHERE ea.emp_id = ? 
+    AND ea.company_id = ?
+    AND ea.date = ?
+  GROUP BY ea.date, ea.total_duration;
+`;
 
     const values = [queryDate, emp_id, company_id, queryDate];
     const data = await sqlModel.customQuery(query, values);
@@ -480,3 +499,82 @@ exports.checkOut = async (req, res, next) => {
     });
   }
 };
+
+async function autoCheckOut(companyId) {
+  try {
+    console.log(`Running auto check-out for company ${companyId}`);
+    const currentTime = getCurrentTime();
+
+    // Fetch employees who are currently checked in for the specific company
+    const employees = await sqlModel.customQuery(
+      `SELECT c.id AS checkin_id, c.emp_id, c.company_id 
+       FROM check_in c 
+       WHERE c.company_id = ? AND c.checkin_status = 'Check-in' AND c.check_out_time IS NULL`,
+      [companyId]
+    );
+
+    for (const employee of employees) {
+      // Create a mock res object to handle the response
+      const res = {
+        status: (statusCode) => ({
+          json: (data) => {
+            // console.log(`Response status: ${statusCode}`, data);
+            return data;
+          },
+        }),
+      };
+
+      // Call the checkOut function with necessary data
+      const req = {
+        body: {
+          emp_id: employee.emp_id,
+          company_id: employee.company_id,
+          lat_check_out: null, // or provide default lat/long
+          long_check_out: null,
+          battery_status_at_checkout: null,
+        },
+      };
+
+      await exports.checkOut(req, res, null); // Pass the mock res object
+    }
+  } catch (error) {
+    console.error("Error during auto check-out:", error);
+  }
+}
+
+async function scheduleAutoCheckOuts() {
+  const companies = await sqlModel.select("company", ["id", "check_out_time"]);
+
+  // Group companies by check_out_time
+  const companiesByTime = companies.reduce((acc, company) => {
+    if (!acc[company.check_out_time]) {
+      acc[company.check_out_time] = [];
+    }
+    acc[company.check_out_time].push(company.id);
+    return acc;
+  }, {});
+
+  // Schedule a cron job for each unique check-out time
+  for (const checkOutTime in companiesByTime) {
+    const [hour, minute] = checkOutTime.split(":");
+
+    // Validate hour and minute
+    if (!hour || !minute || isNaN(hour) || isNaN(minute)) {
+      // console.error(
+      //   `Invalid check_out_time: ${checkOutTime} for companies: ${companiesByTime[
+      //     checkOutTime
+      //   ].join(", ")}`
+      // );
+      continue; // Skip this invalid time
+    }
+
+    cron.schedule(`${minute} ${hour} * * *`, () => {
+      console.log(companiesByTime[checkOutTime]);
+      const companyIds = companiesByTime[checkOutTime];
+      companyIds.forEach(autoCheckOut);
+    });
+  }
+}
+
+// Initialize the scheduling function
+scheduleAutoCheckOuts();

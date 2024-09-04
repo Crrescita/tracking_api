@@ -11,35 +11,100 @@ const createSlug = (title) => {
     .replace(/-+$/, ""); // Trim - from end of text
 };
 
+// exports.createLeaveType = async (req, res, next) => {
+//   try {
+//     const id = req.params.id || "";
+//     const { name, total_leave_days, status } = req.body;
+
+//     let slug = "";
+//     if (name) {
+//       slug = createSlug(name);
+//     }
+//     const insert = { name, slug, total_leave_days, status };
+
+//     if (id) {
+//       const leaveTypeRecord = await sqlModel.select("leave_type", ["name"], {
+//         id,
+//       });
+//       if (leaveTypeRecord.error || leaveTypeRecord.length === 0) {
+//         return res
+//           .status(200)
+//           .send({ status: false, message: "leave Type not found" });
+//       }
+
+//       insert.updated_at = getCurrentDateTime();
+//       const saveData = await sqlModel.update("leave_type", insert, {
+//         id,
+//       });
+
+//       if (saveData.error) {
+//         return res.status(200).send(saveData);
+//       } else {
+//         return res.status(200).send({ status: true, message: "Data Updated" });
+//       }
+//     } else {
+//       const existingSlug = await sqlModel.select("leave_type", ["id"], {
+//         slug,
+//       });
+
+//       if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
+//         return res
+//           .status(400)
+//           .send({ status: false, message: "Leave Type already exists" });
+//       }
+//       insert.created_at = getCurrentDateTime();
+//       const saveData = await sqlModel.insert("leave_type", insert);
+
+//       if (saveData.error) {
+//         return res.status(200).send(saveData);
+//       } else {
+//         return res.status(200).send({ status: true, message: "Data Saved" });
+//       }
+//     }
+//   } catch (err) {
+//     return res.status(500).send({ status: false, error: err.message });
+//   }
+// };
+
 exports.createLeaveType = async (req, res, next) => {
   try {
     const id = req.params.id || "";
-    const { name, status } = req.body;
+    const { name, company_id, total_leave_days, status } = req.body;
 
     let slug = "";
     if (name) {
       slug = createSlug(name);
     }
-    const insert = { name, slug, status };
+    const insert = { name, company_id, slug, total_leave_days, status };
+
+    let previousLeaveDays = 0;
 
     if (id) {
-      const leaveTypeRecord = await sqlModel.select("leave_type", ["name"], {
-        id,
-      });
+      const leaveTypeRecord = await sqlModel.select(
+        "leave_type",
+        ["name", "total_leave_days"],
+        { id }
+      );
       if (leaveTypeRecord.error || leaveTypeRecord.length === 0) {
         return res
           .status(200)
-          .send({ status: false, message: "leave Type not found" });
+          .send({ status: false, message: "Leave Type not found" });
       }
 
+      previousLeaveDays = leaveTypeRecord[0].total_leave_days || 0;
+
       insert.updated_at = getCurrentDateTime();
-      const saveData = await sqlModel.update("leave_type", insert, {
-        id,
-      });
+      const saveData = await sqlModel.update("leave_type", insert, { id });
 
       if (saveData.error) {
         return res.status(200).send(saveData);
       } else {
+        const diff = total_leave_days - previousLeaveDays;
+        await sqlModel.customQuery(
+          `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
+          [diff, company_id]
+        );
+
         return res.status(200).send({ status: true, message: "Data Updated" });
       }
     } else {
@@ -47,7 +112,7 @@ exports.createLeaveType = async (req, res, next) => {
         slug,
       });
 
-      if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
+      if (existingSlug.length > 0) {
         return res
           .status(400)
           .send({ status: false, message: "Leave Type already exists" });
@@ -58,6 +123,11 @@ exports.createLeaveType = async (req, res, next) => {
       if (saveData.error) {
         return res.status(200).send(saveData);
       } else {
+        await sqlModel.customQuery(
+          `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
+          [total_leave_days, company_id]
+        );
+
         return res.status(200).send({ status: true, message: "Data Saved" });
       }
     }
@@ -402,7 +472,7 @@ exports.getLeaveSetting = async (req, res, next) => {
     if (data.length === 0) {
       return res.status(200).send({ status: false, message: "No data found" });
     }
-    res.status(200).send({ status: true, data: [data] });
+    res.status(200).send({ status: true, data: data });
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
   }
