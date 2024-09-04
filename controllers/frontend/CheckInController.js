@@ -144,27 +144,66 @@ exports.getCheckIn = async (req, res, next) => {
 
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
 
-    const query = `
-  SELECT 
-    ea.date, 
-    IFNULL(ea.total_duration, '00:00:00') AS total_duration,
-    IFNULL(MIN(c.check_in_time), '00:00:00') AS earliestCheckInTime, 
-    IFNULL(MAX(c.check_out_time), '00:00:00') AS latestCheckOutTime,
-    MAX(c.checkin_status) AS checkin_status
-  FROM emp_attendance ea
-  LEFT JOIN check_in c 
-    ON ea.emp_id = c.emp_id 
-    AND ea.company_id = c.company_id 
-    AND DATE(c.date) = ?
-  WHERE ea.emp_id = ? 
-    AND ea.company_id = ?
-    AND ea.date = ?
-  GROUP BY ea.date, ea.total_duration;
+    // const query = `
+    //   SELECT
+    //     ea.date,
+    //     IFNULL(ea.total_duration, '00:00:00') AS total_duration,
+    //     IFNULL(MIN(c.check_in_time), '00:00:00') AS earliestCheckInTime,
+    //     IFNULL(MAX(c.check_out_time), '00:00:00') AS latestCheckOutTime,
+    //     MAX(c.checkin_status) AS checkin_status
+    //   FROM emp_attendance ea
+    //   LEFT JOIN check_in c
+    //     ON ea.emp_id = c.emp_id
+    //     AND ea.company_id = c.company_id
+    //     AND DATE(c.date) = ?
+    //   WHERE ea.emp_id = ?
+    //     AND ea.company_id = ?
+    //     AND ea.date = ?
+    //   GROUP BY ea.date, ea.total_duration;
+    // `;
+
+    const query = `SELECT 
+  ea.date,
+  c.check_out_time,
+  c.checkin_status,
+  c.check_in_time,
+  c.duration
+FROM emp_attendance ea
+LEFT JOIN check_in c
+  ON ea.emp_id = c.emp_id
+  AND ea.company_id = c.company_id
+  AND DATE(c.date) = ?  
+WHERE ea.emp_id = ? 
+  AND ea.company_id = ?
+  AND ea.date = ?
+  ;
 `;
-
     const values = [queryDate, emp_id, company_id, queryDate];
-    const data = await sqlModel.customQuery(query, values);
 
+    // const values = [queryDate, emp_id, company_id, queryDate];
+    const data = await sqlModel.customQuery(query, values);
+    // console.log(queryDate);
+    // console.log(data);
+    const lastIndex = data.length - 1;
+
+    const responses = [
+      {
+        date: queryDate,
+        total_duration: data[lastIndex].duration
+          ? data[lastIndex].duration
+          : "00:00:00",
+        earliestCheckInTime: data[0].check_in_time
+          ? data[0].check_in_time
+          : "00:00:00",
+        latestCheckOutTime: data[lastIndex].check_out_time
+          ? data[lastIndex].check_out_time
+          : "00:00:00",
+        checkin_status: data[lastIndex].checkin_status
+          ? data[lastIndex].checkin_status
+          : "Check-in",
+      },
+    ];
+    console.log(responses);
     if (data.error) {
       return res.status(500).send(data);
     }
@@ -186,7 +225,7 @@ exports.getCheckIn = async (req, res, next) => {
       });
     }
 
-    res.status(200).send({ status: true, data: data });
+    res.status(200).send({ status: true, data: responses });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
