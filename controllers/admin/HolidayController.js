@@ -14,13 +14,13 @@ const createSlug = (title) => {
 exports.createHoliday = async (req, res, next) => {
   try {
     const id = req.params.id || "";
-    const { name, date, status } = req.body;
+    const { name, date, status, company_id } = req.body;
 
     let slug = "";
     if (name) {
       slug = createSlug(name);
     }
-    const insert = { name, date, slug, status };
+    const insert = { name, date, slug, status, company_id };
 
     if (id) {
       const holidayRecord = await sqlModel.select(
@@ -49,6 +49,7 @@ exports.createHoliday = async (req, res, next) => {
     } else {
       const existingSlug = await sqlModel.select("company_holidays", ["id"], {
         slug,
+        company_id,
       });
 
       if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
