@@ -78,23 +78,22 @@ exports.getRecord = async (req, res, next) => {
       {
         title: "Hour Worked",
         icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/clock.png",
-        hour_worked: data.total_duration || "00:00:00",
+        detail: data.total_duration || "00:00:00",
       },
       {
         title: "Attendance",
         icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/User.png",
-        attendance_percentage:
-          ((data.total_checkins / 30) * 100).toFixed(2) + "%",
+        detail: ((data.total_checkins / 30) * 100).toFixed(2) + "%",
       },
       {
         title: "Distance Covered",
         icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/location.png",
-        total_distance: data.total_distance || "0",
+        detail: data.total_distance || "0",
       },
       {
         title: "Remaining Leaves",
         icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/Date.png",
-        remaining_leave: data.remaining_leave_days || "0",
+        detail: data.remaining_leave_days || "0",
       },
     ];
 
