@@ -113,7 +113,7 @@ exports.employeesInsert = async (req, res, next) => {
       const employeeRecord = await sqlModel.select(
         "employees",
         ["email", "password"],
-        { id, company_id: companyId }
+        { id }
       );
 
       if (employeeRecord.error || employeeRecord.length === 0) {
@@ -129,7 +129,7 @@ exports.employeesInsert = async (req, res, next) => {
         const existingemployeesWithEmail = await sqlModel.select(
           "employees",
           ["id"],
-          { email: req.body.email, company_id: companyId }
+          { email: req.body.email }
         );
         if (
           existingemployeesWithEmail.length > 0 &&
@@ -145,7 +145,7 @@ exports.employeesInsert = async (req, res, next) => {
         const existingemployeesWithId = await sqlModel.select(
           "employees",
           ["id"],
-          { employee_id: req.body.employee_id, company_id: companyId }
+          { employee_id: req.body.employee_id }
         );
         if (
           existingemployeesWithId.length > 0 &&
@@ -160,7 +160,6 @@ exports.employeesInsert = async (req, res, next) => {
       if (req.fileFullPath && req.fileFullPath.length > 0) {
         const employeesRecord = await sqlModel.select("employees", ["image"], {
           id,
-          company_id: companyId,
         });
 
         if (employeesRecord.error || employeesRecord.length === 0) {
@@ -208,7 +207,7 @@ exports.employeesInsert = async (req, res, next) => {
       const existingemployeesWithEmail = await sqlModel.select(
         "employees",
         ["id"],
-        { email: req.body.email, company_id: companyId }
+        { email: req.body.email }
       );
       if (existingemployeesWithEmail.length > 0) {
         return res
@@ -254,7 +253,7 @@ exports.employeesInsert = async (req, res, next) => {
 exports.deleteemployee = async (req, res, next) => {
   try {
     const id = req.params.id;
-    console.log(id);
+
     // Fetch employee's record
     const employeeRecord = await sqlModel.select("employees", ["image"], {
       id,

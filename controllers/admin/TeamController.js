@@ -202,7 +202,14 @@ exports.createDesignation = async (req, res, next) => {
 exports.getDesignation = async (req, res, next) => {
   try {
     const id = req.params?.id || "";
-    const whereClause = id ? { id } : {};
+    // const whereClause = id ? { id } : {};
+
+    const whereClause = {};
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        whereClause[key] = req.query[key];
+      }
+    }
     const data = await sqlModel.select("designation", {}, whereClause);
 
     if (data.error) {
