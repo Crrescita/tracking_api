@@ -81,35 +81,37 @@ exports.getAttendance = async (req, res, next) => {
 
     // Query to get all employees and their attendance data for the given date
     const query = `
-        SELECT
-          e.id,
-          e.name,
-          e.mobile,
-          e.email,
-          e.designation,
-          e.department,
-          e.employee_id,
-          CASE
-            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-            ELSE e.image
-          END AS image,
-          a.checkin_status,
-          a.time_difference,
-          a.total_duration,
-          a.total_distance,
-          c.date,
-          c.check_in_time,
-          c.check_out_time,
-          c.duration
-        FROM employees e
-        LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
-        LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-        WHERE e.company_id = ?
-      `;
+    SELECT
+      e.id,
+      e.name,
+      e.mobile,
+      e.email,
+      e.designation,
+
+      d.name AS department,
+      e.employee_id,
+      CASE
+        WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+        ELSE e.image
+      END AS image,
+      a.checkin_status,
+      a.time_difference,
+      a.total_duration,
+      a.total_distance,
+      c.date,
+      c.check_in_time,
+      c.check_out_time,
+      c.duration
+    FROM employees e
+    LEFT JOIN department d ON e.department = d.id
+    LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
+    LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+    WHERE e.company_id = ?
+`;
 
     const values = [baseUrl, date, date, company_id];
     const data = await sqlModel.customQuery(query, values);
-    console.log(data);
+
     // Process the data
     const processedData = data.reduce((acc, item) => {
       const existingEmployee = acc.find((emp) => emp.id === item.id);
