@@ -296,6 +296,23 @@ exports.createLeaveType = async (req, res, next) => {
       });
     }
 
+    // Calculate the total leave days in the leave_type table for the company
+    const totalLeaveDaysQuery = await sqlModel.customQuery(
+      `SELECT SUM(total_leave_days) AS totalLeaveDays 
+         FROM leave_type 
+         WHERE company_id = ?`,
+      [company_id]
+    );
+
+    if (totalLeaveDaysQuery.error) {
+      return res.status(500).send({
+        status: false,
+        message: "Error calculating total leave days",
+      });
+    }
+
+    const totalLeaveDaysInCompany = totalLeaveDaysQuery[0]?.totalLeaveDays || 0;
+
     if (id) {
       // Updating an existing leave type
       const leaveTypeRecord = await sqlModel.select(
@@ -329,10 +346,13 @@ exports.createLeaveType = async (req, res, next) => {
       if (status !== previousStatus) {
         // Handle status change
         if (status === "inactive") {
-          // Increase remaining leave days if status changes to inactive
+          // Increase remaining leave days and decrease used leave days if status changes to inactive
           await sqlModel.customQuery(
-            `UPDATE leave_settings SET remaining_leavedays = LEAST(remaining_leavedays + ?, totalannual_leavedays) WHERE company_id = ?`,
-            [previousLeaveDays, company_id]
+            `UPDATE leave_settings 
+               SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays + ?, 0), totalannual_leavedays), 
+                   used_leavedays = LEAST(GREATEST(used_leavedays - ?, 0), totalannual_leavedays) 
+               WHERE company_id = ?`,
+            [previousLeaveDays, previousLeaveDays, company_id]
           );
         } else if (status === "active") {
           // Check if we have enough leave days before activating
@@ -344,16 +364,28 @@ exports.createLeaveType = async (req, res, next) => {
             });
           }
           await sqlModel.customQuery(
-            `UPDATE leave_settings SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays - ?, 0), totalannual_leavedays) WHERE company_id = ?`,
-            [total_leave_days, company_id]
+            `UPDATE leave_settings 
+               SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays - ?, 0), totalannual_leavedays), 
+                   used_leavedays = LEAST(GREATEST(used_leavedays + ?, 0), totalannual_leavedays) 
+               WHERE company_id = ?`,
+            [total_leave_days, total_leave_days, company_id]
           );
         }
       } else {
-        // Adjust remaining leave days based on the change in total_leave_days
+        // Adjust remaining leave days and used leave days based on the change in total_leave_days
         if (diff !== 0) {
+          if (remaining_leavedays - diff < 0) {
+            return res.status(400).send({
+              status: false,
+              message: "Insufficient remaining leave days for this update",
+            });
+          }
           await sqlModel.customQuery(
-            `UPDATE leave_settings SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays - ?, 0), totalannual_leavedays) WHERE company_id = ?`,
-            [diff, company_id]
+            `UPDATE leave_settings 
+               SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays - ?, 0), totalannual_leavedays), 
+                   used_leavedays = LEAST(GREATEST(used_leavedays + ?, 0), totalannual_leavedays) 
+               WHERE company_id = ?`,
+            [diff, diff, company_id]
           );
         }
       }
@@ -375,7 +407,10 @@ exports.createLeaveType = async (req, res, next) => {
         });
       }
 
-      if (status === "active" && total_leave_days > availableLeaveDays) {
+      if (
+        status === "active" &&
+        total_leave_days + totalLeaveDaysInCompany > totalannual_leavedays
+      ) {
         return res.status(400).send({
           status: false,
           message: "Total leave days cannot exceed available leave days",
@@ -392,9 +427,18 @@ exports.createLeaveType = async (req, res, next) => {
         });
       } else {
         if (status === "active") {
+          if (remaining_leavedays - total_leave_days < 0) {
+            return res.status(400).send({
+              status: false,
+              message: "Insufficient remaining leave days for this leave type",
+            });
+          }
           await sqlModel.customQuery(
-            `UPDATE leave_settings SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays - ?, 0), totalannual_leavedays) WHERE company_id = ?`,
-            [total_leave_days, company_id]
+            `UPDATE leave_settings 
+               SET remaining_leavedays = LEAST(GREATEST(remaining_leavedays - ?, 0), totalannual_leavedays), 
+                   used_leavedays = LEAST(GREATEST(used_leavedays + ?, 0), totalannual_leavedays) 
+               WHERE company_id = ?`,
+            [total_leave_days, total_leave_days, company_id]
           );
         }
 
@@ -880,6 +924,100 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
 //   }
 // };
 
+// exports.createLeaveSetting = async (req, res, next) => {
+//   try {
+//     const {
+//       company_id,
+//       totalannual_leavedays,
+//       carry_forword_status,
+//       carry_forword_leaves,
+//     } = req.body;
+
+//     const insert = {
+//       company_id,
+//       totalannual_leavedays,
+//       carry_forword_status,
+//       carry_forword_leaves,
+//     };
+
+//     // Calculate total used leave days from leave_type for the company
+//     const usedLeaveDaysQuery = await sqlModel.customQuery(
+//       `SELECT SUM(total_leave_days) AS used_leavedays
+//              FROM leave_type
+//              WHERE company_id = ?`,
+//       [company_id]
+//     );
+
+//     if (usedLeaveDaysQuery.error) {
+//       return res.status(500).send({
+//         status: false,
+//         message: "Error calculating used leave days",
+//       });
+//     }
+
+//     const usedLeaveDays = usedLeaveDaysQuery[0]?.used_leavedays || 0;
+//     insert.used_leavedays = usedLeaveDays;
+
+//     // Ensure that totalannual_leavedays is not less than used_leavedays
+//     if (totalannual_leavedays < usedLeaveDays) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Total annual leave days cannot be less than used leave days",
+//       });
+//     }
+
+//     const existingRecord = await sqlModel.select(
+//       "leave_settings",
+//       ["id", "remaining_leavedays", "totalannual_leavedays"],
+//       {
+//         company_id,
+//       }
+//     );
+
+//     if (existingRecord.error) {
+//       return res.status(500).send({
+//         status: false,
+//         message: "Error checking for existing record",
+//       });
+//     }
+
+//     if (existingRecord.length > 0) {
+//       const leaveSettingId = existingRecord[0].id;
+//       const previousRemainingLeaveDays = existingRecord[0].remaining_leavedays;
+
+//       // Correctly adjust remaining_leavedays
+//       const totalRemainingLeaveDays = totalannual_leavedays - usedLeaveDays;
+//       insert.remaining_leavedays = totalRemainingLeaveDays;
+
+//       insert.updated_at = getCurrentDateTime();
+
+//       const updateData = await sqlModel.update("leave_settings", insert, {
+//         id: leaveSettingId,
+//       });
+
+//       if (updateData.error) {
+//         return res.status(500).send(updateData);
+//       } else {
+//         return res.status(200).send({ status: true, message: "Data Updated" });
+//       }
+//     } else {
+//       // Initialize remaining_leavedays to totalannual_leavedays minus used_leavedays if creating a new record
+//       insert.remaining_leavedays = totalannual_leavedays - usedLeaveDays;
+//       insert.created_at = getCurrentDateTime();
+
+//       const saveData = await sqlModel.insert("leave_settings", insert);
+
+//       if (saveData.error) {
+//         return res.status(500).send(saveData);
+//       } else {
+//         return res.status(200).send({ status: true, message: "Data Saved" });
+//       }
+//     }
+//   } catch (err) {
+//     return res.status(500).send({ status: false, error: err.message });
+//   }
+// };
+
 exports.createLeaveSetting = async (req, res, next) => {
   try {
     const {
@@ -899,8 +1037,8 @@ exports.createLeaveSetting = async (req, res, next) => {
     // Calculate total used leave days from leave_type for the company
     const usedLeaveDaysQuery = await sqlModel.customQuery(
       `SELECT SUM(total_leave_days) AS used_leavedays 
-             FROM leave_type 
-             WHERE company_id = ?`,
+               FROM leave_type 
+               WHERE company_id = ?`,
       [company_id]
     );
 
@@ -939,7 +1077,6 @@ exports.createLeaveSetting = async (req, res, next) => {
 
     if (existingRecord.length > 0) {
       const leaveSettingId = existingRecord[0].id;
-      const previousRemainingLeaveDays = existingRecord[0].remaining_leavedays;
 
       // Correctly adjust remaining_leavedays
       const totalRemainingLeaveDays = totalannual_leavedays - usedLeaveDays;

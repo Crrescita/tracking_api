@@ -159,7 +159,7 @@ exports.getCheckIn = async (req, res, next) => {
   WHERE ea.emp_id = ? 
     AND ea.company_id = ?
     AND ea.date = ?
-  GROUP BY ea.date, ea.total_duration;
+  GROUP BY ea.date;
 `;
 
     const values = [queryDate, emp_id, company_id, queryDate];
@@ -179,13 +179,11 @@ exports.getCheckIn = async (req, res, next) => {
           checkin_status: "Check-in",
         },
       ];
-      return res
-        .status(200)
-        .send({
-          status: true,
-          message: "No data found for this date",
-          data: response,
-        });
+      return res.status(200).send({
+        status: true,
+        message: "No data found for this date",
+        data: response,
+      });
     }
 
     res.status(200).send({ status: true, data: data });
