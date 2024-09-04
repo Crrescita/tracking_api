@@ -14,7 +14,7 @@ const createSlug = (title) => {
 exports.createDepartment = async (req, res, next) => {
   try {
     const id = req.params.id || "";
-    const { name, status } = req.body;
+    const { name, status, company_id } = req.body;
 
     // Create slug
     let slug = "";
@@ -22,7 +22,7 @@ exports.createDepartment = async (req, res, next) => {
       slug = createSlug(name);
     }
 
-    const insert = { name, slug, status };
+    const insert = { name, slug, status, company_id };
 
     if (id) {
       const departmentRecord = await sqlModel.select("department", ["name"], {
@@ -45,6 +45,7 @@ exports.createDepartment = async (req, res, next) => {
     } else {
       const existingSlug = await sqlModel.select("department", ["id"], {
         slug,
+        company_id,
       });
 
       if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
@@ -146,7 +147,7 @@ exports.deleteMultipleDepartments = async (req, res, next) => {
 exports.createDesignation = async (req, res, next) => {
   try {
     const id = req.params.id || "";
-    const { name, status } = req.body;
+    const { name, status, company_id } = req.body;
 
     // Create slug
     let slug = "";
@@ -154,7 +155,7 @@ exports.createDesignation = async (req, res, next) => {
       slug = createSlug(name);
     }
 
-    const insert = { name, slug, status };
+    const insert = { name, slug, status, company_id };
 
     if (id) {
       const departmentRecord = await sqlModel.select("designation", ["name"], {
@@ -177,6 +178,7 @@ exports.createDesignation = async (req, res, next) => {
     } else {
       const existingSlug = await sqlModel.select("designation", ["id"], {
         slug,
+        company_id,
       });
 
       if (existingSlug.length > 0 && (id === "" || existingSlug[0].id !== id)) {
