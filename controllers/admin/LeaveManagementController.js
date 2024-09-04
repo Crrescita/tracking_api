@@ -145,7 +145,7 @@ exports.deleteLeaveType = async (req, res, next) => {
 
     // Delete the leave type
     const result = await sqlModel.delete("leave_type", { id });
-    console.log(total_leave_days);
+    z;
     if (!result.error) {
       // Update remaining_leavedays in leave_settings
       await sqlModel.customQuery(
