@@ -144,24 +144,6 @@ exports.getCheckIn = async (req, res, next) => {
 
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
 
-    // const query = `
-    //   SELECT
-    //     ea.date,
-    //     ea.total_duration,
-    //     MIN(c.check_in_time) AS earliestCheckInTime,
-    //     MAX(c.check_out_time) AS latestCheckOutTime,
-    //     MAX(c.checkin_status) AS checkin_status
-    //   FROM emp_attendance ea
-    //   LEFT JOIN check_in c
-    //     ON ea.emp_id = c.emp_id
-    //     AND ea.company_id = c.company_id
-    //     AND DATE(c.date) = ?
-    //   WHERE ea.emp_id = ?
-    //     AND ea.company_id = ?
-    //     AND ea.date = ?
-    //   GROUP BY ea.date, ea.total_duration;
-    // `;
-
     const query = `
   SELECT 
     ea.date, 
@@ -188,7 +170,22 @@ exports.getCheckIn = async (req, res, next) => {
     }
 
     if (data.length === 0) {
-      return res.status(200).send({ status: false, message: "No data found" });
+      const response = [
+        {
+          date: queryDate,
+          total_duration: "00:00:00",
+          earliestCheckInTime: "00:00:00",
+          latestCheckOutTime: "00:00:00",
+          checkin_status: "Check-in",
+        },
+      ];
+      return res
+        .status(200)
+        .send({
+          status: true,
+          message: "No data found for this date",
+          data: response,
+        });
     }
 
     res.status(200).send({ status: true, data: data });
