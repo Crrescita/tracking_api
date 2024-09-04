@@ -159,7 +159,7 @@ exports.getCheckIn = async (req, res, next) => {
   WHERE ea.emp_id = ? 
     AND ea.company_id = ?
     AND ea.date = ?
-  GROUP BY ea.date;
+  GROUP BY ea.date, ea.total_duration;
 `;
 
     const values = [queryDate, emp_id, company_id, queryDate];
