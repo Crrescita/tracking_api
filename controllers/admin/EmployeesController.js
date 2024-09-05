@@ -61,6 +61,7 @@ exports.employeesGet = async (req, res, next) => {
     const query = `
       SELECT
         e.id,
+        e.company_id,
         e.name,
         e.mobile,
         e.email,    
