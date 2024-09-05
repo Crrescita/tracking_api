@@ -61,19 +61,68 @@ const haversineDistance = (coords1, coords2) => {
 //   }
 // };
 
+// exports.getCoordinates = async (req, res, next) => {
+//   try {
+//     // Base query to fetch data from emp_tracking and coordinates_address
+//     let query = `
+//       SELECT
+//         t.*,
+//         round(t.latitude, 6) as latitude,
+//         round(t.longitude, 6) as longitude,
+//         c.address
+//       FROM emp_tracking t
+//       LEFT JOIN coordinates_address c
+//       ON round(t.latitude, 6) = round(c.latitude, 6)
+//       AND round(t.longitude, 6) = round(c.longitude, 6)
+//       WHERE t.latitude != 0.0 AND t.longitude != 0.0
+//     `;
+
+//     // Append additional query parameters
+//     for (const key in req.query) {
+//       if (req.query.hasOwnProperty(key)) {
+//         query += ` AND t.${key} = '${req.query[key]}'`;
+//       }
+//     }
+
+//     // Execute the query
+//     const data = await sqlModel.customQuery(query);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+
+//     let totalDistance = 0;
+
+//     // Calculate the total distance between the coordinates
+//     for (let i = 0; i < data.length - 1; i++) {
+//       const distance = haversineDistance(data[i], data[i + 1]);
+//       totalDistance += distance;
+//     }
+
+//     // Send the response
+//     res.status(200).send({ status: true, totalDistance, data: data });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getCoordinates = async (req, res, next) => {
   try {
     // Base query to fetch data from emp_tracking and coordinates_address
     let query = `
       SELECT
         t.*,
-        round(t.latitude, 6) as latitude,
-        round(t.longitude, 6) as longitude,
+        round(t.latitude, 4) as latitude, -- Round to 4 decimal places
+        round(t.longitude, 4) as longitude, -- Round to 4 decimal places
         c.address
       FROM emp_tracking t
       LEFT JOIN coordinates_address c
-      ON round(t.latitude, 6) = round(c.latitude, 6)
-      AND round(t.longitude, 6) = round(c.longitude, 6)
+      ON round(t.latitude, 4) = round(c.latitude, 4) -- Match with 4 decimal places
+      AND round(t.longitude, 4) = round(c.longitude, 4) -- Match with 4 decimal places
       WHERE t.latitude != 0.0 AND t.longitude != 0.0
     `;
 
@@ -109,72 +158,6 @@ exports.getCoordinates = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
-
-// exports.getCoordinates = async (req, res, next) => {
-//   try {
-//     // Base query to fetch data from emp_tracking and coordinates_address
-//     let query = `
-//       SELECT
-//         t.*,
-//         round(t.latitude, 6) as latitude,
-//         round(t.longitude, 6) as longitude,
-//         c.address
-//       FROM emp_tracking t
-//       LEFT JOIN coordinates_address c
-//       ON round(t.latitude, 6) = round(c.latitude, 6)
-//       AND round(t.longitude, 6) = round(c.longitude, 6)
-//       WHERE t.latitude != 0.0 AND t.longitude != 0.0
-//     `;
-
-//     // Append additional query parameters
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         query += ` AND t.${key} = '${req.query[key]}'`;
-//       }
-//     }
-
-//     // Execute the query
-//     const data = await sqlModel.customQuery(query);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-
-//     // Use a Map to track unique coordinates based on rounded latitude and longitude
-//     const uniqueCoordinatesMap = new Map();
-//     data.forEach((entry) => {
-//       const key = `${entry.latitude},${entry.longitude}`;
-//       if (!uniqueCoordinatesMap.has(key)) {
-//         uniqueCoordinatesMap.set(key, entry);
-//       }
-//     });
-
-//     const uniqueCoordinates = Array.from(uniqueCoordinatesMap.values());
-
-//     let totalDistance = 0;
-
-//     // Calculate the total distance between the coordinates
-//     for (let i = 0; i < uniqueCoordinates.length - 1; i++) {
-//       const distance = haversineDistance(
-//         uniqueCoordinates[i],
-//         uniqueCoordinates[i + 1]
-//       );
-//       totalDistance += distance;
-//     }
-
-//     // Send the response
-//     res
-//       .status(200)
-//       .send({ status: true, totalDistance, data: uniqueCoordinates });
-//   } catch (error) {
-//     console.error("Error in getCoordinates:", error);
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
 
 exports.getCoordinatesv2 = async (req, res, next) => {
   try {
