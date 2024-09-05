@@ -255,12 +255,10 @@ exports.getCheckIn = async (req, res, next) => {
     const { id: emp_id, company_id } = employee;
 
     if (!emp_id || !company_id) {
-      return res
-        .status(400)
-        .send({
-          status: false,
-          message: "Employee ID and company ID are required",
-        });
+      return res.status(400).send({
+        status: false,
+        message: "Employee ID and company ID are required",
+      });
     }
 
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
@@ -286,13 +284,11 @@ exports.getCheckIn = async (req, res, next) => {
     const data = await sqlModel.customQuery(query, values);
 
     if (data.error) {
-      return res
-        .status(500)
-        .send({
-          status: false,
-          message: "Internal server error",
-          error: data.error,
-        });
+      return res.status(500).send({
+        status: false,
+        message: "Internal server error",
+        error: data.error,
+      });
     }
 
     if (data.length === 0) {
@@ -305,7 +301,7 @@ exports.getCheckIn = async (req, res, next) => {
             total_duration: "00:00:00",
             earliestCheckInTime: "00:00:00",
             latestCheckOutTime: "00:00:00",
-            checkin_status: "Check-in",
+            checkin_status: "Check-out",
           },
         ],
       });
@@ -323,13 +319,11 @@ exports.getCheckIn = async (req, res, next) => {
 
     res.status(200).send({ status: true, data: [response] });
   } catch (error) {
-    res
-      .status(500)
-      .send({
-        status: false,
-        message: "An unexpected error occurred",
-        error: error.message,
-      });
+    res.status(500).send({
+      status: false,
+      message: "An unexpected error occurred",
+      error: error.message,
+    });
   }
 };
 
