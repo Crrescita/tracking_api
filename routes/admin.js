@@ -11,6 +11,7 @@ const TeamController = require("../controllers/admin/TeamController");
 const HolidayController = require("../controllers/admin/HolidayController");
 const LeaveManagmentController = require("../controllers/admin/LeaveManagementController");
 const EmployeeAttendanceController = require("../controllers/admin/EmployeeAttendanceController");
+const AddressController = require("../controllers/admin/AddressController");
 // for testing it is comment
 // const verifyToken = async (req, res, next) => {
 //   const authHeader = req.headers["authorization"];
@@ -196,6 +197,9 @@ router
   .route("/leaveSetting/:id?")
   .get(LeaveManagmentController.getLeaveSetting)
   .post(LeaveManagmentController.createLeaveSetting);
+
+// address
+router.route("/address").post(AddressController.createAddress);
 
 /* GET users listing. */
 router.get("/", function (req, res, next) {

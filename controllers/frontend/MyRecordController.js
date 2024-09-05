@@ -87,7 +87,7 @@ exports.getRecord = async (req, res, next) => {
       },
       {
         title: "Distance Covered",
-        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/locations.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/location.png",
         detail: data.total_distance || "0",
       },
       {
