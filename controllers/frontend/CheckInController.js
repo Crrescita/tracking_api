@@ -111,6 +111,125 @@ const haversineDistance = (coords1, coords2) => {
 //   return distanceInKm;
 // };
 
+// exports.getCheckIn = async (req, res, next) => {
+//   try {
+//     const token = req.headers.authorization?.split(" ")[1];
+
+//     if (!token) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Token is required" });
+//     }
+
+//     const [employee] = await sqlModel.select(
+//       "employees",
+//       ["id", "company_id"],
+//       { api_token: token }
+//     );
+
+//     if (!employee) {
+//       return res
+//         .status(404)
+//         .send({ status: false, message: "Employee not found" });
+//     }
+
+//     const { id: emp_id, company_id } = employee;
+
+//     if (!emp_id || !company_id) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Employee ID and company ID are required",
+//       });
+//     }
+
+//     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
+
+//     // const query = `
+//     //   SELECT
+//     //     ea.date,
+//     //     IFNULL(ea.total_duration, '00:00:00') AS total_duration,
+//     //     IFNULL(MIN(c.check_in_time), '00:00:00') AS earliestCheckInTime,
+//     //     IFNULL(MAX(c.check_out_time), '00:00:00') AS latestCheckOutTime,
+//     //     MAX(c.checkin_status) AS checkin_status
+//     //   FROM emp_attendance ea
+//     //   LEFT JOIN check_in c
+//     //     ON ea.emp_id = c.emp_id
+//     //     AND ea.company_id = c.company_id
+//     //     AND DATE(c.date) = ?
+//     //   WHERE ea.emp_id = ?
+//     //     AND ea.company_id = ?
+//     //     AND ea.date = ?
+//     //   GROUP BY ea.date, ea.total_duration;
+//     // `;
+
+//     const query = `SELECT
+//   ea.date,
+//   c.check_out_time,
+//   c.checkin_status,
+//   c.check_in_time,
+//   c.duration
+// FROM emp_attendance ea
+// LEFT JOIN check_in c
+//   ON ea.emp_id = c.emp_id
+//   AND ea.company_id = c.company_id
+//   AND DATE(c.date) = ?
+// WHERE ea.emp_id = ?
+//   AND ea.company_id = ?
+//   AND ea.date = ?
+//   ;
+// `;
+//     const values = [queryDate, emp_id, company_id, queryDate];
+
+//     // const values = [queryDate, emp_id, company_id, queryDate];
+//     const data = await sqlModel.customQuery(query, values);
+//     // console.log(queryDate);
+//     // console.log(data);
+//     const lastIndex = data.length - 1;
+
+//     const responses = [
+//       {
+//         date: queryDate,
+//         total_duration: data[lastIndex].duration
+//           ? data[lastIndex].duration
+//           : "00:00:00",
+//         earliestCheckInTime: data[0].check_in_time
+//           ? data[0].check_in_time
+//           : "00:00:00",
+//         latestCheckOutTime: data[lastIndex].check_out_time
+//           ? data[lastIndex].check_out_time
+//           : "00:00:00",
+//         checkin_status: data[lastIndex].checkin_status
+//           ? data[lastIndex].checkin_status
+//           : "Check-in",
+//       },
+//     ];
+//     console.log(responses);
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       const response = [
+//         {
+//           date: queryDate,
+//           total_duration: "00:00:00",
+//           earliestCheckInTime: "00:00:00",
+//           latestCheckOutTime: "00:00:00",
+//           checkin_status: "Check-in",
+//         },
+//       ];
+//       return res.status(200).send({
+//         status: true,
+//         message: "No data found for this date",
+//         data: response,
+//       });
+//     }
+
+//     res.status(200).send({ status: true, data: responses });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
 exports.getCheckIn = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -136,98 +255,81 @@ exports.getCheckIn = async (req, res, next) => {
     const { id: emp_id, company_id } = employee;
 
     if (!emp_id || !company_id) {
-      return res.status(400).send({
-        status: false,
-        message: "Employee ID and company ID are required",
-      });
+      return res
+        .status(400)
+        .send({
+          status: false,
+          message: "Employee ID and company ID are required",
+        });
     }
 
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
 
-    // const query = `
-    //   SELECT
-    //     ea.date,
-    //     IFNULL(ea.total_duration, '00:00:00') AS total_duration,
-    //     IFNULL(MIN(c.check_in_time), '00:00:00') AS earliestCheckInTime,
-    //     IFNULL(MAX(c.check_out_time), '00:00:00') AS latestCheckOutTime,
-    //     MAX(c.checkin_status) AS checkin_status
-    //   FROM emp_attendance ea
-    //   LEFT JOIN check_in c
-    //     ON ea.emp_id = c.emp_id
-    //     AND ea.company_id = c.company_id
-    //     AND DATE(c.date) = ?
-    //   WHERE ea.emp_id = ?
-    //     AND ea.company_id = ?
-    //     AND ea.date = ?
-    //   GROUP BY ea.date, ea.total_duration;
-    // `;
+    const query = `
+      SELECT 
+        ea.date,
+        c.check_out_time,
+        c.checkin_status,
+        c.check_in_time,
+        c.duration
+      FROM emp_attendance ea
+      LEFT JOIN check_in c
+        ON ea.emp_id = c.emp_id
+        AND ea.company_id = c.company_id
+        AND DATE(c.date) = ?  
+      WHERE ea.emp_id = ? 
+        AND ea.company_id = ?
+        AND ea.date = ?;
+    `;
 
-    const query = `SELECT 
-  ea.date,
-  c.check_out_time,
-  c.checkin_status,
-  c.check_in_time,
-  c.duration
-FROM emp_attendance ea
-LEFT JOIN check_in c
-  ON ea.emp_id = c.emp_id
-  AND ea.company_id = c.company_id
-  AND DATE(c.date) = ?  
-WHERE ea.emp_id = ? 
-  AND ea.company_id = ?
-  AND ea.date = ?
-  ;
-`;
     const values = [queryDate, emp_id, company_id, queryDate];
-
-    // const values = [queryDate, emp_id, company_id, queryDate];
     const data = await sqlModel.customQuery(query, values);
-    // console.log(queryDate);
-    // console.log(data);
-    const lastIndex = data.length - 1;
 
-    const responses = [
-      {
-        date: queryDate,
-        total_duration: data[lastIndex].duration
-          ? data[lastIndex].duration
-          : "00:00:00",
-        earliestCheckInTime: data[0].check_in_time
-          ? data[0].check_in_time
-          : "00:00:00",
-        latestCheckOutTime: data[lastIndex].check_out_time
-          ? data[lastIndex].check_out_time
-          : "00:00:00",
-        checkin_status: data[lastIndex].checkin_status
-          ? data[lastIndex].checkin_status
-          : "Check-in",
-      },
-    ];
-    console.log(responses);
     if (data.error) {
-      return res.status(500).send(data);
+      return res
+        .status(500)
+        .send({
+          status: false,
+          message: "Internal server error",
+          error: data.error,
+        });
     }
 
     if (data.length === 0) {
-      const response = [
-        {
-          date: queryDate,
-          total_duration: "00:00:00",
-          earliestCheckInTime: "00:00:00",
-          latestCheckOutTime: "00:00:00",
-          checkin_status: "Check-in",
-        },
-      ];
       return res.status(200).send({
         status: true,
         message: "No data found for this date",
-        data: response,
+        data: [
+          {
+            date: queryDate,
+            total_duration: "00:00:00",
+            earliestCheckInTime: "00:00:00",
+            latestCheckOutTime: "00:00:00",
+            checkin_status: "Check-in",
+          },
+        ],
       });
     }
 
-    res.status(200).send({ status: true, data: responses });
+    const lastIndex = data.length - 1;
+
+    const response = {
+      date: queryDate,
+      total_duration: data[lastIndex]?.duration || "00:00:00",
+      earliestCheckInTime: data[0]?.check_in_time || "00:00:00",
+      latestCheckOutTime: data[lastIndex]?.check_out_time || "00:00:00",
+      checkin_status: data[lastIndex]?.checkin_status || "Check-in",
+    };
+
+    res.status(200).send({ status: true, data: [response] });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res
+      .status(500)
+      .send({
+        status: false,
+        message: "An unexpected error occurred",
+        error: error.message,
+      });
   }
 };
 
