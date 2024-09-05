@@ -106,10 +106,32 @@ async function passwordUpdated(data) {
   }
 }
 
+async function sendLeaveRequestToCompany(data) {
+  try {
+    // Read and compile the EJS template with data
+    const htmlFile = "./views/leaveRequest.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    let info = await transporter.sendMail({
+      //   from: '"Your Name" <your-email@gmail.com>',
+      to: data.email,
+      subject: "Leave Request Notification",
+      //   text: "Hello world?",
+      html: compiledHtml,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
 module.exports = {
   sendEmailToEmp,
   sendEmailToCompany,
   forgotPassword,
   forgotPasswordCode,
   passwordUpdated,
+  sendLeaveRequestToCompany,
 };

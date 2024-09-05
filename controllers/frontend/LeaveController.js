@@ -1,4 +1,5 @@
 const sqlModel = require("../../config/db");
+const sendMail = require("../../mail/nodemailer");
 
 exports.createLeaveRequest = async (req, res, next) => {
   try {
@@ -12,7 +13,7 @@ exports.createLeaveRequest = async (req, res, next) => {
 
     const [employee] = await sqlModel.select(
       "employees",
-      ["id", "company_id"],
+      ["id", "company_id", "name"],
       { api_token: token }
     );
 
@@ -22,12 +23,32 @@ exports.createLeaveRequest = async (req, res, next) => {
         .send({ status: false, message: "Employee not found" });
     }
 
+    const [company] = await sqlModel.select("company", ["email"], {
+      id: employee.company_id,
+    });
+
+    if (!company) {
+      return res
+        .status(404)
+        .send({ status: false, message: "Company not found" });
+    }
+
     const leaveRequestId = req.params.id;
     const insert = { ...req.body };
 
     insert.emp_id = employee.id;
     insert.company_id = employee.company_id;
     insert.created_at = getCurrentDateTime();
+
+    const fromDate = new Date(insert.from_date);
+    const toDate = new Date(insert.to_date);
+
+    if (toDate < fromDate) {
+      return res.status(400).send({
+        status: false,
+        message: "To date cannot be earlier than from date",
+      });
+    }
 
     const validation = validateFields({
       from_date: insert.from_date,
@@ -66,6 +87,22 @@ exports.createLeaveRequest = async (req, res, next) => {
       }
     } else {
       saveData = await sqlModel.insert("leave_request", insert);
+
+      // Handling CC emails
+      const ccEmails = req.body.cc
+        ? `${req.body.cc},${company.email}`
+        : company.email;
+
+      const emailData = {
+        name: employee.name,
+        email: ccEmails,
+        from_date: insert.from_date,
+        to_date: insert.to_date,
+        leave_type: insert.leave_type,
+        reason: insert.reason,
+      };
+
+      sendMail.sendLeaveRequestToCompany(emailData);
     }
 
     if (saveData.error) {
