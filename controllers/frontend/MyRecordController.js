@@ -92,7 +92,7 @@ exports.getRecord = async (req, res, next) => {
       },
       {
         title: "Remaining Leaves",
-        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/Date.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Calendar.png",
         detail: data.remaining_leave_days || "0",
       },
     ];
