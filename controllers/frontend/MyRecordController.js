@@ -77,17 +77,17 @@ exports.getRecord = async (req, res, next) => {
     const response = [
       {
         title: "Hour Worked",
-        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/clock.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/clock.png",
         detail: data.total_duration || "00:00:00",
       },
       {
         title: "Attendance",
-        icon: "https://crrescita.s3.ap-south-1.amazonaws.com/Tracker+Images/User.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Employee.png",
         detail: ((data.total_checkins / 30) * 100).toFixed(2) + "%",
       },
       {
         title: "Distance Covered",
-        icon: "https://telindia.s3.ap-south-1.amazonaws.com/location.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
         detail: data.total_distance || "0",
       },
       {
