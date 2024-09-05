@@ -102,7 +102,7 @@ exports.login = async (req, res, next) => {
 
     updatedUser.image = updatedUser.image
       ? `${process.env.BASE_URL}${updatedUser.image}`
-      : "";
+      : "https://telindia.s3.ap-south-1.amazonaws.com/icons/users.jpg";
     delete updatedUser.password;
 
     const insert = {
