@@ -694,16 +694,26 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
         (date) => groupedData[date].attendance_status === "Present"
       );
       if (checkInDates.length > 0) {
+        // const checkInQuery = `
+        //     SELECT
+        //       c.date,
+        //       MIN(c.check_in_time) AS last_check_in_time,
+        //       MAX(c.check_out_time) AS last_check_out_time
+        //     FROM check_in c
+        //     WHERE c.emp_id = ? AND c.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+        //     GROUP BY c.date
+        //     ORDER BY c.date
+        //   `;
         const checkInQuery = `
-            SELECT
-              c.date,
-              MIN(c.check_in_time) AS last_check_in_time,
-              MAX(c.check_out_time) AS last_check_out_time
-            FROM check_in c
-            WHERE c.emp_id = ? AND c.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ? 
-            GROUP BY c.date
-            ORDER BY c.date
-          `;
+  SELECT
+    c.date,
+    GROUP_CONCAT(c.check_in_time ORDER BY c.check_in_time) AS check_in_times,
+    GROUP_CONCAT(c.check_out_time ORDER BY c.check_out_time) AS check_out_times
+  FROM check_in c
+  WHERE c.emp_id = ? AND c.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+  GROUP BY c.date
+  ORDER BY c.date
+`;
         const checkInValues = [emp_id, company_id, month, year];
         const checkInRecords = await sqlModel.customQuery(
           checkInQuery,
@@ -711,15 +721,62 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
         );
 
         // Update groupedData with check_in data
+        // checkInRecords.forEach((item) => {
+        //   if (
+        //     groupedData[item.date] &&
+        //     groupedData[item.date].attendance_status == "Present"
+        //   ) {
+        //     groupedData[item.date].last_check_in_time =
+        //       item.last_check_in_time || "00:00:00";
+        //     groupedData[item.date].last_check_out_time =
+        //       item.last_check_out_time || "00:00:00";
+        //   }
+        // });
+
         checkInRecords.forEach((item) => {
           if (
             groupedData[item.date] &&
             groupedData[item.date].attendance_status == "Present"
           ) {
-            groupedData[item.date].last_check_in_time =
-              item.last_check_in_time || "00:00:00";
-            groupedData[item.date].last_check_out_time =
-              item.last_check_out_time || "00:00:00";
+            const checkInTimes = item.check_in_times
+              ? item.check_in_times.split(",")
+              : [];
+            const checkOutTimes = item.check_out_times
+              ? item.check_out_times.split(",")
+              : [];
+
+            // Create a timeline array
+            let timeline = [];
+
+            // Ensure we process both arrays in parallel, matching check-ins to check-outs
+            const maxTimes = Math.max(
+              checkInTimes.length,
+              checkOutTimes.length
+            );
+            for (let i = 0; i < maxTimes; i++) {
+              if (checkInTimes[i]) {
+                timeline.push({
+                  action: "Check In",
+                  time: checkInTimes[i],
+                });
+              }
+              if (checkOutTimes[i]) {
+                timeline.push({
+                  action: "Check Out",
+                  time: checkOutTimes[i],
+                });
+              }
+            }
+            groupedData[item.date].last_check_in_time = checkInTimes[0]
+              ? checkInTimes[0]
+              : "00:00:00";
+            groupedData[item.date].last_check_out_time = checkOutTimes[
+              checkOutTimes.length - 1
+            ]
+              ? checkOutTimes[checkOutTimes.length - 1]
+              : "00:00:00";
+
+            groupedData[item.date].timeline = timeline;
           }
         });
       }

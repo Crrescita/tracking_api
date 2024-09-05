@@ -116,13 +116,13 @@ exports.getCoordinates = async (req, res, next) => {
     let query = `
       SELECT
         t.*,
-        round(t.latitude, 4) as latitude, -- Round to 4 decimal places
-        round(t.longitude, 4) as longitude, -- Round to 4 decimal places
+        round(t.latitude, 4) as latitude, 
+        round(t.longitude, 4) as longitude, 
         c.address
       FROM emp_tracking t
       LEFT JOIN coordinates_address c
-      ON round(t.latitude, 4) = round(c.latitude, 4) -- Match with 4 decimal places
-      AND round(t.longitude, 4) = round(c.longitude, 4) -- Match with 4 decimal places
+      ON round(t.latitude, 4) = round(c.latitude, 4) 
+      AND round(t.longitude, 4) = round(c.longitude, 4) 
       WHERE t.latitude != 0.0 AND t.longitude != 0.0
     `;
 
