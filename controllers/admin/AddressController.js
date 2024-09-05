@@ -81,22 +81,19 @@ exports.createAddress = async (req, res, next) => {
         longitude: roundedLongitude,
         latitude: roundedLatitude,
         address,
-      
       };
 
       if (!existingEntry) {
-        
         // Only insert if no existing entry is found
         insertData.created_at = getCurrentDateTime();
         await sqlModel.insert("coordinates_address", insertData);
         insertedCount++;
-      } 
-      else {
-        insertData.updated_at: getCurrentDateTime(),
-        // Update the existing entry
-        await sqlModel.update("coordinates_address", insertData, {
-          id: existingEntry.id,
-        });
+      } else {
+        (insertData.updated_at = getCurrentDateTime()),
+          // Update the existing entry
+          await sqlModel.update("coordinates_address", insertData, {
+            id: existingEntry.id,
+          });
       }
     });
 
