@@ -54,9 +54,9 @@ exports.createAddress = async (req, res, next) => {
     const coordinateEntries = Object.values(insert);
 
     if (!Array.isArray(coordinateEntries) || coordinateEntries.length === 0) {
-      return res
-        .status(400)
-        .send({ status: false, message: "No coordinates provided." });
+      // return res
+      //   .status(400)
+      //   .send({ status: false, message: "No coordinates provided." });
     }
 
     let insertedCount = 0; // Track the number of inserted records
