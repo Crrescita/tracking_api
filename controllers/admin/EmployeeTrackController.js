@@ -86,35 +86,37 @@ exports.getCoordinates = async (req, res, next) => {
     const date = req.query.date || "2024-08-29"; // Default date if not provided
 
     let query = `
-      SELECT DISTINCT  *,a.emp_id, a.datetime_mobile, a.latitude, a.longitude 
-      FROM emp_tracking a 
-      WHERE a.emp_id = ? 
-        AND a.date = ?
-        AND NOT EXISTS (
-          SELECT 1 
-          FROM emp_tracking b 
-          WHERE b.emp_id = a.emp_id 
-            AND b.date = ? 
-            AND (6371000 * acos(
-              cos(radians(a.latitude)) * cos(radians(b.latitude)) * 
-              cos(radians(b.longitude) - radians(a.longitude)) + 
-              sin(radians(a.latitude)) * sin(radians(b.latitude))
-            )) < 10  -- Exclude distances less than 10 meters
-            AND b.datetime_mobile < a.datetime_mobile
-        )
-        AND NOT EXISTS (
-          SELECT 1 
-          FROM emp_tracking c 
-          WHERE c.emp_id = a.emp_id 
-            AND c.date = ? 
-            AND (6371000 * acos(
-              cos(radians(a.latitude)) * cos(radians(c.latitude)) * 
-              cos(radians(c.longitude) - radians(a.longitude)) + 
-              sin(radians(a.latitude)) * sin(radians(c.latitude))
-            )) < 10  -- Exclude distances less than 10 meters
-            AND c.datetime_mobile > a.datetime_mobile
-        )
-    `;
+    SELECT DISTINCT *, a.emp_id, a.datetime_mobile, a.latitude, a.longitude 
+    FROM emp_tracking a 
+    WHERE a.emp_id = ? 
+      AND a.date = ? 
+      AND a.latitude != 0.0
+      AND a.longitude != 0.0
+      AND NOT EXISTS (
+        SELECT 1 
+        FROM emp_tracking b 
+        WHERE b.emp_id = a.emp_id 
+          AND b.date = ? 
+          AND (6371000 * acos(
+            cos(radians(a.latitude)) * cos(radians(b.latitude)) * 
+            cos(radians(b.longitude) - radians(a.longitude)) + 
+            sin(radians(a.latitude)) * sin(radians(b.latitude))
+          )) < 10  -- Exclude distances less than 10 meters
+          AND b.datetime_mobile < a.datetime_mobile
+      )
+      AND NOT EXISTS (
+        SELECT 1 
+        FROM emp_tracking c 
+        WHERE c.emp_id = a.emp_id 
+          AND c.date = ? 
+          AND (6371000 * acos(
+            cos(radians(a.latitude)) * cos(radians(c.latitude)) * 
+            cos(radians(c.longitude) - radians(a.longitude)) + 
+            sin(radians(a.latitude)) * sin(radians(c.latitude))
+          )) < 10  -- Exclude distances less than 10 meters
+          AND c.datetime_mobile > a.datetime_mobile
+      )
+  `;
 
     const params = [empId, date, date, date];
 
