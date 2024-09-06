@@ -86,7 +86,7 @@ exports.getCoordinates = async (req, res, next) => {
     const date = req.query.date || "2024-08-29"; // Default date if not provided
 
     let query = `
-      SELECT DISTINCT a.emp_id, a.datetime_mobile, a.latitude, a.longitude 
+      SELECT DISTINCT  *,a.emp_id, a.datetime_mobile, a.latitude, a.longitude 
       FROM emp_tracking a 
       WHERE a.emp_id = ? 
         AND a.date = ?
