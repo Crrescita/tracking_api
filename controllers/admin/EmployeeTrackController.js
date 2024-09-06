@@ -24,21 +24,115 @@ const haversineDistance = (coords1, coords2) => {
   return distance;
 };
 
+// Haversine Distance function to calculate distance between two coordinates
+const haversineDistances = (coord1, coord2) => {
+  const R = 6371000; // Radius of Earth in meters
+  const lat1 = coord1.latitude * (Math.PI / 180);
+  const lat2 = coord2.latitude * (Math.PI / 180);
+  const deltaLat = (coord2.latitude - coord1.latitude) * (Math.PI / 180);
+  const deltaLon = (coord2.longitude - coord1.longitude) * (Math.PI / 180);
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLon / 2) *
+      Math.sin(deltaLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+};
+// main
+// exports.getCoordinates = async (req, res, next) => {
+//   try {
+//     let query =
+//       "SELECT * , round(latitude,6) as latitude, round(longitude,6) as longitude FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
+
+//     for (const key in req.query) {
+//       if (req.query.hasOwnProperty(key)) {
+//         query += ` AND ${key} = '${req.query[key]}'`;
+//       }
+//     }
+
+//     const data = await sqlModel.customQuery(query);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+
+//     let totalDistance = 0;
+
+//     // Calculate the total distance between the coordinates
+//     for (let i = 0; i < data.length - 1; i++) {
+//       const distance = haversineDistance(data[i], data[i + 1]);
+//       totalDistance += distance;
+//     }
+
+//     // Send the response
+//     res.status(200).send({ status: true, totalDistance, data: data });
+//   } catch (error) {
+//     console.error("Error in getCoordinates:", error);
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getCoordinates = async (req, res, next) => {
   try {
-    let query =
-      "SELECT * , round(latitude,6) as latitude, round(longitude,6) as longitude FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
+    const empId = req.query.emp_id || 4;
+    const date = req.query.date || "2024-08-29";
 
+    let query = `
+      SELECT DISTINCT a.emp_id, a.datetime_mobile, a.latitude, a.longitude 
+      FROM emp_tracking a 
+      WHERE a.emp_id = ? 
+        AND a.date = ? 
+        AND NOT EXISTS (
+          SELECT 1 
+          FROM emp_tracking b 
+          WHERE b.emp_id = a.emp_id 
+            AND b.date = ? 
+            AND (6371000 * acos(
+              cos(radians(a.latitude)) * cos(radians(b.latitude)) * 
+              cos(radians(b.longitude) - radians(a.longitude)) + 
+              sin(radians(a.latitude)) * sin(radians(b.latitude))
+            )) < 10  -- Exclude distances less than 10 meters
+            AND b.datetime_mobile < a.datetime_mobile
+        )
+        AND NOT EXISTS (
+          SELECT 1 
+          FROM emp_tracking c 
+          WHERE c.emp_id = a.emp_id 
+            AND c.date = ? 
+            AND (6371000 * acos(
+              cos(radians(a.latitude)) * cos(radians(c.latitude)) * 
+              cos(radians(c.longitude) - radians(a.longitude)) + 
+              sin(radians(a.latitude)) * sin(radians(c.latitude))
+            )) < 10 
+            AND c.datetime_mobile > a.datetime_mobile
+        )
+      ORDER BY a.datetime_mobile;
+    `;
+
+    const params = [empId, date, date, date];
+
+    // Apply additional filters based on query parameters
     for (const key in req.query) {
-      if (req.query.hasOwnProperty(key)) {
-        query += ` AND ${key} = '${req.query[key]}'`;
+      if (req.query.hasOwnProperty(key) && key !== "emp_id" && key !== "date") {
+        query += ` AND ${key} = ?`;
+        params.push(req.query[key]);
       }
     }
 
-    const data = await sqlModel.customQuery(query);
+    const data = await sqlModel.customQuery(query, params);
 
-    if (data.error) {
-      return res.status(500).send(data);
+    if (!data || data.error) {
+      return res
+        .status(500)
+        .send(data || { status: false, error: "Query failed" });
     }
 
     if (data.length === 0) {
@@ -47,14 +141,13 @@ exports.getCoordinates = async (req, res, next) => {
 
     let totalDistance = 0;
 
-    // Calculate the total distance between the coordinates
+    // Calculate total distance between consecutive points using the Haversine formula
     for (let i = 0; i < data.length - 1; i++) {
-      const distance = haversineDistance(data[i], data[i + 1]);
+      const distance = haversineDistances(data[i], data[i + 1]);
       totalDistance += distance;
     }
 
-    // Send the response
-    res.status(200).send({ status: true, totalDistance, data: data });
+    res.status(200).send({ status: true, totalDistance, data });
   } catch (error) {
     console.error("Error in getCoordinates:", error);
     res.status(500).send({ status: false, error: error.message });
