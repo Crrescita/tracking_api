@@ -82,14 +82,14 @@ const haversineDistances = (coord1, coord2) => {
 
 exports.getCoordinates = async (req, res, next) => {
   try {
-    const empId = req.query.emp_id || 4;
-    const date = req.query.date || "2024-08-29";
+    const empId = req.query.emp_id || 4; // Default emp_id to 4 if not provided
+    const date = req.query.date || "2024-08-29"; // Default date if not provided
 
     let query = `
       SELECT DISTINCT a.emp_id, a.datetime_mobile, a.latitude, a.longitude 
       FROM emp_tracking a 
       WHERE a.emp_id = ? 
-        AND a.date = ? 
+        AND a.date = ?
         AND NOT EXISTS (
           SELECT 1 
           FROM emp_tracking b 
@@ -111,21 +111,23 @@ exports.getCoordinates = async (req, res, next) => {
               cos(radians(a.latitude)) * cos(radians(c.latitude)) * 
               cos(radians(c.longitude) - radians(a.longitude)) + 
               sin(radians(a.latitude)) * sin(radians(c.latitude))
-            )) < 10 
+            )) < 10  -- Exclude distances less than 10 meters
             AND c.datetime_mobile > a.datetime_mobile
         )
-      ORDER BY a.datetime_mobile;
     `;
 
     const params = [empId, date, date, date];
 
-    // Apply additional filters based on query parameters
+    // Dynamically append additional filters based on query parameters
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key) && key !== "emp_id" && key !== "date") {
         query += ` AND ${key} = ?`;
         params.push(req.query[key]);
       }
     }
+
+    // Closing the query with the ORDER BY clause
+    query += " ORDER BY a.datetime_mobile";
 
     const data = await sqlModel.customQuery(query, params);
 
@@ -143,7 +145,7 @@ exports.getCoordinates = async (req, res, next) => {
 
     // Calculate total distance between consecutive points using the Haversine formula
     for (let i = 0; i < data.length - 1; i++) {
-      const distance = haversineDistances(data[i], data[i + 1]);
+      const distance = haversineDistance(data[i], data[i + 1]);
       totalDistance += distance;
     }
 
