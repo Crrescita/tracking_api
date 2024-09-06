@@ -769,12 +769,12 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
             }
             groupedData[item.date].last_check_in_time = checkInTimes[0]
               ? checkInTimes[0]
-              : "00:00:00";
+              : "-";
             groupedData[item.date].last_check_out_time = checkOutTimes[
               checkOutTimes.length - 1
             ]
               ? checkOutTimes[checkOutTimes.length - 1]
-              : "00:00:00";
+              : "-";
 
             groupedData[item.date].timeline = timeline;
           }
