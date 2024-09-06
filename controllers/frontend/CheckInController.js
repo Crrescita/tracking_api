@@ -266,10 +266,10 @@ exports.getCheckIn = async (req, res, next) => {
     const query = `
       SELECT 
         ea.date,
+        ea.total_duration,
         c.check_out_time,
         c.checkin_status,
-        c.check_in_time,
-        c.duration
+        c.check_in_time
       FROM emp_attendance ea
       LEFT JOIN check_in c
         ON ea.emp_id = c.emp_id
@@ -282,7 +282,7 @@ exports.getCheckIn = async (req, res, next) => {
 
     const values = [queryDate, emp_id, company_id, queryDate];
     const data = await sqlModel.customQuery(query, values);
-
+    console.log(data);
     if (data.error) {
       return res.status(500).send({
         status: false,
@@ -311,7 +311,7 @@ exports.getCheckIn = async (req, res, next) => {
 
     const response = {
       date: queryDate,
-      total_duration: data[lastIndex]?.duration || "00:00:00",
+      total_duration: data[lastIndex]?.total_duration || "00:00:00",
       earliestCheckInTime: data[0]?.check_in_time || "00:00:00",
       latestCheckOutTime: data[lastIndex]?.check_out_time || "00:00:00",
       checkin_status: data[lastIndex]?.checkin_status || "Check-in",
