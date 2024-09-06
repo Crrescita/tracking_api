@@ -101,7 +101,7 @@ exports.getCoordinates = async (req, res, next) => {
             cos(radians(a.latitude)) * cos(radians(b.latitude)) * 
             cos(radians(b.longitude) - radians(a.longitude)) + 
             sin(radians(a.latitude)) * sin(radians(b.latitude))
-          )) < 10  -- Exclude distances less than 10 meters
+          )) < 5
           AND b.datetime_mobile < a.datetime_mobile
       )
       AND NOT EXISTS (
@@ -113,7 +113,7 @@ exports.getCoordinates = async (req, res, next) => {
             cos(radians(a.latitude)) * cos(radians(c.latitude)) * 
             cos(radians(c.longitude) - radians(a.longitude)) + 
             sin(radians(a.latitude)) * sin(radians(c.latitude))
-          )) < 10  -- Exclude distances less than 10 meters
+          )) < 5
           AND c.datetime_mobile > a.datetime_mobile
       )
   `;
