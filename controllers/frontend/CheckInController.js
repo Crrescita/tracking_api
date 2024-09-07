@@ -392,7 +392,7 @@ exports.checkIn = async (req, res, next) => {
     const checkInDateTime = new Date(`1970-01-01T${currentTime}Z`);
 
     // Determine check-in status and time difference
-    let checkin_status = "On Time";
+    let checkin_status = "On-Time";
     let timeDifferenceSeconds = 0;
 
     if (checkInDateTime < startDateTime) {

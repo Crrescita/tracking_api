@@ -6,9 +6,70 @@ const bcrypt = require("bcrypt");
 const baseDir = path.join(__dirname, "uploads");
 const saltRounds = 10;
 
+// exports.login = async (req, res, next) => {
+//   try {
+//     const { email, password, user_type } = req.body;
+
+//     const table = user_type === "administrator" ? "users" : "company";
+
+//     const [user] = await sqlModel.select(table, {}, { email });
+
+//     if (!user) {
+//       return res.status(200).send({
+//         status: false,
+//         message: "Email does not exist",
+//         statusCode: 4,
+//       });
+//     }
+
+//     if (user_type === "company" && user.status !== "active") {
+//       return res.status(200).send({
+//         status: false,
+//         message: "Company account is inactive",
+//         statusCode: 5,
+//       });
+//     }
+
+//     // Verify password
+//     const passwordMatch = await bcrypt.compare(password, user.password);
+//     if (!passwordMatch) {
+//       return res.status(200).send({
+//         status: false,
+//         message: "Password do not match",
+//         statusCode: 3,
+//       });
+//     }
+
+//     // Generate a new token
+//     const token = crypto.randomBytes(20).toString("hex");
+
+//     // Update the user with the new token
+//     await sqlModel.update(table, { api_token: token }, { id: user.id });
+
+//     // Fetch the updated user
+//     const [updatedUser] = await sqlModel.select(table, {}, { email });
+
+//     // Respond with the updated user data
+//     return res.status(200).send({
+//       status: true,
+//       data: updatedUser,
+//       user_type: user_type,
+//       message: "Login successfully",
+//       statusCode: 3,
+//     });
+//   } catch (error) {
+//     // Respond with a generic error message
+//     return res.status(500).send({
+//       status: false,
+//       message: "An error occurred during login",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.login = async (req, res, next) => {
   try {
-    const { email, password, user_type } = req.body;
+    const { email, password, user_type, device_info } = req.body;
 
     const table = user_type === "administrator" ? "users" : "company";
 
@@ -30,7 +91,6 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(200).send({
@@ -40,25 +100,30 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // Generate a new token
     const token = crypto.randomBytes(20).toString("hex");
 
-    // Update the user with the new token
+    await sqlModel.insert("user_sessions", {
+      user_id: user.id,
+      api_token: token,
+      user_type: user_type,
+      device_info: device_info || "unknown",
+      ip_address:
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+    });
+
     await sqlModel.update(table, { api_token: token }, { id: user.id });
 
-    // Fetch the updated user
     const [updatedUser] = await sqlModel.select(table, {}, { email });
 
-    // Respond with the updated user data
     return res.status(200).send({
       status: true,
       data: updatedUser,
+      token: token,
       user_type: user_type,
       message: "Login successfully",
       statusCode: 3,
     });
   } catch (error) {
-    // Respond with a generic error message
     return res.status(500).send({
       status: false,
       message: "An error occurred during login",

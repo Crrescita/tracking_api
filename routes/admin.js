@@ -12,6 +12,9 @@ const HolidayController = require("../controllers/admin/HolidayController");
 const LeaveManagmentController = require("../controllers/admin/LeaveManagementController");
 const EmployeeAttendanceController = require("../controllers/admin/EmployeeAttendanceController");
 const AddressController = require("../controllers/admin/AddressController");
+const FirebaseController = require("../controllers/admin/FirebaseController");
+const NotificationController = require("../controllers/admin/NotificationController");
+
 // for testing it is comment
 // const verifyToken = async (req, res, next) => {
 //   const authHeader = req.headers["authorization"];
@@ -52,6 +55,65 @@ const AddressController = require("../controllers/admin/AddressController");
 //     });
 //   }
 // };
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const userType = req.headers["usertype"];
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      status: false,
+      message: "Unauthorized: Token not provided",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    // Query the user_session table instead of directly querying users/company
+    const [session] = await sqlModel.select(
+      "user_session",
+      {},
+      { api_token: token }
+    );
+
+    if (!session) {
+      return res.status(403).json({
+        status: false,
+        message: "Forbidden: Invalid or expired token",
+      });
+    }
+
+    // Fetch the corresponding user details based on the session data
+    const authuserTable = userType === "company" ? "company" : "users";
+
+    const [user] = await sqlModel.select(
+      authuserTable,
+      {},
+      { id: session.user_id }
+    );
+
+    if (!user) {
+      return res.status(403).json({
+        status: false,
+        message: "Forbidden: User not found",
+      });
+    }
+
+    // Attach user and session data to req for use in the next middleware
+    req.user = user;
+    req.session = session;
+
+    next();
+  } catch (error) {
+    console.error("Error querying database:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
 
 //login & regiseter
 router.post("/login", UserController.login);
@@ -200,6 +262,14 @@ router
 
 // address
 router.route("/address").post(AddressController.createAddress);
+
+// fcm token
+router.post("/setFcmToken", FirebaseController.setFcmToken);
+
+// get notification
+router.get("/getNotification/:id", NotificationController.getNotification);
+
+router.post("/markAsRead", NotificationController.markAsRead);
 
 /* GET users listing. */
 router.get("/", function (req, res, next) {
