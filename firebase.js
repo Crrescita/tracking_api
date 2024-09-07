@@ -1,5 +1,4 @@
 const admin = require("firebase-admin");
-const serviceAccount = require("./serviceAccountKey.json");
 const base64ServiceAccountKey = process.env.GOOGLE_CLOUD_KEY;
 
 const serviceAccount = JSON.parse(
