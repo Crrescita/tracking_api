@@ -259,7 +259,7 @@ const sendMail = require("../../mail/nodemailer");
 //   }
 // };
 
-const admin = require("../../firebase"); // Import the Firebase Admin instance
+const admin = require("../../firebase");
 
 exports.createLeaveRequest = async (req, res, next) => {
   try {
@@ -392,23 +392,53 @@ exports.createLeaveRequest = async (req, res, next) => {
 
       sendMail.sendLeaveRequestToCompany(emailData);
 
-      const [token] = await sqlModel.select("fcm_tokens", ["fcm_token"], {
+      // const [token] = await sqlModel.select("fcm_tokens", ["fcm_token"], {
+      //   user_id: employee.company_id,
+      // });
+
+      // const messageContent = `Leave request from ${employee.name}.`;
+      // // Send Firebase notification
+      // const message = {
+      //   notification: {
+      //     title: "New Leave Request",
+      //     body: messageContent,
+      //     image: employee.image
+      //       ? `${process.env.BASE_URL}${employee.image}`
+      //       : "",
+      //   },
+
+      //   token: token.fcm_token,
+      // };
+
+      const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], {
         user_id: employee.company_id,
       });
 
-      const messageContent = `Leave request from ${employee.name} for ${insert.leave_type}.`;
-      // Send Firebase notification
-      const message = {
-        notification: {
-          title: "New Leave Request",
-          body: messageContent,
-          image: employee.image
-            ? `${process.env.BASE_URL}${employee.image}`
-            : "",
-        },
+      if (tokens.length === 0) {
+        return res.status(400).send({
+          status: false,
+          message: "No FCM tokens found for the company",
+        });
+      }
 
-        token: token.fcm_token,
-      };
+      const messageContent = `Leave request from ${employee.name}.`;
+
+      // Create a notification promise for each token
+      const notificationPromises = tokens.map(({ fcm_token }) => {
+        return admin.messaging().send({
+          notification: {
+            title: "New Leave Request",
+            body: messageContent,
+            image: employee.image
+              ? `${process.env.BASE_URL}${employee.image}`
+              : "",
+          },
+          token: fcm_token,
+        });
+      });
+
+      // Execute all notification sends in parallel
+      await Promise.all(notificationPromises);
 
       const insertNotification = {
         company_id: employee.company_id,

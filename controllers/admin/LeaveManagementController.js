@@ -11,254 +11,6 @@ const createSlug = (title) => {
     .replace(/-+$/, ""); // Trim - from end of text
 };
 
-// exports.createLeaveType = async (req, res, next) => {
-//   try {
-//     const id = req.params.id || "";
-//     const { name, company_id, total_leave_days, status } = req.body;
-
-//     let slug = "";
-//     if (name) {
-//       slug = createSlug(name);
-//     }
-//     const insert = { name, company_id, slug, total_leave_days, status };
-
-//     let previousLeaveDays = 0;
-
-//     // Fetch remaining leave days for the company
-//     const remainingLeaveDaysResult = await sqlModel.select(
-//       "leave_settings",
-//       ["remaining_leavedays"],
-//       { company_id }
-//     );
-
-//     if (
-//       remainingLeaveDaysResult.error ||
-//       remainingLeaveDaysResult.length === 0
-//     ) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Company not found or no remaining leave days available",
-//       });
-//     }
-
-//     const remainingLeaveDays = remainingLeaveDaysResult[0].remaining_leavedays;
-
-//     // Check if total_leave_days exceeds remaining leave days
-//     if (total_leave_days > remainingLeaveDays) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Total leave days cannot exceed remaining leave days",
-//       });
-//     }
-
-//     if (id) {
-//       const leaveTypeRecord = await sqlModel.select(
-//         "leave_type",
-//         ["name", "total_leave_days"],
-//         { id }
-//       );
-//       if (leaveTypeRecord.error || leaveTypeRecord.length === 0) {
-//         return res
-//           .status(200)
-//           .send({ status: false, message: "Leave Type not found" });
-//       }
-
-//       previousLeaveDays = leaveTypeRecord[0].total_leave_days || 0;
-
-//       insert.updated_at = getCurrentDateTime();
-//       const saveData = await sqlModel.update("leave_type", insert, { id });
-
-//       if (saveData.error) {
-//         return res.status(200).send(saveData);
-//       } else {
-//         const diff = total_leave_days - previousLeaveDays;
-//         await sqlModel.customQuery(
-//           `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
-//           [diff, company_id]
-//         );
-
-//         return res.status(200).send({ status: true, message: "Data Updated" });
-//       }
-//     } else {
-//       const existingSlug = await sqlModel.select("leave_type", ["id"], {
-//         slug,
-//       });
-
-//       if (existingSlug.length > 0) {
-//         return res
-//           .status(400)
-//           .send({ status: false, message: "Leave Type already exists" });
-//       }
-//       insert.created_at = getCurrentDateTime();
-//       const saveData = await sqlModel.insert("leave_type", insert);
-
-//       if (saveData.error) {
-//         return res.status(200).send(saveData);
-//       } else {
-//         await sqlModel.customQuery(
-//           `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
-//           [total_leave_days, company_id]
-//         );
-
-//         return res.status(200).send({ status: true, message: "Data Saved" });
-//       }
-//     }
-//   } catch (err) {
-//     return res.status(500).send({ status: false, error: err.message });
-//   }
-// };
-
-// exports.createLeaveType = async (req, res, next) => {
-//   try {
-//     const id = req.params.id || "";
-//     const { name, company_id, total_leave_days, status } = req.body;
-
-//     let slug = "";
-//     if (name) {
-//       slug = createSlug(name);
-//     }
-//     const insert = { name, company_id, slug, total_leave_days, status };
-
-//     // Fetch current leave settings for the company
-//     const leaveSettingsResult = await sqlModel.select(
-//       "leave_settings",
-//       ["remaining_leavedays", "used_leavedays", "totalannual_leavedays"],
-//       { company_id }
-//     );
-
-//     if (leaveSettingsResult.error || leaveSettingsResult.length === 0) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Company not found or no leave settings available",
-//       });
-//     }
-
-//     const { remaining_leavedays, used_leavedays, totalannual_leavedays } =
-//       leaveSettingsResult[0];
-//     const availableLeaveDays = totalannual_leavedays - used_leavedays;
-
-//     // Ensure total_leave_days does not exceed totalannual_leavedays
-//     if (total_leave_days > totalannual_leavedays) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Total leave days cannot exceed the total annual leave days",
-//       });
-//     }
-
-//     if (id) {
-//       // Updating an existing leave type
-//       const leaveTypeRecord = await sqlModel.select(
-//         "leave_type",
-//         ["total_leave_days", "status"],
-//         { id }
-//       );
-
-//       if (leaveTypeRecord.error || leaveTypeRecord.length === 0) {
-//         return res.status(404).send({
-//           status: false,
-//           message: "Leave Type not found",
-//         });
-//       }
-
-//       const previousLeaveDays = leaveTypeRecord[0].total_leave_days || 0;
-//       const previousStatus = leaveTypeRecord[0].status;
-
-//       insert.updated_at = getCurrentDateTime();
-//       const updateData = await sqlModel.update("leave_type", insert, { id });
-
-//       if (updateData.error) {
-//         return res.status(500).send({
-//           status: false,
-//           message: "Error updating leave type",
-//         });
-//       }
-
-//       const diff = total_leave_days - previousLeaveDays;
-
-//       if (status !== previousStatus) {
-//         // Handle status change
-//         if (status === "inactive") {
-//           // Increase remaining leave days if status changes to inactive
-//           await sqlModel.customQuery(
-//             `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays + ? WHERE company_id = ?`,
-//             [previousLeaveDays, company_id]
-//           );
-//         } else if (status === "active") {
-//           // Check if we have enough leave days before activating
-//           if (total_leave_days > availableLeaveDays) {
-//             return res.status(400).send({
-//               status: false,
-//               message:
-//                 "Cannot activate leave type; insufficient remaining leave days",
-//             });
-//           }
-//           await sqlModel.customQuery(
-//             `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
-//             [total_leave_days, company_id]
-//           );
-//         }
-//       } else {
-//         // Adjust remaining leave days based on the change in total_leave_days
-//         if (diff !== 0) {
-//           await sqlModel.customQuery(
-//             `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
-//             [diff, company_id]
-//           );
-//         }
-//       }
-
-//       return res.status(200).send({
-//         status: true,
-//         message: "Data Updated",
-//       });
-//     } else {
-//       // Creating a new leave type
-//       const existingSlug = await sqlModel.select("leave_type", ["id"], {
-//         slug,
-//       });
-
-//       if (existingSlug.length > 0) {
-//         return res.status(400).send({
-//           status: false,
-//           message: "Leave Type already exists",
-//         });
-//       }
-
-//       if (status === "active" && total_leave_days > availableLeaveDays) {
-//         return res.status(400).send({
-//           status: false,
-//           message: "Total leave days cannot exceed available leave days",
-//         });
-//       }
-
-//       insert.created_at = getCurrentDateTime();
-//       const saveData = await sqlModel.insert("leave_type", insert);
-
-//       if (saveData.error) {
-//         return res.status(500).send({
-//           status: false,
-//           message: "Error saving leave type",
-//         });
-//       } else {
-//         if (status === "active") {
-//           await sqlModel.customQuery(
-//             `UPDATE leave_settings SET remaining_leavedays = remaining_leavedays - ? WHERE company_id = ?`,
-//             [total_leave_days, company_id]
-//           );
-//         }
-
-//         return res.status(200).send({
-//           status: true,
-//           message: "Data Saved",
-//         });
-//       }
-//     }
-//   } catch (err) {
-//     console.error("Unhandled error: ", err);
-//     return res.status(500).send({ status: false, error: err.message });
-//   }
-// };
-
 exports.createLeaveType = async (req, res, next) => {
   try {
     const id = req.params.id || "";
@@ -684,26 +436,24 @@ exports.getLeaveRequest = async (req, res, next) => {
     await sqlModel.customQuery(updateExpiredQuery, [company_id, currentDate]);
 
     const query = `
-        SELECT 
-          lr.leave_type, 
-          lr.from_date, 
-          lr.to_date, 
-          lr.status, 
-          lr.reason, 
-          lr.created_at, 
-          lr.id, 
-          e.name, 
-          e.designation, 
-          CASE 
-            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image) 
-          END AS image
-        FROM leave_request lr 
-        LEFT JOIN employees e 
-        ON lr.emp_id = e.id 
-        AND lr.company_id = e.company_id 
-        WHERE lr.company_id = ? 
-        AND lr.status = 'Pending'
-      `;
+    SELECT 
+      lr.leave_type AS leaveType_id, 
+      lr.from_date, 
+      lr.to_date, 
+      lr.status, 
+      lr.reason, 
+      lr.created_at, 
+      lr.id, 
+      lt.name AS leave_type, 
+      e.name, 
+      e.designation, 
+      COALESCE(CONCAT(?, e.image), '') AS image 
+    FROM leave_request lr
+    LEFT JOIN employees e ON lr.emp_id = e.id 
+    LEFT JOIN leave_type lt ON lr.leave_type = lt.id AND lt.company_id = lr.company_id 
+    WHERE lr.company_id = ? 
+      AND lr.status = 'Pending'
+  `;
 
     const values = [process.env.BASE_URL, company_id];
     const data = await sqlModel.customQuery(query, values);
@@ -792,9 +542,10 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
     const leaveRecord = await sqlModel.select("leave_request", ["*"], { id });
 
     if (leaveRecord.error || leaveRecord.length === 0) {
-      return res
-        .status(200)
-        .send({ status: false, message: "Leave not found" });
+      return res.status(200).send({
+        status: false,
+        message: "Leave not found",
+      });
     }
 
     insert.updated_at = getCurrentDateTime();
@@ -805,11 +556,12 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
       return res.status(200).send(saveData);
     }
 
-    if (status === "Approved") {
+    if (status == "Approved") {
       const fromDate = new Date(leaveRecord[0].from_date);
       const toDate = new Date(leaveRecord[0].to_date);
       const empId = leaveRecord[0].emp_id;
       const companyId = leaveRecord[0].company_id;
+      const leaveType = leaveRecord[0].leave_type;
 
       const holidays = await sqlModel.select("company_holidays", ["date"], {
         company_id: companyId,
@@ -817,6 +569,7 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
       const holidayDates = holidays.map((holiday) => holiday.date);
 
       let currentDate = new Date(fromDate);
+      let noOfDays = 0;
 
       while (currentDate <= toDate) {
         const dayOfWeek = currentDate.getDay();
@@ -824,6 +577,7 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
 
         // Exclude Sundays and holidays
         if (dayOfWeek !== 0 && !holidayDates.includes(formattedDate)) {
+          noOfDays++;
           const checkInData = {
             emp_id: empId,
             company_id: companyId,
@@ -832,12 +586,45 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
             created_at: getCurrentDateTime(),
           };
 
-          //   await sqlModel.insert("check_in", checkInData);
           await sqlModel.insert("emp_attendance", checkInData);
         }
 
         // Move to the next day
         currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Check if leave record already exists
+      const existingLeaveRecord = await sqlModel.select(
+        "leave_record",
+        ["id", "no_of_days"],
+        {
+          emp_id: empId,
+          company_id: companyId,
+          leave_type: leaveType,
+        }
+      );
+
+      if (existingLeaveRecord.length > 0) {
+        const updatedDays =
+          parseInt(existingLeaveRecord[0].no_of_days) + noOfDays;
+        await sqlModel.update(
+          "leave_record",
+          {
+            no_of_days: updatedDays.toString(),
+            updated_at: getCurrentDateTime(),
+          },
+          { id: existingLeaveRecord[0].id }
+        );
+      } else {
+        const leaveRecordData = {
+          emp_id: empId,
+          company_id: companyId,
+          leave_type: leaveType,
+          no_of_days: noOfDays.toString(),
+          created_at: getCurrentDateTime(),
+        };
+
+        await sqlModel.insert("leave_record", leaveRecordData);
       }
     }
 
