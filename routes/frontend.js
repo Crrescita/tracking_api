@@ -119,7 +119,7 @@ router.get("/myRecord", MyRecordController.getRecord);
 // support
 router.post(
   "/support",
-  upload.fields([{ name: "media", maxCount: 1 }]),
+  upload.fields([{ name: "image", maxCount: 1 }]),
   SupportController.createSupport
 );
 

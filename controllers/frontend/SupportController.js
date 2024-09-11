@@ -32,7 +32,7 @@ exports.createSupport = async (req, res, next) => {
       created_at: getCurrentDateTime(),
     };
 
-    if (req.files && req.files.media) {
+    if (req.files && req.files.image) {
       insertData.media = req.fileFullPath.find((path) =>
         path.includes("image")
       );
