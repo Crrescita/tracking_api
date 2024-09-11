@@ -57,50 +57,6 @@ app.use(function (req, res, next) {
 });
 
 // Error handler
-// app.use(function (err, req, res, next) {
-//   // Log the error with the appropriate logger based on the route
-//   if (req.originalUrl.startsWith("/admin")) {
-//     adminErrorLogger.winstonInstance.error(err.message, {
-//       request: {
-//         method: req.method,
-//         url: req.originalUrl,
-//         headers: req.headers,
-//         body: req.body,
-//       },
-//       response: {
-//         statusCode: res.statusCode,
-//         responseTime: res.responseTime,
-//         headers: res.getHeaders(),
-//         body: res.body,
-//       },
-//     });
-//   } else if (req.originalUrl.startsWith("/frontend")) {
-//     frontendErrorLogger.winstonInstance.error(err.message, {
-//       request: {
-//         method: req.method,
-//         url: req.originalUrl,
-//         headers: req.headers,
-//         body: req.body,
-//       },
-//       response: {
-//         statusCode: res.statusCode,
-//         responseTime: res.responseTime,
-//         headers: res.getHeaders(),
-//         body: res.body,
-//       },
-//     });
-//   }
-
-//   // Set locals for rendering error page
-//   res.locals.message = err.message;
-//   res.locals.error = req.app.get("env") === "development" ? err : {};
-
-//   // Render the error page
-//   res.status(err.status || 500);
-//   res.render("error");
-// });
-
-// Error handler
 app.use(function (err, req, res, next) {
   // Log the error with the appropriate logger based on the route
   if (req.originalUrl.startsWith("/admin")) {
@@ -112,10 +68,10 @@ app.use(function (err, req, res, next) {
         body: req.body,
       },
       response: {
-        statusCode: res.statusCode || 500, // Add default value if statusCode is undefined
-        responseTime: res.responseTime || "N/A", // Default value if undefined
-        headers: res.getHeaders ? res.getHeaders() : {}, // Ensure getHeaders exists
-        body: res.body || {}, // Default to empty object if body is undefined
+        statusCode: res.statusCode || 500,
+        responseTime: res.responseTime || "N/A",
+        headers: res.getHeaders ? res.getHeaders() : {},
+        body: res.body || {},
       },
     });
   } else if (req.originalUrl.startsWith("/frontend")) {
@@ -127,21 +83,20 @@ app.use(function (err, req, res, next) {
         body: req.body,
       },
       response: {
-        statusCode: res.statusCode || 500, // Add default value if statusCode is undefined
-        responseTime: res.responseTime || "N/A", // Default value if undefined
-        headers: res.getHeaders ? res.getHeaders() : {}, // Ensure getHeaders exists
-        body: res.body || {}, // Default to empty object if body is undefined
+        statusCode: res.statusCode || 500,
+        responseTime: res.responseTime || "N/A",
+        headers: res.getHeaders ? res.getHeaders() : {},
+        body: res.body || {},
       },
     });
   }
 
-  // Set locals for rendering error page
-  res.locals.message = err.message;
-  res.locals.error = req.app.get("env") === "development" ? err : {};
-
-  // Render the error page
-  res.status(err.status || 500);
-  res.render("error");
+  // Send JSON error response
+  res.status(err.status || 500).json({
+    status: false,
+    message: err.message,
+    error: req.app.get("env") === "development" ? err : {},
+  });
 });
 
 // Handle uncaught exceptions
