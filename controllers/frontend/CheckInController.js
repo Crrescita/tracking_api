@@ -1002,8 +1002,9 @@ exports.checkOut = async (req, res, next) => {
         date,
         earliestCheckInTime: checkInData[checkInData.length - 1]?.check_in_time,
         latestCheckOutTime: checkOutTime,
+        checkin_status: "Check-out"
         total_duration: formatDuration(totalDurationInSeconds),
-        totalDistance,
+        // totalDistance,
       },
     });
   } catch (error) {
