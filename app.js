@@ -1,76 +1,111 @@
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+const createError = require("http-errors");
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const logger = require("morgan");
+const frontendRouter = require("./routes/frontend");
+const adminRouter = require("./routes/admin");
+const {
+  adminRequestLogger,
+  frontendRequestLogger,
+  adminErrorLogger,
+  frontendErrorLogger,
+} = require("./middleware/logRequests");
 
-var frontendRouter = require("./routes/frontend");
-var adminRouter = require("./routes/admin");
+const app = express();
 
-var app = express();
-
-var corsOptions = {
+// CORS configuration
+const corsOptions = {
   origin: [
     "http://localhost:4200",
-    "http://localhost:4200/",
     "http://localhost:3000/",
     "http://localhost:6000/",
     "http://localhost:60912",
-"https://emptracking.crrescita.com/",
-"https://emptracking.crrescita.com"
+    "https://emptracking.crrescita.com/",
+    "https://emptracking.crrescita.com",
   ],
 };
+
 app.use(cors(corsOptions));
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Methods", "PUT, POST, GET, PATCH, DELETE");
-    return res.status(200).json({});
-  }
-  next();
-});
-
-var options = {
-  origin: "*",
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-};
-app.use(cors(options));
-
-// view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "jade");
-
-app.use(logger("dev"));
+// Middleware to parse JSON bodies and cookies
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/logs", express.static(path.join(__dirname, "logs")));
 
+// Use Morgan for logging access requests
+app.use(logger("dev"));
+
+// Use logging middleware for each route
+app.use("/admin", adminRequestLogger);
+app.use("/frontend", frontendRequestLogger);
+
+// Routes
 app.use("/frontend", frontendRouter);
 app.use("/admin", adminRouter);
 
-// catch 404 and forward to error handler
+// Middleware for error logging
+app.use("/admin", adminErrorLogger);
+app.use("/frontend", frontendErrorLogger);
+
+// Middleware for handling 404 errors
 app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// error handler
+// Error handler
 app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
+  // Log the error with the appropriate logger based on the route
+  if (req.originalUrl.startsWith("/admin")) {
+    adminErrorLogger.winstonInstance.error(err.message, {
+      request: {
+        method: req.method,
+        url: req.originalUrl,
+        headers: req.headers,
+        body: req.body,
+      },
+      response: {
+        statusCode: res.statusCode,
+        responseTime: res.responseTime,
+        headers: res.getHeaders(),
+        body: res.body,
+      },
+    });
+  } else if (req.originalUrl.startsWith("/frontend")) {
+    frontendErrorLogger.winstonInstance.error(err.message, {
+      request: {
+        method: req.method,
+        url: req.originalUrl,
+        headers: req.headers,
+        body: req.body,
+      },
+      response: {
+        statusCode: res.statusCode,
+        responseTime: res.responseTime,
+        headers: res.getHeaders(),
+        body: res.body,
+      },
+    });
+  }
+
+  // Set locals for rendering error page
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
 
-  // render the error page
+  // Render the error page
   res.status(err.status || 500);
   res.render("error");
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", function (err) {
+  if (err) {
+    console.log("Caught exception: " + err.stack);
+    process.exit(1);
+  }
 });
 
 module.exports = app;

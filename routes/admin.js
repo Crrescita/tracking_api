@@ -14,6 +14,7 @@ const EmployeeAttendanceController = require("../controllers/admin/EmployeeAtten
 const AddressController = require("../controllers/admin/AddressController");
 const FirebaseController = require("../controllers/admin/FirebaseController");
 const NotificationController = require("../controllers/admin/NotificationController");
+const LogController = require("../controllers/admin/LogController");
 
 // for testing it is comment
 // const verifyToken = async (req, res, next) => {
@@ -68,11 +69,11 @@ const verifyToken = async (req, res, next) => {
   }
 
   const token = authHeader.split(" ")[1];
-
+  console.log(token);
   try {
     // Query the user_session table instead of directly querying users/company
     const [session] = await sqlModel.select(
-      "user_session",
+      "user_sessions",
       {},
       { api_token: token }
     );
@@ -125,7 +126,7 @@ router.post("/update_password", UserController.update_password);
 router.post("/forgetPass", UserController.forgetPass);
 router.post("/resetPass", UserController.resetPass);
 
-// router.use(verifyToken);
+router.use(verifyToken);
 
 router
   .route("/company/:id?")
@@ -260,6 +261,12 @@ router
   .get(LeaveManagmentController.getLeaveSetting)
   .post(LeaveManagmentController.createLeaveSetting);
 
+// leave Detail
+router.get("/leaveDetail/:id", LeaveManagmentController.leaveDetail);
+
+// leave record
+router.get("/leaveRecord", LeaveManagmentController.leaveRecord);
+
 // address
 router.route("/address").post(AddressController.createAddress);
 
@@ -271,6 +278,8 @@ router.get("/getNotification/:id", NotificationController.getNotification);
 
 router.post("/markAsRead", NotificationController.markAsRead);
 
+// logs
+router.get("/logs", LogController.getLogs);
 /* GET users listing. */
 router.get("/", function (req, res, next) {
   res.send("respond with a resource");

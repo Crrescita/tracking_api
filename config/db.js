@@ -12,20 +12,50 @@ const pool = mysql.createPool({
 const promisePool = pool.promise();
 
 const sqlModel = {
+  // execute: async (sql, values) => {
+  //   try {
+  //     const [rows, fields] = await promisePool.execute(sql, values);
+  //     return rows;
+  //   } catch (error) {
+  //     const errorResponse = {
+  //       status: false,
+  //       error: {
+  //         code: error.code || "INTERNAL_SERVER_ERROR",
+  //         message:
+  //           error.sqlMessage ||
+  //           "An error occurred while processing the request.",
+  //       },
+  //     };
+  //     throw new Error(errorResponse.error.message);
+  //   }
+  // },
+
   execute: async (sql, values) => {
     try {
       const [rows, fields] = await promisePool.execute(sql, values);
       return rows;
     } catch (error) {
+      let errorMessage = "An error occurred while processing the request.";
+      if (
+        error.code === "ER_NO_REFERENCED_ROW_2" ||
+        error.code === "ER_ROW_IS_REFERENCED_2"
+      ) {
+        errorMessage =
+          "Foreign Key Constraint Error: Unable to delete the record because it is referenced in another part of the system.";
+      }
       const errorResponse = {
         status: false,
         error: {
           code: error.code || "INTERNAL_SERVER_ERROR",
-          message:
-            error.sqlMessage ||
-            "An error occurred while processing the request.",
+          message: errorMessage,
         },
       };
+      console.error({
+        message: errorResponse.error.message,
+        stack: error.stack,
+        sql,
+        values,
+      });
       throw new Error(errorResponse.error.message);
     }
   },

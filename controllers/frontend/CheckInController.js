@@ -406,6 +406,166 @@ const getCompanyCheckInWindow = async (company_id) => {
   };
 };
 
+// exports.checkIn = async (req, res, next) => {
+//   try {
+//     const token = req.headers.authorization?.split(" ")[1];
+
+//     if (!token) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "Token is required" });
+//     }
+
+//     // Fetch employee details using the token
+//     const [employee] = await sqlModel.select(
+//       "employees",
+//       ["id", "company_id"],
+//       { api_token: token }
+//     );
+
+//     if (!employee) {
+//       return res
+//         .status(404)
+//         .send({ status: false, message: "Employee not found" });
+//     }
+
+//     const { id: emp_id, company_id } = employee; // Use emp_id and company_id from the fetched employee
+
+//     const { lat_check_in, long_check_in, battery_status_at_checkIn } = req.body;
+
+//     if (!lat_check_in || !long_check_in || !battery_status_at_checkIn) {
+//       return res.status(200).json({
+//         status: false,
+//         message: "All check-in details are required",
+//       });
+//     }
+
+//     const date = getCurrentDate();
+//     const currentTime = getCurrentTime();
+
+//     // Check if the employee is on leave
+//     const leaveStatus = await sqlModel.select(
+//       "emp_attendance",
+//       ["checkin_status, total_duration"],
+//       {
+//         emp_id,
+//         company_id,
+//         date,
+//       }
+//     );
+
+//     if (leaveStatus.length > 0 && leaveStatus[0].checkin_status === "Leave") {
+//       return res.status(200).json({
+//         status: false,
+//         message: "You are currently on leave and cannot check in",
+//       });
+//     }
+
+//     // Check if the employee has already checked in for the day
+//     const existingCheckIns = await sqlModel.select(
+//       "check_in",
+//       ["id", "check_in_time"],
+//       {
+//         emp_id,
+//         company_id,
+//         date,
+//         checkin_status: "Check-in",
+//       }
+//     );
+
+//     if (existingCheckIns.length > 0) {
+//       return res.status(200).json({
+//         status: false,
+//         message: "Please Check-out before checking in again",
+//       });
+//     }
+
+//     // Retrieve company's check-in time window
+//     const companyData = await sqlModel.select(
+//       "company",
+//       ["check_in_time_start", "check_in_time_end"],
+//       { id: company_id }
+//     );
+
+//     if (!companyData.length) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "Company data not found",
+//       });
+//     }
+
+//     const { check_in_time_start, check_in_time_end } = companyData[0];
+//     const startDateTime = new Date(`1970-01-01T${check_in_time_start}Z`);
+//     const endDateTime = new Date(`1970-01-01T${check_in_time_end}Z`);
+//     const checkInDateTime = new Date(`1970-01-01T${currentTime}Z`);
+
+//     // Determine check-in status and time difference
+//     const { checkin_status, timeDifferenceSeconds } =
+//       getCheckInStatusAndTimeDiff(checkInDateTime, startDateTime, endDateTime);
+
+//     // Check if analytics data for the employee on the same date already exists
+//     await insertAnalyticsData(
+//       emp_id,
+//       company_id,
+//       date,
+//       checkin_status,
+//       timeDifferenceSeconds
+//     );
+
+//     // Handle check-in image if provided
+//     const checkin_img = req.files?.checkin_img
+//       ? req.files.checkin_img[0].path
+//       : null;
+
+//     const newCheckInData = {
+//       emp_id,
+//       company_id,
+//       check_in_time: currentTime,
+//       lat_check_in,
+//       long_check_in,
+//       checkin_img,
+//       battery_status_at_checkIn,
+//       created_at: getCurrentDateTime(),
+//       checkin_status: "Check-in",
+//       date,
+//     };
+
+//     // Insert check-in data
+//     await sqlModel.insert("check_in", newCheckInData);
+
+//     // Retrieve the earliest check-in time for the same date
+//     const earliestCheckInQuery = `
+//       SELECT MIN(check_in_time) AS earliestCheckInTime
+//       FROM check_in
+//       WHERE emp_id = ? AND company_id = ? AND date = ?
+//     `;
+//     const earliestCheckInResult = await sqlModel.customQuery(
+//       earliestCheckInQuery,
+//       [emp_id, company_id, date]
+//     );
+//     const earliestCheckInTime =
+//       earliestCheckInResult[0]?.earliestCheckInTime || currentTime;
+
+//     return res.status(200).json({
+//       status: true,
+//       message: "Check-in successful",
+//       data: {
+//         date,
+//         total_duration: leaveStatus[0].total_duration,
+//         earliestCheckInTime,
+//         latestCheckOutTime: "00:00:00",
+//         checkin_status: "Check-in",
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error during check-in:", error);
+//     return res.status(500).json({
+//       status: false,
+//       message: "An error occurred during check-in",
+//       error: error.message,
+//     });
+//   }
+// };
 exports.checkIn = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -429,12 +589,12 @@ exports.checkIn = async (req, res, next) => {
         .send({ status: false, message: "Employee not found" });
     }
 
-    const { id: emp_id, company_id } = employee; // Use emp_id and company_id from the fetched employee
+    const { id: emp_id, company_id } = employee;
 
     const { lat_check_in, long_check_in, battery_status_at_checkIn } = req.body;
 
     if (!lat_check_in || !long_check_in || !battery_status_at_checkIn) {
-      return res.status(400).json({
+      return res.status(200).json({
         status: false,
         message: "All check-in details are required",
       });
@@ -446,7 +606,7 @@ exports.checkIn = async (req, res, next) => {
     // Check if the employee is on leave
     const leaveStatus = await sqlModel.select(
       "emp_attendance",
-      ["checkin_status, total_duration"],
+      ["checkin_status", "total_duration"],
       {
         emp_id,
         company_id,
@@ -455,7 +615,7 @@ exports.checkIn = async (req, res, next) => {
     );
 
     if (leaveStatus.length > 0 && leaveStatus[0].checkin_status === "Leave") {
-      return res.status(400).json({
+      return res.status(200).json({
         status: false,
         message: "You are currently on leave and cannot check in",
       });
@@ -474,7 +634,7 @@ exports.checkIn = async (req, res, next) => {
     );
 
     if (existingCheckIns.length > 0) {
-      return res.status(400).json({
+      return res.status(200).json({
         status: false,
         message: "Please Check-out before checking in again",
       });
@@ -546,12 +706,15 @@ exports.checkIn = async (req, res, next) => {
     const earliestCheckInTime =
       earliestCheckInResult[0]?.earliestCheckInTime || currentTime;
 
+    // Fix: Add default value for total_duration
+    const total_duration = leaveStatus[0]?.total_duration || "00:00:00";
+
     return res.status(200).json({
       status: true,
       message: "Check-in successful",
       data: {
         date,
-        total_duration: leaveStatus[0].total_duration,
+        total_duration, // Safely use total_duration
         earliestCheckInTime,
         latestCheckOutTime: "00:00:00",
         checkin_status: "Check-in",
