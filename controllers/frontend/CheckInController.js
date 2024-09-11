@@ -168,7 +168,7 @@ exports.getCheckIn = async (req, res, next) => {
       checkin_status: data[lastIndex]?.checkin_status || "Check-in",
     };
 
-    res.status(200).send({ status: true, data: [response] });
+    res.status(200).send({ status: true, data: response });
   } catch (error) {
     res.status(500).send({
       status: false,

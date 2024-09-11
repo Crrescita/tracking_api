@@ -9,7 +9,7 @@ const EmployeeController = require("../controllers/frontend/EmployeeController")
 const PageController = require("../controllers/frontend/PagesController");
 const LeaveController = require("../controllers/frontend/LeaveController");
 const MyRecordController = require("../controllers/frontend/MyRecordController");
-
+const SupportController = require("../controllers/frontend/SupportController");
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
@@ -115,6 +115,13 @@ router
 
 // my record
 router.get("/myRecord", MyRecordController.getRecord);
+
+// support
+router.post(
+  "/support",
+  upload.fields([{ name: "media", maxCount: 1 }]),
+  SupportController.createSupport
+);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {

@@ -202,7 +202,9 @@ exports.updateEmployee = async (req, res, next) => {
       }
     }
 
-    res.status(200).send({ status: true, message: "Data Updated" });
+    res
+      .status(200)
+      .send({ status: true, message: "Profile updated successfully!" });
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
   }

@@ -5,9 +5,10 @@ exports.createSupport = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Token is required" });
+      return res.status(400).send({
+        status: false,
+        message: "Token is required",
+      });
     }
 
     const [employee] = await sqlModel.select(
@@ -17,20 +18,37 @@ exports.createSupport = async (req, res, next) => {
     );
 
     if (!employee) {
-      return res
-        .status(404)
-        .send({ status: false, message: "Employee not found" });
+      return res.status(404).send({
+        status: false,
+        message: "Employee not found",
+      });
     }
 
-    const insert = { ...req.body };
+    const insertData = {
+      ...req.body,
+      emp_id: employee.id,
+      company_id: employee.company_id,
+      created_at: getCurrentDateTime(),
+    };
 
-    insert.emp_id = employee.id;
-    insert.company_id = employee.company_id;
-
-    if (req.files && req.files.image) {
-      insert.media = req.fileFullPath.find((path) => path.includes("image"));
+    if (req.files && req.files.media) {
+      insertData.media = req.fileFullPath.find((path) =>
+        path.includes("image")
+      );
     }
+
+    const saveData = await sqlModel.insert("support", insertData);
+
+    return res.status(201).send({
+      status: true,
+      message:
+        "Support request has been successfully created. Our team will reach out to you shortly.",
+      data: saveData,
+    });
   } catch (error) {
-    return status(500).status({ status: 500, error: error.message });
+    return res.status(500).send({
+      status: false,
+      error: error.message,
+    });
   }
 };
