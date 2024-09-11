@@ -146,15 +146,13 @@ exports.getCheckIn = async (req, res, next) => {
       return res.status(200).send({
         status: true,
         message: "No data found for this date",
-        data: [
-          {
-            date: queryDate,
-            total_duration: "00:00:00",
-            earliestCheckInTime: "00:00:00",
-            latestCheckOutTime: "00:00:00",
-            checkin_status: "Check-out",
-          },
-        ],
+        data: {
+          date: queryDate,
+          total_duration: "00:00:00",
+          earliestCheckInTime: "00:00:00",
+          latestCheckOutTime: "00:00:00",
+          checkin_status: "Check-out",
+        },
       });
     }
 
