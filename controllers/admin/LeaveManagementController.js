@@ -684,7 +684,7 @@ const getFutureRelativeTime = (date) => {
 
 exports.leaveDetail = async (req, res, next) => {
   try {
-    const id = req.params.id || "";
+    const id = req.params.id || ""; // Leave request ID
     const emp_id = req.query.emp_id || "";
     const company_id = req.query.company_id || "";
 
@@ -722,9 +722,18 @@ exports.leaveDetail = async (req, res, next) => {
       remaining_leave: Math.max(record.remaining_leave, 0),
     }));
 
-    // Fetch leave request details
+    // If no `id` is provided, return only the processedResults
+    if (!id) {
+      return res.status(200).json({
+        status: true,
+        message: "Leave records fetched successfully",
+        data: processedResults,
+      });
+    }
+
+    // Fetch leave request details if `id` is provided
     const leaveRequestQuery = `
-      SELECT lr.from_date, lr.to_date, lt.name, lr.reason,lr.no_of_days, lr.created_at
+      SELECT lr.from_date, lr.to_date, lt.name, lr.reason, lr.no_of_days, lr.created_at
       FROM leave_request lr
       LEFT JOIN leave_type lt ON lr.leave_type = lt.id
       WHERE lr.id = ?
@@ -786,7 +795,12 @@ exports.leaveDetail = async (req, res, next) => {
       emp_id,
     ]);
 
-    // Send the response
+    // Check if recentLeave and upcomingLeave have results
+    const recentLeaveDate = recentLeave.length > 0 ? recentLeave[0].date : null;
+    const upcomingLeaveDate =
+      upcomingLeave.length > 0 ? upcomingLeave[0].date : null;
+
+    // Send the response with both processedResults and leave details
     return res.status(200).json({
       status: true,
       data: processedResults,
@@ -799,15 +813,11 @@ exports.leaveDetail = async (req, res, next) => {
         no_of_days: no_of_days,
         reason: reason,
         created_at: created_at,
-        recent_leave_date: recentLeave[0].date ? recentLeave[0].date : "-",
-        upcoming_leave_date: upcomingLeave[0].date
-          ? upcomingLeave[0].date
-          : "-",
-        recent_leave: recentLeave.length
-          ? getRelativeTime(recentLeave[0].date)
-          : null,
-        upcoming_leave: upcomingLeave.length
-          ? getFutureRelativeTime(upcomingLeave[0].date)
+        recent_leave_date: recentLeaveDate ? recentLeaveDate : "-",
+        upcoming_leave_date: upcomingLeaveDate ? upcomingLeaveDate : "-",
+        recent_leave: recentLeaveDate ? getRelativeTime(recentLeaveDate) : null,
+        upcoming_leave: upcomingLeaveDate
+          ? getFutureRelativeTime(upcomingLeaveDate)
           : null,
       },
     });
@@ -824,22 +834,81 @@ exports.leaveDetail = async (req, res, next) => {
 exports.leaveRecord = async (req, res, next) => {
   try {
     const company_id = req.query.company_id || "";
+    const emp_id = req.query.emp_id || "";
 
-    if (!company_id) {
+    // Ensure at least one of the two is provided
+    if (!company_id && !emp_id) {
       return res.status(400).json({
         status: false,
-        message: "Company ID is required",
+        message: "Either Company ID or Employee ID is required",
       });
     }
 
-    // Fetch all employees for the company
-    const employees = await sqlModel.select("employees", {}, { company_id });
+    let employees = [];
 
-    if (employees.length === 0) {
-      return res.status(404).json({
-        status: false,
-        message: "Employees not found",
-      });
+    // Fetch data based on emp_id if provided
+    if (emp_id) {
+      const query = `
+        SELECT
+          e.id,
+          e.company_id,
+          e.name,
+          e.employee_id,
+          d.name AS department_name,
+          de.name AS designation_name,
+          CASE
+            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+            ELSE e.image
+          END AS image
+        FROM employees e
+        LEFT JOIN department d ON e.department = d.id
+        LEFT JOIN designation de ON e.designation = de.id
+        WHERE e.id = ?
+      `;
+
+      employees = await sqlModel.customQuery(query, [
+        process.env.BASE_URL,
+        emp_id,
+      ]);
+
+      if (employees.length === 0) {
+        return res.status(404).json({
+          status: false,
+          message: "Employee not found",
+        });
+      }
+    }
+    // Fetch data based on company_id if emp_id is not provided
+    else if (company_id) {
+      const query = `
+        SELECT
+          e.id,
+          e.company_id,
+          e.name,
+          e.employee_id,
+          d.name AS department_name,
+          de.name AS designation_name,
+          CASE
+            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+            ELSE e.image
+          END AS image
+        FROM employees e
+        LEFT JOIN department d ON e.department = d.id
+        LEFT JOIN designation de ON e.designation = de.id
+        WHERE e.company_id = ?
+      `;
+
+      employees = await sqlModel.customQuery(query, [
+        process.env.BASE_URL,
+        company_id,
+      ]);
+
+      if (employees.length === 0) {
+        return res.status(404).json({
+          status: false,
+          message: "Employees not found",
+        });
+      }
     }
 
     const leaveData = [];
@@ -869,12 +938,27 @@ exports.leaveRecord = async (req, res, next) => {
         emp_id,
       ]);
 
+      const leaveDetailQuery = `SELECT SUM(no_of_days) AS total_leave_taken FROM leave_record WHERE emp_id = ?`;
+
+      const [leaveDetails] = await sqlModel.customQuery(leaveDetailQuery, [
+        emp_id,
+      ]);
+
       // Add the data for this employee to the leaveData array
       leaveData.push({
-        employee_id: emp_id,
-        employee_name: employee.name,
-        recent_leave: recentLeave ? recentLeave.date : null,
-        upcoming_leave: upcomingLeave ? upcomingLeave.date : null,
+        id: emp_id,
+        name: employee.name,
+        designation: employee.designation_name,
+        image: employee.image ? employee.image : "",
+        recent_leave: recentLeave ? getRelativeTime(recentLeave.date) : null,
+        recent_leaveDate: recentLeave ? recentLeave.date : null,
+        upcoming_leaveDate: upcomingLeave ? upcomingLeave.date : null,
+        upcoming_leave: upcomingLeave
+          ? getRelativeTime(upcomingLeave.date)
+          : null,
+        total_leave_taken: leaveDetails
+          ? leaveDetails.total_leave_taken || 0
+          : 0,
       });
     }
 
@@ -888,6 +972,72 @@ exports.leaveRecord = async (req, res, next) => {
     return res.status(500).json({
       status: false,
       message: error.message,
+    });
+  }
+};
+
+exports.leaveRequestType = async (req, res, next) => {
+  try {
+    const { emp_id, status = "approved" } = req.query; // Default status to 'approved' if not provided
+
+    // Ensure emp_id is provided
+    if (!emp_id) {
+      return res.status(400).json({
+        status: false,
+        message: "Employee ID is required",
+      });
+    }
+
+    const query = `
+      SELECT 
+        lr.leave_type AS leaveType_id, 
+        lr.from_date, 
+        lr.to_date, 
+        lr.status, 
+        lr.reason, 
+        lr.created_at, 
+        lr.id, 
+        lt.name AS leave_type, 
+        lt.total_leave_days
+      FROM leave_request lr
+      LEFT JOIN leave_type lt 
+        ON lr.leave_type = lt.id 
+        AND lt.company_id = lr.company_id 
+      WHERE lr.emp_id = ? 
+        AND lr.status = ?
+    `;
+
+    const values = [emp_id, status]; // Values for the prepared statement
+    const data = await sqlModel.customQuery(query, values); // Execute the custom query
+
+    // Check for any SQL errors returned
+    if (data.error) {
+      return res.status(500).json({
+        status: false,
+        message: "Error executing query",
+        error: data.error,
+      });
+    }
+
+    // Check if any data is found
+    if (data.length === 0) {
+      return res.status(200).json({
+        status: false,
+        message: "No data found for the given Employee ID and status",
+      });
+    }
+
+    // Return the fetched data
+    return res.status(200).json({
+      status: true,
+      data: data,
+    });
+  } catch (error) {
+    // Catch any other errors and return a 500 status
+    return res.status(500).json({
+      status: false,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };

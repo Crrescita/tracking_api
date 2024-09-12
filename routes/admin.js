@@ -262,7 +262,7 @@ router
   .post(LeaveManagmentController.createLeaveSetting);
 
 // leave Detail
-router.get("/leaveDetail/:id", LeaveManagmentController.leaveDetail);
+router.get("/leaveDetail/:id?", LeaveManagmentController.leaveDetail);
 
 // leave record
 router.get("/leaveRecord", LeaveManagmentController.leaveRecord);
