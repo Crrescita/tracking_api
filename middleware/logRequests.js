@@ -31,24 +31,58 @@ const getCurrentDate = () => {
 };
 
 // Function to create a Winston logger for admin or frontend
+// const createLogger = (logType) => {
+//   ensureLogDirectoriesExist(); // Ensure the directories exist before logging
+//   return winston.createLogger({
+//     level: "info",
+//     format: winston.format.combine(
+//       winston.format.timestamp(),
+//       winston.format.json()
+//     ),
+//     transports: [
+//       // Separate log file for each day for admin or frontend
+//       new winston.transports.File({
+//         filename: path.join(
+//           __dirname,
+//           `../logs/${logType}/${getCurrentDate()}.log`
+//         ),
+//         level: "info",
+//       }),
+//     ],
+//   });
+// };
+
 const createLogger = (logType) => {
   ensureLogDirectoriesExist(); // Ensure the directories exist before logging
+
+  const transport = new winston.transports.File({
+    filename: path.join(
+      __dirname,
+      `../logs/${logType}/${getCurrentDate()}.log`
+    ),
+    level: "info",
+  });
+
+  // Check date and update filename dynamically before each log
+  transport.on("logged", () => {
+    const currentDate = getCurrentDate();
+    const expectedLogFile = path.join(
+      __dirname,
+      `../logs/${logType}/${currentDate}.log`
+    );
+
+    if (transport.filename !== expectedLogFile) {
+      transport.filename = expectedLogFile;
+    }
+  });
+
   return winston.createLogger({
     level: "info",
     format: winston.format.combine(
       winston.format.timestamp(),
       winston.format.json()
     ),
-    transports: [
-      // Separate log file for each day for admin or frontend
-      new winston.transports.File({
-        filename: path.join(
-          __dirname,
-          `../logs/${logType}/${getCurrentDate()}.log`
-        ),
-        level: "info",
-      }),
-    ],
+    transports: [transport],
   });
 };
 
