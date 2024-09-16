@@ -47,7 +47,7 @@ exports.getRecord = async (req, res, next) => {
     // Get the month and year from query parameters or default to current month
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
     const [year, month] = queryDate.split("-");
-
+    console.log(queryDate);
     // Fetch data from emp_attendance
     const query = `
        SELECT
@@ -68,7 +68,7 @@ exports.getRecord = async (req, res, next) => {
       year,
       month,
     ]);
-
+    console.log(data);
     if (data.error) {
       return res.status(500).send(data);
     }
