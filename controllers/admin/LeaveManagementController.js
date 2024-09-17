@@ -954,7 +954,7 @@ exports.leaveRecord = async (req, res, next) => {
         recent_leaveDate: recentLeave ? recentLeave.date : null,
         upcoming_leaveDate: upcomingLeave ? upcomingLeave.date : null,
         upcoming_leave: upcomingLeave
-          ? getRelativeTime(upcomingLeave.date)
+          ? getFutureRelativeTime(upcomingLeave.date)
           : null,
         total_leave_taken: leaveDetails
           ? leaveDetails.total_leave_taken || 0
