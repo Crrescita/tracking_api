@@ -44,7 +44,7 @@ exports.login = async (req, res, next) => {
     const [user] = await sqlModel.select("employees", {}, { email });
 
     if (!user) {
-      return res.status(404).send({
+      return res.status(200).send({
         status: false,
         message: "Email does not exist",
         statusCode: 4,
@@ -58,7 +58,7 @@ exports.login = async (req, res, next) => {
     );
 
     if (employeeCompany.status !== "active") {
-      return res.status(403).send({
+      return res.status(200).send({
         status: false,
         message: "Company account is inactive",
         statusCode: 5,
@@ -66,7 +66,7 @@ exports.login = async (req, res, next) => {
     }
 
     if (user.status !== "active") {
-      return res.status(403).send({
+      return res.status(200).send({
         status: false,
         message: "Employee account is inactive",
         statusCode: 5,
@@ -76,7 +76,7 @@ exports.login = async (req, res, next) => {
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      return res.status(401).send({
+      return res.status(200).send({
         status: false,
         message: "Password does not match",
         statusCode: 3,
@@ -93,7 +93,7 @@ exports.login = async (req, res, next) => {
     const [updatedUser] = await sqlModel.select("employees", {}, { email });
 
     if (!updatedUser) {
-      return res.status(500).send({
+      return res.status(200).send({
         status: false,
         message: "Failed to fetch updated user data",
         statusCode: 6,
@@ -102,7 +102,7 @@ exports.login = async (req, res, next) => {
 
     updatedUser.image = updatedUser.image
       ? `${process.env.BASE_URL}${updatedUser.image}`
-      : "https://telindia.s3.ap-south-1.amazonaws.com/icons/users.jpg";
+      : "";
     delete updatedUser.password;
 
     const insert = {
@@ -271,7 +271,7 @@ exports.forgetPassword = async (req, res, next) => {
     const validation = validateFields({ email });
 
     if (!validation.valid) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: validation.message,
         statusCode: 1,
@@ -281,7 +281,7 @@ exports.forgetPassword = async (req, res, next) => {
     const [user] = await sqlModel.select("employees", {}, { email });
 
     if (!user) {
-      return res.status(404).send({ status: false, message: "User not found" });
+      return res.status(200).send({ status: false, message: "User not found" });
     }
 
     const resetCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -320,7 +320,7 @@ exports.validateResetCode = async (req, res, next) => {
     const validation = validateFields({ email, code });
 
     if (!validation.valid) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: validation.message,
         statusCode: 1,
@@ -330,18 +330,18 @@ exports.validateResetCode = async (req, res, next) => {
     const [user] = await sqlModel.select("employees", {}, { email });
 
     if (!user) {
-      return res.status(404).send({ status: false, message: "User not found" });
+      return res.status(200).send({ status: false, message: "User not found" });
     }
 
     if (user.reset_code !== code) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Invalid code",
       });
     }
 
     if (Date.now() > user.code_expire) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Code has expired",
       });
@@ -372,7 +372,7 @@ exports.resetPassword = async (req, res, next) => {
     });
 
     if (!validation.valid) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: validation.message,
         statusCode: 1,
@@ -380,7 +380,7 @@ exports.resetPassword = async (req, res, next) => {
     }
 
     if (newPassword !== confirmPassword) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Password and confirm password do not match",
       });
@@ -389,18 +389,18 @@ exports.resetPassword = async (req, res, next) => {
     const [user] = await sqlModel.select("employees", {}, { email });
 
     if (!user) {
-      return res.status(404).send({ status: false, message: "User not found" });
+      return res.status(200).send({ status: false, message: "User not found" });
     }
 
     if (user.reset_code !== code) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Invalid code",
       });
     }
 
     if (Date.now() > user.code_expire) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Code has expired",
       });
@@ -451,7 +451,7 @@ exports.changePassword = async (req, res, next) => {
     });
 
     if (!validation.valid) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: validation.message,
         statusCode: 1,
@@ -459,7 +459,7 @@ exports.changePassword = async (req, res, next) => {
     }
 
     if (newPassword !== confirmPassword) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "New password and confirm password do not match",
       });
@@ -468,12 +468,12 @@ exports.changePassword = async (req, res, next) => {
     const [user] = await sqlModel.select("employees", {}, { email });
 
     if (!user) {
-      return res.status(404).send({ status: false, message: "User not found" });
+      return res.status(200).send({ status: false, message: "User not found" });
     }
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Incorrect old password",
       });

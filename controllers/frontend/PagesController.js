@@ -6,7 +6,7 @@ exports.WelcomePageData = async (req, res, next) => {
     const { title, description } = req.body;
 
     if (!title || !description) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Title and description are required fields",
       });
@@ -55,7 +55,7 @@ exports.WelcomePageData = async (req, res, next) => {
 
       await sqlModel.insert("welcome_page", insertData);
 
-      res.status(201).send({
+      res.status(200).send({
         status: true,
         message: "Welcome page created successfully",
       });
@@ -75,7 +75,7 @@ exports.getWelcomePage = async (req, res, next) => {
     ]);
 
     if (!welcomePage) {
-      return res.status(404).send({
+      return res.status(200).send({
         status: false,
         message: "Welcome page not found",
       });

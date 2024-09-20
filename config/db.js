@@ -5,7 +5,7 @@ const pool = mysql.createPool({
   password: "upendra#0309@",
   database: "location_tracker",
   // password: "niket@123",
-  // database: "location_track",
+  // database: "location_new",
   connectionLimit: 10,
 });
 
