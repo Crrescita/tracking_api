@@ -83,7 +83,7 @@ exports.employeesGet = async (req, res, next) => {
 
     res.status(200).send({ status: true, data: employee });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };
 // update emp
@@ -206,7 +206,7 @@ exports.updateEmployee = async (req, res, next) => {
       .status(200)
       .send({ status: true, message: "Profile updated successfully!" });
   } catch (error) {
-    return res.status(500).send({ status: false, error: error.message });
+    return res.status(200).send({ status: false, error: error.message });
   }
 };
 
@@ -491,7 +491,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     const values = [process.env.BASE_URL, emp_id, company_id, month, year];
     const data = await sqlModel.customQuery(query, values);
     if (data.error) {
-      return res.status(500).send(data);
+      return res.status(200).send(data);
     }
 
     const empAttendanceQuery = `
@@ -506,7 +506,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     );
 
     if (empAttendanceData.error) {
-      return res.status(500).send(empAttendanceData);
+      return res.status(200).send(empAttendanceData);
     }
 
     const groupedData = allDays.reduce((acc, date) => {
@@ -606,7 +606,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
       data: employeeData,
     });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };
 
@@ -884,7 +884,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
     const data = await sqlModel.customQuery(query, values);
 
     if (data.error) {
-      return res.status(500).send(data);
+      return res.status(200).send(data);
     }
 
     const empAttendanceQuery = `
@@ -984,7 +984,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
       data: employeeData,
     });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };
 
@@ -1042,6 +1042,6 @@ exports.getEmployeeCompany = async (req, res, next) => {
 
     res.status(200).send({ status: true, data: employee });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };

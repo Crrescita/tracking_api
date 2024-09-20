@@ -61,7 +61,7 @@ exports.WelcomePageData = async (req, res, next) => {
       });
     }
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };
 
@@ -91,6 +91,6 @@ exports.getWelcomePage = async (req, res, next) => {
       data: welcomePage,
     });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };

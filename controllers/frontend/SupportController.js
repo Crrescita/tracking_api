@@ -19,7 +19,7 @@ exports.createSupport = async (req, res, next) => {
     );
 
     if (!employee) {
-      return res.status(404).send({
+      return res.status(200).send({
         status: false,
         message: "Employee not found",
       });
@@ -47,7 +47,7 @@ exports.createSupport = async (req, res, next) => {
       data: saveData,
     });
   } catch (error) {
-    return res.status(500).send({
+    return res.status(200).send({
       status: false,
       error: error.message,
     });

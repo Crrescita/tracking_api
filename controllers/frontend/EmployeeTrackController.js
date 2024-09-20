@@ -66,8 +66,7 @@ exports.getCoordinates = async (req, res, next) => {
     // Send the response
     res.status(200).send({ status: true, totalDistance, data: data });
   } catch (error) {
-    console.error("Error in getCoordinates:", error);
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };
 
@@ -288,8 +287,7 @@ exports.setCoordinates = async (req, res, next) => {
       timer: timerValue,
     });
   } catch (error) {
-    console.error("Error during data submission:", error);
-    return res.status(500).json({
+    return res.status(200).json({
       status: false,
       message: "An error occurred during data submission",
       error: error.message,
@@ -497,8 +495,7 @@ exports.setAllCoordinates = async (req, res, next) => {
       timer: timerValue, // Include the timer value in the response
     });
   } catch (error) {
-    console.error("Error during data submission:", error);
-    return res.status(500).json({
+    return res.status(200).json({
       status: false,
       message: "An error occurred during data submission",
       error: error.message,
