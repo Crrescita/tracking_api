@@ -188,7 +188,7 @@ exports.setCoordinates = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .json({ status: false, message: "Token is required" });
     }
 
@@ -203,7 +203,7 @@ exports.setCoordinates = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .json({ status: false, message: "Employee not found" });
     }
 
@@ -235,7 +235,7 @@ exports.setCoordinates = async (req, res, next) => {
 
     for (const [key, value] of Object.entries(requiredFields)) {
       if (!value) {
-        return res.status(400).json({
+        return res.status(200).json({
           status: false,
           message: `${key.replace("_", " ")} is required`,
         });
@@ -270,7 +270,7 @@ exports.setCoordinates = async (req, res, next) => {
     });
 
     if (!employeeTimer) {
-      return res.status(404).json({
+      return res.status(200).json({
         status: false,
         message: "Employee not found",
       });
@@ -403,7 +403,7 @@ exports.setAllCoordinates = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .json({ status: false, message: "Token is required" });
     }
 
@@ -418,7 +418,7 @@ exports.setAllCoordinates = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .json({ status: false, message: "Employee not found" });
     }
 
@@ -429,7 +429,7 @@ exports.setAllCoordinates = async (req, res, next) => {
     const dataArray = req.body;
 
     if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      return res.status(400).json({
+      return res.status(200).json({
         status: false,
         message: "Data should be a non-empty array",
       });
@@ -461,7 +461,7 @@ exports.setAllCoordinates = async (req, res, next) => {
 
       for (const [key, value] of Object.entries(requiredFields)) {
         if (!value) {
-          return res.status(400).json({
+          return res.status(200).json({
             status: false,
             message: `${key.replace("_", " ")} is required`,
           });

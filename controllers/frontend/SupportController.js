@@ -6,7 +6,7 @@ exports.createSupport = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Token is required",
       });
@@ -40,7 +40,7 @@ exports.createSupport = async (req, res, next) => {
 
     const saveData = await sqlModel.insert("support", insertData);
 
-    return res.status(201).send({
+    return res.status(200).send({
       status: true,
       message:
         "Support request has been successfully created. Our team will reach out to you shortly.",

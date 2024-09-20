@@ -87,7 +87,7 @@ exports.getCheckIn = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -99,14 +99,14 @@ exports.getCheckIn = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
     const { id: emp_id, company_id } = employee;
 
     if (!emp_id || !company_id) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Employee ID and company ID are required",
       });
@@ -570,7 +570,7 @@ exports.checkIn = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -583,7 +583,7 @@ exports.checkIn = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
@@ -646,7 +646,7 @@ exports.checkIn = async (req, res, next) => {
     );
 
     if (!companyData.length) {
-      return res.status(404).json({
+      return res.status(200).json({
         status: false,
         message: "Company data not found",
       });
@@ -890,7 +890,7 @@ exports.checkOut = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .json({ status: false, message: "Token is required" });
     }
 
@@ -903,7 +903,7 @@ exports.checkOut = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .json({ status: false, message: "Employee not found" });
     }
 
@@ -913,7 +913,7 @@ exports.checkOut = async (req, res, next) => {
       req.body;
 
     if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
-      return res.status(400).json({
+      return res.status(200).json({
         status: false,
         message: "All check-out details are required",
       });
@@ -935,7 +935,7 @@ exports.checkOut = async (req, res, next) => {
       checkInData[0].checkin_status !== "Check-in" ||
       checkInData[0].check_out_time
     ) {
-      return res.status(400).json({
+      return res.status(200).json({
         status: false,
         message:
           "Cannot check out: No valid check-in record found or already checked out",

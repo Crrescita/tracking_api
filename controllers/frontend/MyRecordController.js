@@ -6,7 +6,7 @@ exports.getRecord = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -18,14 +18,14 @@ exports.getRecord = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
     const { id: emp_id, company_id } = employee;
 
     if (!emp_id || !company_id) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Employee ID and company ID are required",
       });
@@ -47,7 +47,7 @@ exports.getRecord = async (req, res, next) => {
     // Get the month and year from query parameters or default to current month
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
     const [year, month] = queryDate.split("-");
-    console.log(queryDate);
+
     // Fetch data from emp_attendance
     const query = `
        SELECT
@@ -68,7 +68,7 @@ exports.getRecord = async (req, res, next) => {
       year,
       month,
     ]);
-    console.log(data);
+
     if (data.error) {
       return res.status(500).send(data);
     }

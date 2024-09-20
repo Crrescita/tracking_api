@@ -37,7 +37,7 @@ exports.employeesGet = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -65,7 +65,7 @@ exports.employeesGet = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
@@ -93,7 +93,7 @@ exports.updateEmployee = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -105,7 +105,7 @@ exports.updateEmployee = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
@@ -119,7 +119,7 @@ exports.updateEmployee = async (req, res, next) => {
 
     if (!company) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Company not found" });
     }
 
@@ -149,7 +149,7 @@ exports.updateEmployee = async (req, res, next) => {
         existingEmployeeWithEmail[0].id !== id
       ) {
         return res
-          .status(400)
+          .status(200)
           .send({ status: false, message: "Email already exists" });
       }
     }
@@ -165,7 +165,7 @@ exports.updateEmployee = async (req, res, next) => {
         existingEmployeeWithId[0].id !== id
       ) {
         return res
-          .status(400)
+          .status(200)
           .send({ status: false, message: "Employee ID already exists" });
       }
     }
@@ -430,7 +430,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -442,14 +442,14 @@ exports.getEmployeeAttendance = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
     const { id: emp_id, company_id } = employee;
 
     if (!emp_id || !company_id) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Employee ID and company ID are required",
       });
@@ -831,7 +831,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -843,7 +843,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
@@ -852,7 +852,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
     const requestedDate = req.query.date;
 
     if (!emp_id || !company_id || !requestedDate) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "Employee ID, company ID, and date are required",
       });
@@ -995,7 +995,7 @@ exports.getEmployeeCompany = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -1007,7 +1007,7 @@ exports.getEmployeeCompany = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
@@ -1030,7 +1030,7 @@ exports.getEmployeeCompany = async (req, res, next) => {
 
     if (!company) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Company not found" });
     }
 
