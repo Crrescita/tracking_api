@@ -129,7 +129,7 @@ exports.login = async (req, res, next) => {
       statusCode: 0,
     });
   } catch (error) {
-    res.status(500).send({
+    res.status(200).send({
       status: false,
       message: "Internal server error",
       error: error.message,
@@ -306,7 +306,7 @@ exports.forgetPassword = async (req, res, next) => {
       message: "Password reset code sent to your email",
     });
   } catch (error) {
-    res.status(500).send({
+    res.status(200).send({
       status: false,
       message: "Internal server error",
       error: error.message,
@@ -352,7 +352,7 @@ exports.validateResetCode = async (req, res, next) => {
       message: "Code validated successfully. You may now reset your password.",
     });
   } catch (error) {
-    res.status(500).send({
+    res.status(200).send({
       status: false,
       message: "Internal server error",
       error: error.message,
@@ -432,7 +432,7 @@ exports.resetPassword = async (req, res, next) => {
       message: "Password reset successfully",
     });
   } catch (error) {
-    res.status(500).send({
+    res.status(200).send({
       status: false,
       message: "Internal server error",
       error: error.message,
@@ -505,7 +505,7 @@ exports.changePassword = async (req, res, next) => {
       message: "Password changed successfully",
     });
   } catch (error) {
-    res.status(500).send({
+    res.status(200).send({
       status: false,
       message: "Internal server error",
       error: error.message,

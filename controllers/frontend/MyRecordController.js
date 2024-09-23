@@ -103,6 +103,6 @@ exports.getRecord = async (req, res, next) => {
 
     res.status(200).send({ status: true, data: response });
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };

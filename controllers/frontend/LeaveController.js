@@ -9,7 +9,7 @@ exports.createLeaveRequest = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(400)
+        .status(200)
         .send({ status: false, message: "Token is required" });
     }
 
@@ -21,7 +21,7 @@ exports.createLeaveRequest = async (req, res, next) => {
 
     if (!employee) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Employee not found" });
     }
 
@@ -31,7 +31,7 @@ exports.createLeaveRequest = async (req, res, next) => {
 
     if (!company) {
       return res
-        .status(404)
+        .status(200)
         .send({ status: false, message: "Company not found" });
     }
 
@@ -49,7 +49,7 @@ exports.createLeaveRequest = async (req, res, next) => {
     );
 
     if (!leaveTypeData) {
-      return res.status(404).send({
+      return res.status(200).send({
         status: false,
         message: "Leave type not found",
       });
@@ -89,7 +89,7 @@ exports.createLeaveRequest = async (req, res, next) => {
     const toDate = new Date(insert.to_date);
 
     if (toDate < fromDate) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "To date cannot be earlier than from date",
       });
@@ -131,7 +131,7 @@ exports.createLeaveRequest = async (req, res, next) => {
     );
 
     if (existingLeaveRequests.length > 0) {
-      return res.status(400).send({
+      return res.status(200).send({
         status: false,
         message: "You have already requested leave for the selected dates.",
       });
@@ -186,7 +186,7 @@ exports.createLeaveRequest = async (req, res, next) => {
           updateCondition
         );
       } else {
-        return res.status(404).send({
+        return res.status(200).send({
           status: false,
           message: "Leave request not found",
         });
@@ -216,7 +216,7 @@ exports.createLeaveRequest = async (req, res, next) => {
       });
 
       if (tokens.length === 0) {
-        return res.status(400).send({
+        return res.status(200).send({
           status: false,
           message: "No FCM tokens found for the company",
         });
@@ -265,6 +265,6 @@ exports.createLeaveRequest = async (req, res, next) => {
       return res.status(200).send({ status: true, message: msg });
     }
   } catch (error) {
-    res.status(500).send({ status: false, error: error.message });
+    res.status(200).send({ status: false, error: error.message });
   }
 };

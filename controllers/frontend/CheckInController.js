@@ -135,7 +135,7 @@ exports.getCheckIn = async (req, res, next) => {
     const data = await sqlModel.customQuery(query, values);
 
     if (data.error) {
-      return res.status(500).send({
+      return res.status(200).send({
         status: false,
         message: "Internal server error",
         error: data.error,
@@ -168,7 +168,7 @@ exports.getCheckIn = async (req, res, next) => {
 
     res.status(200).send({ status: true, data: response });
   } catch (error) {
-    res.status(500).send({
+    res.status(200).send({
       status: false,
       message: "An unexpected error occurred",
       error: error.message,
@@ -719,8 +719,7 @@ exports.checkIn = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error("Error during check-in:", error);
-    return res.status(500).json({
+    return res.status(200).json({
       status: false,
       message: "An error occurred during check-in",
       error: error.message,
@@ -1008,8 +1007,7 @@ exports.checkOut = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error("Error during check-out:", error);
-    return res.status(500).json({
+    return res.status(200).json({
       status: false,
       message: "An error occurred during check-out",
       error: error.message,
