@@ -34,7 +34,11 @@ exports.login = async (req, res, next) => {
     });
 
     if (!validation.valid) {
+<<<<<<< HEAD
       return res.status(200).send({
+=======
+      return res.status(403).send({
+>>>>>>> b020c4b (user)
         status: false,
         message: validation.message,
         statusCode: 1,
