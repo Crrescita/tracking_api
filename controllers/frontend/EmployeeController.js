@@ -1138,7 +1138,9 @@ exports.getEmployeeCompany = async (req, res, next) => {
     }
 
     // Process company's logo
-    company.logo = company.logo ? `${process.env.BASE_URL}${company.logo}` : "";
+    // company.logo = company.logo ? `${process.env.BASE_URL}${company.logo}` : "";
+    company.logo =
+      "https://telindia.s3.ap-south-1.amazonaws.com/icons/amico.png";
 
     // Attach the company data to the employee
     employee.company = company;
