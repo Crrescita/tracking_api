@@ -585,7 +585,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
     }
 
     const data = await sqlModel.customQuery(query, values);
-    console.log(data);
+
     if (data.error) {
       return res.status(200).send(data);
     }
