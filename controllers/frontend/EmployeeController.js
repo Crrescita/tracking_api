@@ -218,7 +218,7 @@ exports.updateEmployee = async (req, res, next) => {
 
 //     if (!token) {
 //       return res
-//         .status(400)
+//         .status(200)
 //         .send({ status: false, message: "Token is required" });
 //     }
 
@@ -230,14 +230,14 @@ exports.updateEmployee = async (req, res, next) => {
 
 //     if (!employee) {
 //       return res
-//         .status(404)
+//         .status(200)
 //         .send({ status: false, message: "Employee not found" });
 //     }
 
 //     const { id: emp_id, company_id } = employee;
 
 //     if (!emp_id || !company_id) {
-//       return res.status(400).send({
+//       return res.status(200).send({
 //         status: false,
 //         message: "Employee ID and company ID are required",
 //       });
@@ -246,6 +246,7 @@ exports.updateEmployee = async (req, res, next) => {
 //     const dateParam = req.query.date;
 //     const targetDate = dateParam ? new Date(dateParam) : new Date();
 //     const year = targetDate.getFullYear();
+//     const date = req.query.date;
 //     const month = targetDate.getMonth() + 1;
 
 //     const daysInMonth = new Date(year, month, 0).getDate();
@@ -268,7 +269,8 @@ exports.updateEmployee = async (req, res, next) => {
 //               END AS image,
 //               c.date,
 //               c.check_in_time,
-//               c.check_out_time
+//               c.check_out_time,
+//               c.duration
 //             FROM employees e
 //             LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
 //             WHERE e.id = ? AND e.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
@@ -277,131 +279,174 @@ exports.updateEmployee = async (req, res, next) => {
 
 //     const values = [process.env.BASE_URL, emp_id, company_id, month, year];
 //     const data = await sqlModel.customQuery(query, values);
-
 //     if (data.error) {
-//       return res.status(500).send(data);
+//       return res.status(200).send(data);
 //     }
 
-//     const companyQuery = `
-//             SELECT
-//               check_in_time_start,
-//               check_in_time_end
-//             FROM company
-//             WHERE id = ?
+//     //   const dateParam = req.query.date;
+//     //   const targetDate = dateParam ? new Date(dateParam) : new Date();
+//     //   const year = targetDate.getFullYear();
+//     //   const month = targetDate.getMonth() + 1;
+
+//     //   let query;
+//     //   let values;
+
+//     //   if (dateParam && dateParam.length === 10) {
+//     //     // Specific date format (YYYY-MM-DD)
+//     //     query = `
+//     //   SELECT
+//     //     e.id,
+//     //     e.name,
+//     //     e.mobile,
+//     //     e.email,
+//     //     e.designation,
+//     //     e.employee_id,
+//     //     CASE
+//     //       WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+//     //       ELSE e.image
+//     //     END AS image,
+//     //     c.date,
+//     //     c.check_in_time,
+//     //     c.check_out_time,
+//     //     c.duration
+//     //   FROM employees e
+//     //   LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
+//     //   WHERE e.id = ? AND e.company_id = ? AND c.date = ?
+//     //   ORDER BY c.check_in_time
+//     // `;
+//     //     values = [process.env.BASE_URL, emp_id, company_id, dateParam];
+//     //   } else {
+//     //     // Month and year format (YYYY-MM or default to current month)
+//     //     const daysInMonth = new Date(year, month, 0).getDate();
+//     //     const allDays = Array.from({ length: daysInMonth }, (_, i) => {
+//     //       const day = String(i + 1).padStart(2, "0");
+//     //       return `${year}-${String(month).padStart(2, "0")}-${day}`;
+//     //     });
+
+//     //     query = `
+//     //   SELECT
+//     //     e.id,
+//     //     e.name,
+//     //     e.mobile,
+//     //     e.email,
+//     //     e.designation,
+//     //     e.employee_id,
+//     //     CASE
+//     //       WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+//     //       ELSE e.image
+//     //     END AS image,
+//     //     c.date,
+//     //     c.check_in_time,
+//     //     c.check_out_time,
+//     //     c.duration
+//     //   FROM employees e
+//     //   LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
+//     //   WHERE e.id = ? AND e.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+//     //   ORDER BY c.date, c.check_in_time
+//     // `;
+//     //     values = [process.env.BASE_URL, emp_id, company_id, month, year];
+//     //   }
+
+//     //   const data = await sqlModel.customQuery(query, values);
+//     //   console.log(data);
+//     //   if (data.error) {
+//     //     return res.status(200).send(data);
+//     //   }
+
+//     const empAttendanceQuery = `
+//             SELECT date, checkin_status, time_difference, total_duration
+//             FROM emp_attendance
+//             WHERE emp_id = ? AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
 //           `;
-//     const companyValues = [company_id];
-//     const companyData = await sqlModel.customQuery(companyQuery, companyValues);
+//     const empAttendanceValues = [emp_id, company_id, month, year];
+//     const empAttendanceData = await sqlModel.customQuery(
+//       empAttendanceQuery,
+//       empAttendanceValues
+//     );
 
-//     const { check_in_time_start, check_in_time_end } = companyData[0] || {};
-
-//     const startDateTime = new Date(`1970-01-01T${check_in_time_start}Z`);
-//     const endDateTime = new Date(`1970-01-01T${check_in_time_end}Z`);
-
-//     const formatDuration = (totalSeconds) => {
-//       if (isNaN(totalSeconds) || totalSeconds < 0) {
-//         return "00:00:00";
-//       }
-
-//       const hours = Math.floor(totalSeconds / 3600);
-//       const minutes = Math.floor((totalSeconds % 3600) / 60);
-//       const seconds = Math.floor(totalSeconds % 60);
-
-//       const formattedHours = String(hours).padStart(2, "0");
-//       const formattedMinutes = String(minutes).padStart(2, "0");
-//       const formattedSeconds = String(seconds).padStart(2, "0");
-
-//       return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-//     };
-
-//     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
-//       if (!checkInTime || !checkOutTime) {
-//         return 0;
-//       }
-//       const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
-//       const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
-//       const durationInSeconds = (checkOut - checkIn) / 1000;
-//       return durationInSeconds < 0 ? 0 : durationInSeconds;
-//     };
+//     if (empAttendanceData.error) {
+//       return res.status(200).send(empAttendanceData);
+//     }
 
 //     const groupedData = allDays.reduce((acc, date) => {
 //       acc[date] = {
 //         date,
 //         checkIns: [],
-//         totalDurationInSeconds: 0,
+//         // totalDurationInSeconds: 0,
 //         earliestCheckInTime: null,
 //         latestCheckOutTime: null,
 //         checkin_status: "Absent",
 //         attendance_status: "Absent",
 //         timeDifference: "00:00:00",
-//         totalDuration: "0h 0m 0s",
+//         totalDuration: "00:00:00",
 //       };
 //       return acc;
 //     }, {});
 
+//     empAttendanceData.forEach((attendance) => {
+//       if (groupedData[attendance.date]) {
+//         if (attendance.checkin_status === "Leave") {
+//           groupedData[attendance.date].attendance_status = "Leave";
+//         } else {
+//           groupedData[attendance.date].attendance_status = "Absent";
+//         }
+
+//         groupedData[attendance.date].checkin_status = attendance.checkin_status;
+//         groupedData[attendance.date].timeDifference = attendance.time_difference
+//           ? attendance.time_difference
+//           : "00:00:00";
+//         groupedData[attendance.date].totalDuration = attendance.total_duration
+//           ? attendance.total_duration
+//           : "00:00:00";
+//       }
+//     });
+
+//     // Process data and update groupedData
 //     data.forEach((item) => {
 //       if (!groupedData[item.date]) return;
 
-//       const checkInDateTime = new Date(`1970-01-01T${item.check_in_time}Z`);
-//       let checkin_status = "On Time";
-//       let timeDifferenceSeconds = 0;
+//       if (groupedData[item.date].attendance_status !== "Leave") {
+//         const checkInDateTime = new Date(`1970-01-01T${item.check_in_time}Z`);
+//         // const durationInSeconds = calculateDurationInSeconds(
+//         //   item.check_in_time,
+//         //   item.check_out_time
+//         // );
 
-//       if (checkInDateTime < startDateTime) {
-//         checkin_status = "Early";
-//         timeDifferenceSeconds = Math.abs(
-//           (startDateTime - checkInDateTime) / 1000
-//         );
-//       } else if (checkInDateTime > endDateTime) {
-//         checkin_status = "Late";
-//         timeDifferenceSeconds = Math.abs(
-//           (checkInDateTime - endDateTime) / 1000
-//         );
-//       }
+//         groupedData[item.date].checkIns.push({
+//           check_in_time: item.check_in_time || "00:00:00",
+//           check_out_time: item.check_out_time || "00:00:00",
+//           duration: item.duration || "00:00:00",
+//         });
 
-//       const durationInSeconds = calculateDurationInSeconds(
-//         item.check_in_time,
-//         item.check_out_time
-//       );
+//         // groupedData[item.date].totalDurationInSeconds += durationInSeconds;
 
-//       groupedData[item.date].checkIns.push({
-//         check_in_time: item.check_in_time,
-//         check_out_time: item.check_out_time || "00:00:00",
-//         duration: formatDuration(durationInSeconds),
-//       });
+//         if (item.check_in_time) {
+//           groupedData[item.date].attendance_status = "Present";
+//           if (
+//             !groupedData[item.date].earliestCheckInTime ||
+//             item.check_in_time < groupedData[item.date].earliestCheckInTime
+//           ) {
+//             groupedData[item.date].earliestCheckInTime = item.check_in_time;
+//           }
+//         }
 
-//       groupedData[item.date].totalDurationInSeconds += durationInSeconds;
-
-//       if (item.check_in_time) {
-//         groupedData[item.date].attendance_status = "Present";
-//         if (
-//           !groupedData[item.date].earliestCheckInTime ||
-//           item.check_in_time < groupedData[item.date].earliestCheckInTime
-//         ) {
-//           groupedData[item.date].earliestCheckInTime = item.check_in_time;
+//         if (item.check_out_time !== null) {
+//           if (
+//             !groupedData[item.date].latestCheckOutTime ||
+//             item.check_out_time > groupedData[item.date].latestCheckOutTime
+//           ) {
+//             groupedData[item.date].latestCheckOutTime = item.check_out_time;
+//           }
+//         } else {
+//           groupedData[item.date].latestCheckOutTime = "00:00:00";
 //         }
 //       }
-
-//       if (item.check_out_time !== null) {
-//         if (
-//           !groupedData[item.date].latestCheckOutTime ||
-//           item.check_out_time > groupedData[item.date].latestCheckOutTime
-//         ) {
-//           groupedData[item.date].latestCheckOutTime = item.check_out_time;
-//         }
-//       } else {
-//         groupedData[item.date].latestCheckOutTime = "00:00:00";
-//       }
-
-//       groupedData[item.date].checkin_status = checkin_status;
-//       groupedData[item.date].timeDifference = formatDuration(
-//         timeDifferenceSeconds
-//       );
 //     });
 
 //     const checkInDates = Object.values(groupedData).map((dateData) => ({
 //       ...dateData,
 //       earliestCheckInTime: dateData.earliestCheckInTime || "00:00:00",
 //       latestCheckOutTime: dateData.latestCheckOutTime || "00:00:00",
-//       totalDuration: formatDuration(dateData.totalDurationInSeconds),
 //     }));
 
 //     const employeeData = {
@@ -420,7 +465,7 @@ exports.updateEmployee = async (req, res, next) => {
 //       data: employeeData,
 //     });
 //   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
+//     res.status(200).send({ status: false, error: error.message });
 //   }
 // };
 
@@ -454,52 +499,111 @@ exports.getEmployeeAttendance = async (req, res, next) => {
         message: "Employee ID and company ID are required",
       });
     }
+    const dateParam = req.query.date; // e.g., "2024-08-22" or "2024-08"
+    const dateRegexYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/; // Matches YYYY-MM-DD
+    const dateRegexYYYYMM = /^\d{4}-\d{2}$/; // Matches YYYY-MM
 
-    const dateParam = req.query.date;
+    if (
+      !dateParam ||
+      (!dateRegexYYYYMMDD.test(dateParam) && !dateRegexYYYYMM.test(dateParam))
+    ) {
+      return res.status(200).send({
+        status: false,
+        message: "Invalid date format. Use YYYY-MM-DD or YYYY-MM.",
+      });
+    }
+
+    // const dateParam = req.query.date;
     const targetDate = dateParam ? new Date(dateParam) : new Date();
     const year = targetDate.getFullYear();
     const month = targetDate.getMonth() + 1;
 
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const allDays = Array.from({ length: daysInMonth }, (_, i) => {
-      const day = String(i + 1).padStart(2, "0");
-      return `${year}-${String(month).padStart(2, "0")}-${day}`;
-    });
+    let query;
+    let values;
 
-    const query = `
-            SELECT 
-              e.id,
-              e.name,
-              e.mobile,
-              e.email,
-              e.designation,
-              e.employee_id,
-              CASE
-                WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-                ELSE e.image
-              END AS image,
-              c.date,
-              c.check_in_time,
-              c.check_out_time,
-              c.duration
-            FROM employees e
-            LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
-            WHERE e.id = ? AND e.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
-            ORDER BY c.date, c.check_in_time
-          `;
+    let daysInMonth;
+    let allDays;
 
-    const values = [process.env.BASE_URL, emp_id, company_id, month, year];
+    if (dateParam && dateParam.length === 10) {
+      // Specific date format (YYYY-MM-DD)
+      query = `
+        SELECT
+          e.id,
+          e.name,
+          e.mobile,
+          e.email,
+          e.designation,
+          e.employee_id,
+          CASE
+            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+            ELSE e.image
+          END AS image,
+          c.date,
+          c.check_in_time,
+          c.check_out_time,
+          c.duration
+        FROM employees e
+        LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
+        WHERE e.id = ? AND e.company_id = ? AND c.date = ?
+        ORDER BY c.check_in_time
+      `;
+      values = [process.env.BASE_URL, emp_id, company_id, dateParam];
+    } else if (dateParam && dateParam.length === 7) {
+      // Month and year format (YYYY-MM)
+      daysInMonth = new Date(year, month, 0).getDate();
+      allDays = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = String(i + 1).padStart(2, "0");
+        return `${year}-${String(month).padStart(2, "0")}-${day}`;
+      });
+
+      query = `
+        SELECT
+          e.id,
+          e.name,
+          e.mobile,
+          e.email,
+          e.designation,
+          e.employee_id,
+          CASE
+            WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+            ELSE e.image
+          END AS image,
+          c.date,
+          c.check_in_time,
+          c.check_out_time,
+          c.duration
+        FROM employees e
+        LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
+        WHERE e.id = ? AND e.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+        ORDER BY c.date, c.check_in_time
+      `;
+      values = [process.env.BASE_URL, emp_id, company_id, month, year];
+    } else {
+      return res
+        .status(200)
+        .send({ status: false, message: "Invalid date format" });
+    }
+
     const data = await sqlModel.customQuery(query, values);
     if (data.error) {
       return res.status(200).send(data);
     }
 
     const empAttendanceQuery = `
-            SELECT date, checkin_status, time_difference, total_duration
-            FROM emp_attendance 
-            WHERE emp_id = ? AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
-          `;
-    const empAttendanceValues = [emp_id, company_id, month, year];
+      SELECT date, checkin_status, time_difference, total_duration
+      FROM emp_attendance
+      WHERE emp_id = ? AND company_id = ?
+      ${
+        dateParam && dateParam.length === 10
+          ? "AND date = ?"
+          : "AND MONTH(date) = ? AND YEAR(date) = ?"
+      }
+    `;
+    const empAttendanceValues =
+      dateParam && dateParam.length === 10
+        ? [emp_id, company_id, dateParam]
+        : [emp_id, company_id, month, year];
+
     const empAttendanceData = await sqlModel.customQuery(
       empAttendanceQuery,
       empAttendanceValues
@@ -509,77 +613,75 @@ exports.getEmployeeAttendance = async (req, res, next) => {
       return res.status(200).send(empAttendanceData);
     }
 
-    const groupedData = allDays.reduce((acc, date) => {
-      acc[date] = {
-        date,
-        checkIns: [],
-        // totalDurationInSeconds: 0,
-        earliestCheckInTime: null,
-        latestCheckOutTime: null,
-        checkin_status: "Absent",
-        attendance_status: "Absent",
-        timeDifference: "00:00:00",
-        totalDuration: "00:00:00",
-      };
-      return acc;
-    }, {});
+    const groupedData =
+      dateParam && dateParam.length === 10
+        ? {
+            [dateParam]: {
+              date: dateParam,
+              checkIns: [],
+              earliestCheckInTime: null,
+              latestCheckOutTime: null,
+              checkin_status: "Absent",
+              attendance_status: "Absent",
+              timeDifference: "00:00:00",
+              totalDuration: "00:00:00",
+            },
+          }
+        : allDays.reduce((acc, date) => {
+            acc[date] = {
+              date,
+              checkIns: [],
+              earliestCheckInTime: null,
+              latestCheckOutTime: null,
+              checkin_status: "Absent",
+              attendance_status: "Absent",
+              timeDifference: "00:00:00",
+              totalDuration: "00:00:00",
+            };
+            return acc;
+          }, {});
 
     empAttendanceData.forEach((attendance) => {
-      if (groupedData[attendance.date]) {
-        if (attendance.checkin_status === "Leave") {
-          groupedData[attendance.date].attendance_status = "Leave";
-        } else {
-          groupedData[attendance.date].attendance_status = "Absent";
-        }
-
-        groupedData[attendance.date].checkin_status = attendance.checkin_status;
-        groupedData[attendance.date].timeDifference = attendance.time_difference
-          ? attendance.time_difference
-          : "00:00:00";
-        groupedData[attendance.date].totalDuration = attendance.total_duration
-          ? attendance.total_duration
-          : "00:00:00";
+      const attendanceDate = attendance.date || dateParam;
+      if (groupedData[attendanceDate]) {
+        groupedData[attendanceDate].checkin_status = attendance.checkin_status;
+        groupedData[attendanceDate].timeDifference =
+          attendance.time_difference || "00:00:00";
+        groupedData[attendanceDate].totalDuration =
+          attendance.total_duration || "00:00:00";
+        groupedData[attendanceDate].attendance_status =
+          attendance.checkin_status === "Leave" ? "Leave" : "Absent";
       }
     });
 
-    // Process data and update groupedData
     data.forEach((item) => {
-      if (!groupedData[item.date]) return;
-
-      if (groupedData[item.date].attendance_status !== "Leave") {
-        const checkInDateTime = new Date(`1970-01-01T${item.check_in_time}Z`);
-        // const durationInSeconds = calculateDurationInSeconds(
-        //   item.check_in_time,
-        //   item.check_out_time
-        // );
-
-        groupedData[item.date].checkIns.push({
+      const itemDate = item.date || dateParam;
+      if (groupedData[itemDate]) {
+        groupedData[itemDate].checkIns.push({
           check_in_time: item.check_in_time || "00:00:00",
           check_out_time: item.check_out_time || "00:00:00",
           duration: item.duration || "00:00:00",
         });
 
-        // groupedData[item.date].totalDurationInSeconds += durationInSeconds;
-
         if (item.check_in_time) {
-          groupedData[item.date].attendance_status = "Present";
+          groupedData[itemDate].attendance_status = "Present";
           if (
-            !groupedData[item.date].earliestCheckInTime ||
-            item.check_in_time < groupedData[item.date].earliestCheckInTime
+            !groupedData[itemDate].earliestCheckInTime ||
+            item.check_in_time < groupedData[itemDate].earliestCheckInTime
           ) {
-            groupedData[item.date].earliestCheckInTime = item.check_in_time;
+            groupedData[itemDate].earliestCheckInTime = item.check_in_time;
           }
         }
 
         if (item.check_out_time !== null) {
           if (
-            !groupedData[item.date].latestCheckOutTime ||
-            item.check_out_time > groupedData[item.date].latestCheckOutTime
+            !groupedData[itemDate].latestCheckOutTime ||
+            item.check_out_time > groupedData[itemDate].latestCheckOutTime
           ) {
-            groupedData[item.date].latestCheckOutTime = item.check_out_time;
+            groupedData[itemDate].latestCheckOutTime = item.check_out_time;
           }
         } else {
-          groupedData[item.date].latestCheckOutTime = "00:00:00";
+          groupedData[itemDate].latestCheckOutTime = "00:00:00";
         }
       }
     });
