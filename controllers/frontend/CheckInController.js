@@ -57,6 +57,30 @@ const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
   return durationInSeconds < 0 ? 0 : durationInSeconds;
 };
 
+// const haversineDistance = (coords1, coords2) => {
+//   const toRad = (value) => (value * Math.PI) / 180;
+
+//   const lat1 = parseFloat(coords1.latitude);
+//   const lon1 = parseFloat(coords1.longitude);
+//   const lat2 = parseFloat(coords2.latitude);
+//   const lon2 = parseFloat(coords2.longitude);
+
+//   const R = 6371; // Earth's radius in kilometers
+
+//   const dLat = toRad(lat2 - lat1);
+//   const dLon = toRad(lon2 - lon1);
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos(toRad(lat1)) *
+//       Math.cos(toRad(lat2)) *
+//       Math.sin(dLon / 2) *
+//       Math.sin(dLon / 2);
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   const distance = R * c;
+
+//   return distance;
+// };
+
 const haversineDistance = (coords1, coords2) => {
   const toRad = (value) => (value * Math.PI) / 180;
 
@@ -76,7 +100,8 @@ const haversineDistance = (coords1, coords2) => {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
+
+  const distance = R * c; // Distance in kilometers
 
   return distance;
 };
@@ -1035,12 +1060,17 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
   const filteredTrackingData = trackingData.filter(
     (coord) => coord.latitude !== 0.0 && coord.longitude !== 0.0
   );
-
+  // console.log(filteredTrackingData);
   for (let i = 0; i < filteredTrackingData.length - 1; i++) {
-    totalDistance += haversineDistance(
+    // totalDistance += haversineDistance(
+    //   filteredTrackingData[i],
+    //   filteredTrackingData[i + 1]
+    // );
+    const distance = haversineDistance(
       filteredTrackingData[i],
       filteredTrackingData[i + 1]
     );
+    totalDistance += distance;
   }
 
   for (const checkIn of checkInData) {

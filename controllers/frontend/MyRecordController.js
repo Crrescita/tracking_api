@@ -147,12 +147,14 @@ exports.getRecord = async (req, res, next) => {
     // Get the month and year from query parameters or default to current month
     const queryDate = req.query.date || new Date().toISOString().split("T")[0];
     const [year, month] = queryDate.split("-");
-
+    console.log(queryDate);
     // Fetch attendance data from emp_attendance
+    // COUNT(DISTINCT CASE WHEN checkin_status = 'Check-in' THEN date END) AS total_checkins,
     const query = `
       SELECT
         SUM(COALESCE(CAST(total_duration AS UNSIGNED), 0)) AS total_duration,
-        COUNT(DISTINCT CASE WHEN checkin_status = 'Check-in' THEN date END) AS total_checkins,
+    
+           COUNT(id) AS total_checkins,
         SUM(COALESCE(CAST(total_distance AS UNSIGNED), 0)) AS total_distance
       FROM emp_attendance
       WHERE emp_id = ? 
@@ -174,7 +176,7 @@ exports.getRecord = async (req, res, next) => {
     // Calculate the total days in the selected month for attendance percentage
     const daysInMonth = new Date(year, month, 0).getDate();
     const attendancePercentage =
-      ((data.total_checkins / daysInMonth) * 100).toFixed(2) + "%";
+      ((data.total_checkins / daysInMonth) * 100).toFixed(0) + "%";
 
     // Fetch leave details from leave_type and leave_record tables
     const leaveDetailsQuery = `
