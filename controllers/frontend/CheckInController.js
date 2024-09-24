@@ -1050,26 +1050,43 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
     ["check_in_time", "check_out_time"],
     { emp_id, company_id, date }
   );
-  const trackingData = await sqlModel.select(
-    "emp_tracking",
-    ["latitude", "longitude"],
-    { emp_id, company_id, date }
-  );
+  // const trackingData = await sqlModel.select(
+  //   "emp_tracking",
+  //   ["latitude", "longitude"],
+  //   { emp_id, company_id, date }
+  // );
 
-  // Filter out coordinates with 0.0 values for consistency
-  const filteredTrackingData = trackingData.filter(
-    (coord) => coord.latitude !== 0.0 && coord.longitude !== 0.0
-  );
+  // // Filter out coordinates with 0.0 values for consistency
+  // const filteredTrackingData = trackingData.filter(
+  //   (coord) => coord.latitude !== 0.0 && coord.longitude !== 0.0
+  // );
+
+  const query = `
+  SELECT 
+    *, 
+    ROUND(latitude, 6) AS latitude, 
+    ROUND(longitude, 6) AS longitude 
+  FROM emp_tracking 
+  WHERE emp_id = ? 
+    AND company_id = ? 
+    AND date = ? 
+    AND latitude != 0.0 
+    AND longitude != 0.0
+`;
+
+  const trackingData = await sqlModel.customQuery(query, [
+    emp_id,
+    company_id,
+    date,
+  ]);
+
   // console.log(filteredTrackingData);
-  for (let i = 0; i < filteredTrackingData.length - 1; i++) {
+  for (let i = 0; i < trackingData.length - 1; i++) {
     // totalDistance += haversineDistance(
     //   filteredTrackingData[i],
     //   filteredTrackingData[i + 1]
     // );
-    const distance = haversineDistance(
-      filteredTrackingData[i],
-      filteredTrackingData[i + 1]
-    );
+    const distance = haversineDistance(trackingData[i], trackingData[i + 1]);
     totalDistance += distance;
   }
 
