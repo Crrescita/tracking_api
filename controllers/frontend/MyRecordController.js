@@ -82,7 +82,7 @@ exports.getRecord = async (req, res, next) => {
       },
       {
         title: "Attendance",
-        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Employee.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/User.png",
         detail: ((data.total_checkins / 30) * 100).toFixed(2) + "%",
       },
       {
@@ -92,7 +92,7 @@ exports.getRecord = async (req, res, next) => {
       },
       {
         title: "Remaining Leaves",
-        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Calendar.png",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Date.png",
         detail: data.remaining_leave_days || "0",
       },
     ];
