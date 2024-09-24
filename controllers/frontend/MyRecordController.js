@@ -202,7 +202,7 @@ exports.getRecord = async (req, res, next) => {
       (sum, leave) => sum + leave.remaining_leave,
       0
     );
-
+    console.log(typeof data.total_distance);
     // Format the response data
     const response = [
       {
@@ -219,8 +219,8 @@ exports.getRecord = async (req, res, next) => {
         title: "Distance Covered",
         icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
         detail:
-          (typeof data.total_distance == "number"
-            ? data.total_distance.toFixed(2)
+          (!isNaN(Number(data.total_distance))
+            ? Number(data.total_distance).toFixed(2)
             : "0") + " Km",
       },
       {
