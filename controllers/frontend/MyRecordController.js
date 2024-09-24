@@ -218,7 +218,10 @@ exports.getRecord = async (req, res, next) => {
       {
         title: "Distance Covered",
         icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
-        detail: data.total_distance || "0",
+        detail:
+          (typeof data.total_distance === "number"
+            ? data.total_distance.toFixed(2)
+            : "0") + " Km",
       },
       {
         title: "Remaining Leaves",

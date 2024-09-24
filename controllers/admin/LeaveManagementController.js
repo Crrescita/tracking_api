@@ -315,11 +315,12 @@ exports.getLeaveRequest = async (req, res, next) => {
       lre.no_of_days,
       lt.total_leave_days,
       e.name, 
-      e.designation, 
       e.id AS emp_id,
+      de.name AS designation,
       COALESCE(CONCAT(?, e.image), '') AS image 
     FROM leave_request lr
     LEFT JOIN employees e ON lr.emp_id = e.id   
+    LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN leave_type lt ON lr.leave_type = lt.id AND lt.company_id = lr.company_id 
     LEFT JOIN leave_record lre ON lt.id = lre.leave_type 
     WHERE lr.company_id = ? 
