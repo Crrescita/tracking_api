@@ -955,6 +955,8 @@ exports.leaveRecord = async (req, res, next) => {
         id: emp_id,
         name: employee.name,
         designation: employee.designation_name,
+        department: employee.department_name,
+        employee_id: employee.employee_id,
         image: employee.image ? employee.image : "",
         recent_leave: recentLeave ? getRelativeTime(recentLeave.date) : null,
         recent_leaveDate: recentLeave ? recentLeave.date : null,
