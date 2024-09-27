@@ -951,8 +951,9 @@ exports.checkOut = async (req, res, next) => {
       "check_in",
       ["*"],
       { emp_id, company_id, date },
-      "ORDER BY created_at DESC"
+      "ORDER BY id DESC"
     );
+
     console.log(checkInData);
     if (
       checkInData.length === 0 ||
