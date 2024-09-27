@@ -860,6 +860,8 @@ exports.leaveRecord = async (req, res, next) => {
           e.company_id,
           e.name,
           e.employee_id,
+          e.mobile,
+          e.email,
           d.name AS department_name,
           de.name AS designation_name,
           CASE
@@ -954,6 +956,8 @@ exports.leaveRecord = async (req, res, next) => {
       leaveData.push({
         id: emp_id,
         name: employee.name,
+        mobile: employee.mobile,
+        email: employee.email,
         designation: employee.designation_name,
         department: employee.department_name,
         employee_id: employee.employee_id,
