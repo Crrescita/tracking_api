@@ -953,7 +953,7 @@ exports.checkOut = async (req, res, next) => {
       { emp_id, company_id, date },
       "ORDER BY created_at DESC"
     );
-
+    console.log(checkInData);
     if (
       checkInData.length === 0 ||
       checkInData[0].checkin_status !== "Check-in" ||
