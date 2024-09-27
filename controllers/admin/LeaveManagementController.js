@@ -315,7 +315,10 @@ exports.getLeaveRequest = async (req, res, next) => {
       lre.no_of_days,
       lt.total_leave_days,
       e.name, 
+      e.mobile,
+      e.email,
       e.id AS emp_id,
+      e.employee_id,
       de.name AS designation,
       dep.name AS department,
       COALESCE(CONCAT(?, e.image), '') AS image 
