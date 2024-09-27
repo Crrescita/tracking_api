@@ -955,7 +955,7 @@ exports.leaveRecord = async (req, res, next) => {
       // Add the data for this employee to the leaveData array
       leaveData.push({
         id: emp_id,
-        // name: employee.name,
+        name: employee.name,
         mobile: employee.mobile,
         email: employee.email,
         designation: employee.designation_name,
