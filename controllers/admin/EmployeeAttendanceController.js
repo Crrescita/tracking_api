@@ -187,6 +187,15 @@ exports.getAttendance = async (req, res, next) => {
     const totalLeave = processedData.filter(
       (emp) => emp.attendance_status === "Leave"
     ).length;
+    const totalOnTime = processedData.filter(
+      (emp) => emp.checkin_status === "On-Time"
+    ).length;
+    const totalEarly = processedData.filter(
+      (emp) => emp.checkin_status === "Early"
+    ).length;
+    const totalLate = processedData.filter(
+      (emp) => emp.checkin_status === "Late"
+    ).length;
 
     const totalDurationInSeconds = processedData.reduce((sum, emp) => {
       // Ensure total_duration is treated as a string
@@ -217,6 +226,9 @@ exports.getAttendance = async (req, res, next) => {
         totalLeave,
         totalDuration: totalFormattedDuration,
         totalDistance,
+        totalOnTime,
+        totalEarly,
+        totalLate,
       });
     }
 
@@ -229,6 +241,9 @@ exports.getAttendance = async (req, res, next) => {
         totalLeave,
         totalDuration: totalFormattedDuration,
         totalDistance,
+        totalOnTime,
+        totalEarly,
+        totalLate,
       },
     });
   } catch (error) {
