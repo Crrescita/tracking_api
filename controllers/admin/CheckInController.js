@@ -440,6 +440,130 @@ exports.getCheckInAllDate = async (req, res, next) => {
   }
 };
 
+// exports.getCheckInOut = async (req, res, next) => {
+//   try {
+//     const companyId = req.query?.company_id || "";
+//     const date = getCurrentDate(); // Assuming this gets the current date in the correct format
+
+//     // SQL query to get the first check-in and last check-out along with relevant details
+//     const query = `
+//       WITH first_checkins AS (
+//         SELECT
+//           emp_id,
+//           MIN(check_in_time) AS first_checkin_time,
+//           MIN(lat_check_in) AS lat_check_in,
+//           MIN(long_check_in) AS long_check_in,
+//           MIN(checkin_img) AS checkin_img,
+//           MIN(battery_status_at_checkIn) AS battery_status_at_checkIn
+//         FROM check_in
+//         WHERE company_id = ? AND date = ?
+
+//         GROUP BY emp_id
+//       ),
+//       last_checkouts AS (
+//         SELECT
+//           emp_id,
+//           MAX(check_out_time) AS last_checkout_time,
+//           MAX(lat_check_out) AS lat_check_out,
+//           MAX(long_check_out) AS long_check_out,
+//           MAX(checkout_img) AS checkout_img,
+//           MAX(checkin_status) AS lastCheckinStatus,
+//           MAX(battery_status_at_checkout) AS battery_status_at_checkout
+//         FROM check_in
+//         WHERE company_id = ? AND date = ?
+
+//         GROUP BY emp_id
+//       )
+//       SELECT
+//         u.id,
+//         u.name,
+//         ci.first_checkin_time,
+//         ci.lat_check_in,
+//         ci.long_check_in,
+//         ci.checkin_img,
+//         ci.battery_status_at_checkIn,
+//         co.last_checkout_time,
+//         co.lastCheckinStatus,
+//         co.lat_check_out,
+//         co.long_check_out,
+//         co.checkout_img,
+//         co.battery_status_at_checkout
+//       FROM employees u
+//       LEFT JOIN first_checkins ci ON u.id = ci.emp_id
+//       LEFT JOIN last_checkouts co ON u.id = co.emp_id
+//       WHERE u.company_id = ?;
+//     `;
+
+//     // Execute the query
+//     const data = await sqlModel.customQuery(query, [
+//       companyId,
+//       date,
+//       companyId,
+//       date,
+//       companyId,
+//     ]);
+//     console.log(data);
+
+//      // Fetch the latest check-in data
+//      const checkInData = await sqlModel.select(
+//       "check_in",
+//       ["*"],
+//       { emp_id, company_id, date },
+//       "ORDER BY id DESC"
+//     );
+//     console,log()
+//     // Separate the users into check-in and check-out arrays
+//     const checkInArray = [];
+//     const checkOutArray = [];
+
+//     data.forEach((result) => {
+//       if (result.first_checkin_time) {
+//         checkInArray.push({
+//           empId: result.id,
+//           name: result.name,
+//           checkInTime: result.first_checkin_time,
+//           latCheckIn: result.lat_check_in,
+//           longCheckIn: result.long_check_in,
+//           checkinImg: result.checkin_img,
+//           batteryStatusAtCheckIn: result.battery_status_at_checkIn,
+//         });
+//       }
+
+//       if (result.last_checkout_time) {
+//         checkOutArray.push({
+//           empId: result.id,
+//           name: result.name,
+//           checkOutTime: result.last_checkout_time,
+//           latCheckOut: result.lat_check_out,
+//           longCheckOut: result.long_check_out,
+//           checkoutImg: result.checkout_img,
+//           batteryStatusAtCheckOut: result.battery_status_at_checkout,
+//         });
+//       }
+//     });
+
+//     // Send the response
+//     res.status(200).send({
+//       status: true,
+//       checkInArray,
+//       checkOutArray,
+//     });
+//   } catch (error) {
+//     // Log the error for debugging
+//     console.error("Error fetching check-in/check-out data:", error);
+
+//     // Ensure error is an object with a message property
+//     const errorMessage =
+//       error instanceof Error ? error.message : "Unknown error";
+
+//     // Send the response
+//     res.status(500).send({
+//       status: false,
+//       error: errorMessage,
+//     });
+//   }
+// };
+
 exports.getCheckInOut = async (req, res, next) => {
   try {
     const companyId = req.query?.company_id || "";
@@ -457,7 +581,6 @@ exports.getCheckInOut = async (req, res, next) => {
           MIN(battery_status_at_checkIn) AS battery_status_at_checkIn
         FROM check_in
         WHERE company_id = ? AND date = ?
-         
         GROUP BY emp_id
       ),
       last_checkouts AS (
@@ -471,12 +594,21 @@ exports.getCheckInOut = async (req, res, next) => {
           MAX(battery_status_at_checkout) AS battery_status_at_checkout
         FROM check_in
         WHERE company_id = ? AND date = ?
-         
         GROUP BY emp_id
+      ),
+      latest_checkins AS (
+        SELECT 
+          emp_id,
+          checkin_status
+        FROM check_in
+        WHERE company_id = ? AND date = ?
+        ORDER BY id DESC
+        LIMIT 1
       )
       SELECT 
         u.id,
         u.name,
+        u.image,
         ci.first_checkin_time,
         ci.lat_check_in,
         ci.long_check_in,
@@ -487,10 +619,12 @@ exports.getCheckInOut = async (req, res, next) => {
         co.lat_check_out,
         co.long_check_out,
         co.checkout_img,
-        co.battery_status_at_checkout
+        co.battery_status_at_checkout,
+        lc.checkin_status AS latestCheckinStatus
       FROM employees u
       LEFT JOIN first_checkins ci ON u.id = ci.emp_id
       LEFT JOIN last_checkouts co ON u.id = co.emp_id
+      LEFT JOIN latest_checkins lc ON u.id = lc.emp_id
       WHERE u.company_id = ?;
     `;
 
@@ -501,8 +635,10 @@ exports.getCheckInOut = async (req, res, next) => {
       companyId,
       date,
       companyId,
+      date,
+      companyId,
     ]);
-    console.log(data);
+
     // Separate the users into check-in and check-out arrays
     const checkInArray = [];
     const checkOutArray = [];
@@ -512,23 +648,31 @@ exports.getCheckInOut = async (req, res, next) => {
         checkInArray.push({
           empId: result.id,
           name: result.name,
+          image: `${process.env.BASE_URL}${result.image}`,
           checkInTime: result.first_checkin_time,
           latCheckIn: result.lat_check_in,
           longCheckIn: result.long_check_in,
           checkinImg: result.checkin_img,
           batteryStatusAtCheckIn: result.battery_status_at_checkIn,
+          latestCheckStatus: result.latestCheckinStatus,
         });
       }
 
-      if (result.last_checkout_time) {
+      // Only add to checkOutArray if the lastCheckinStatus is not 'check-in'
+      if (
+        result.last_checkout_time &&
+        result.latestCheckinStatus != "Check-in"
+      ) {
         checkOutArray.push({
           empId: result.id,
           name: result.name,
+          image: `${process.env.BASE_URL}${result.image}`,
           checkOutTime: result.last_checkout_time,
           latCheckOut: result.lat_check_out,
           longCheckOut: result.long_check_out,
           checkoutImg: result.checkout_img,
           batteryStatusAtCheckOut: result.battery_status_at_checkout,
+          latestCheckStatus: result.latestCheckinStatus,
         });
       }
     });
