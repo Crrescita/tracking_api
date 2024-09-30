@@ -642,7 +642,7 @@ exports.getCheckInOut = async (req, res, next) => {
     // Separate the users into check-in and check-out arrays
     const checkInArray = [];
     const checkOutArray = [];
-
+    console.log(data);
     data.forEach((result) => {
       if (result.first_checkin_time) {
         checkInArray.push({
