@@ -11,6 +11,52 @@ const createSlug = (title) => {
     .replace(/-+$/, ""); // Trim - from end of text
 };
 
+const getCurrentDate = () => {
+  const currentDate = new Date();
+
+  const options = {
+    timeZone: "Asia/Kolkata",
+  };
+  const year = currentDate.toLocaleString("en-US", {
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const day = String(currentDate.getDate()).padStart(2, "0");
+
+  const formattedDate = `${year}-${month}-${day}`;
+
+  return formattedDate;
+};
+
+// Helper function for future time (upcoming leave)
+const getFutureRelativeTime = (date) => {
+  const now = new Date();
+  const targetDate = new Date(date);
+
+  const diffInMs = targetDate - now;
+  const diffInSeconds = Math.floor(diffInMs / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+  const diffInMonths = Math.floor(diffInDays / 30);
+  const diffInYears = Math.floor(diffInDays / 365);
+
+  if (diffInYears > 0) {
+    return `in ${diffInYears} year${diffInYears === 1 ? "" : "s"}`;
+  } else if (diffInMonths > 0) {
+    return `in ${diffInMonths} month${diffInMonths === 1 ? "" : "s"}`;
+  } else if (diffInDays > 0) {
+    return `in ${diffInDays} day${diffInDays === 1 ? "" : "s"}`;
+  } else if (diffInHours > 0) {
+    return `in ${diffInHours} hour${diffInHours === 1 ? "" : "s"}`;
+  } else if (diffInMinutes > 0) {
+    return `in ${diffInMinutes} minute${diffInMinutes === 1 ? "" : "s"}`;
+  } else {
+    return "Today";
+  }
+};
+
 exports.createHoliday = async (req, res, next) => {
   try {
     const id = req.params.id || "";
@@ -146,5 +192,49 @@ exports.deleteMultipleHolidays = async (req, res, next) => {
     }
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
+  }
+};
+
+// upcoming hoildays
+exports.getUpcomingHoliday = async (req, res, next) => {
+  try {
+    const whereClause = {};
+    for (const key in req.query) {
+      if (req.query.hasOwnProperty(key)) {
+        whereClause[key] = req.query[key];
+      }
+    }
+
+    const currentDate = getCurrentDate();
+
+    const query = `
+      SELECT name,date
+      FROM company_holidays
+      WHERE date >= ? AND status = 'active'
+      ORDER BY date ASC
+    `;
+
+    const data = await sqlModel.customQuery(query, [currentDate]);
+
+    if (data.error) {
+      return res.status(500).send(data);
+    }
+
+    if (data.length === 0) {
+      return res.status(200).send({
+        status: false,
+        message: "No upcoming holidays found",
+      });
+    }
+
+    // Calculate relative time for each holiday
+    const holidaysWithRelativeTime = data.map((holiday) => ({
+      ...holiday,
+      daysUntilHoliday: getFutureRelativeTime(holiday.date), // Add relative time
+    }));
+
+    res.status(200).send({ status: true, data: holidaysWithRelativeTime });
+  } catch (error) {
+    res.status(500).send({ status: false, error: error.message });
   }
 };
