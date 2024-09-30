@@ -29,6 +29,27 @@ const getCurrentDate = () => {
   return formattedDate;
 };
 
+const getPreviousDate = () => {
+  const currentDate = new Date();
+
+  // Subtract one day from the current date
+  currentDate.setDate(currentDate.getDate() - 1);
+
+  const options = {
+    timeZone: "Asia/Kolkata",
+  };
+  const year = currentDate.toLocaleString("en-US", {
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const day = String(currentDate.getDate()).padStart(2, "0");
+
+  const formattedDate = `${year}-${month}-${day}`;
+
+  return formattedDate;
+};
+
 exports.getEmpLoginDetail = async (req, res, next) => {
   try {
     const emp_id = req.query?.emp_id || "";
@@ -521,6 +542,84 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
 };
 
 // dashboard
+// exports.getTotalAttendance = async (req, res, next) => {
+//   try {
+//     const { company_id } = req.query;
+
+//     // Validate the required parameters
+//     if (!company_id) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Company ID is required",
+//       });
+//     }
+
+//     const date = getCurrentDate();
+
+//     // Query to get employee attendance data for the given date
+//     const query = `
+//       SELECT
+//         e.id,
+//         e.name,
+//         a.checkin_status,
+//         c.check_in_time
+//       FROM employees e
+//       LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
+//       LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+//       WHERE e.company_id = ?
+//     `;
+
+//     const values = [date, date, company_id];
+//     const data = await sqlModel.customQuery(query, values);
+
+//     // Process the data
+//     const processedData = data.reduce((acc, item) => {
+//       // Set attendance status based on checkin_status or absence of attendance data
+//       let attendance_status = "Absent";
+//       if (item.checkin_status === "Leave") {
+//         attendance_status = "Leave";
+//       } else if (item.check_in_time || item.checkin_status) {
+//         attendance_status = "Present";
+//       }
+
+//       // Check if employee already exists in the accumulator
+//       const existingEmployee = acc.find((emp) => emp.id === item.id);
+//       if (!existingEmployee) {
+//         acc.push({
+//           id: item.id,
+//           attendance_status: attendance_status,
+//         });
+//       }
+//       return acc;
+//     }, []);
+
+//     // Calculate total employees, present, absent, and on leave
+//     const totalEmployees = processedData.length;
+//     const totalPresent = processedData.filter(
+//       (emp) => emp.attendance_status === "Present"
+//     ).length;
+//     const totalAbsent = processedData.filter(
+//       (emp) => emp.attendance_status === "Absent"
+//     ).length;
+//     const totalLeave = processedData.filter(
+//       (emp) => emp.attendance_status === "Leave"
+//     ).length;
+
+//     // Respond with totals only
+//     res.status(200).send({
+//       status: true,
+//       attendanceCount: {
+//         totalEmployees,
+//         totalPresent,
+//         totalAbsent,
+//         totalLeave,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getTotalAttendance = async (req, res, next) => {
   try {
     const { company_id } = req.query;
@@ -533,65 +632,81 @@ exports.getTotalAttendance = async (req, res, next) => {
       });
     }
 
-    const date = getCurrentDate();
+    const currentDate = getCurrentDate(); // Function that returns the current date in your preferred format
+    const previousDate = getPreviousDate(); // Function that returns the previous date
 
-    // Query to get employee attendance data for the given date
-    const query = `
-      SELECT
-        e.id,
-        e.name,
-        a.checkin_status,
-        c.check_in_time
-      FROM employees e
-      LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
-      LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-      WHERE e.company_id = ?
-    `;
+    // Function to process attendance data for a given date
+    const processAttendanceData = async (date) => {
+      const query = `
+        SELECT
+          e.id,
+          e.name,
+          a.checkin_status,
+          c.check_in_time
+        FROM employees e
+        LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
+        LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+        WHERE e.company_id = ?
+      `;
 
-    const values = [date, date, company_id];
-    const data = await sqlModel.customQuery(query, values);
+      const values = [date, date, company_id];
+      const data = await sqlModel.customQuery(query, values);
 
-    // Process the data
-    const processedData = data.reduce((acc, item) => {
-      // Set attendance status based on checkin_status or absence of attendance data
-      let attendance_status = "Absent";
-      if (item.checkin_status === "Leave") {
-        attendance_status = "Leave";
-      } else if (item.check_in_time || item.checkin_status) {
-        attendance_status = "Present";
-      }
+      // Process the data
+      const processedData = data.reduce((acc, item) => {
+        // Set attendance status based on checkin_status or absence of attendance data
+        let attendance_status = "Absent";
+        if (item.checkin_status === "Leave") {
+          attendance_status = "Leave";
+        } else if (item.check_in_time || item.checkin_status) {
+          attendance_status = "Present";
+        }
 
-      // Check if employee already exists in the accumulator
-      const existingEmployee = acc.find((emp) => emp.id === item.id);
-      if (!existingEmployee) {
-        acc.push({
-          id: item.id,
-          attendance_status: attendance_status,
-        });
-      }
-      return acc;
-    }, []);
+        // Check if employee already exists in the accumulator
+        const existingEmployee = acc.find((emp) => emp.id === item.id);
+        if (!existingEmployee) {
+          acc.push({
+            id: item.id,
+            attendance_status: attendance_status,
+          });
+        }
+        return acc;
+      }, []);
 
-    // Calculate total employees, present, absent, and on leave
-    const totalEmployees = processedData.length;
-    const totalPresent = processedData.filter(
-      (emp) => emp.attendance_status === "Present"
-    ).length;
-    const totalAbsent = processedData.filter(
-      (emp) => emp.attendance_status === "Absent"
-    ).length;
-    const totalLeave = processedData.filter(
-      (emp) => emp.attendance_status === "Leave"
-    ).length;
+      // Calculate totals
+      const totalEmployees = processedData.length;
+      const totalPresent = processedData.filter(
+        (emp) => emp.attendance_status === "Present"
+      ).length;
+      const totalAbsent = processedData.filter(
+        (emp) => emp.attendance_status === "Absent"
+      ).length;
+      const totalLeave = processedData.filter(
+        (emp) => emp.attendance_status === "Leave"
+      ).length;
 
-    // Respond with totals only
-    res.status(200).send({
-      status: true,
-      attendanceCount: {
+      return {
         totalEmployees,
         totalPresent,
         totalAbsent,
         totalLeave,
+      };
+    };
+
+    // Get attendance for current and previous dates
+    const currentDateAttendance = await processAttendanceData(currentDate);
+    const previousDateAttendance = await processAttendanceData(previousDate);
+
+    // Respond with totals for both dates
+    res.status(200).send({
+      status: true,
+      currentDate: {
+        date: currentDate,
+        attendanceCount: currentDateAttendance,
+      },
+      previousDate: {
+        date: previousDate,
+        attendanceCount: previousDateAttendance,
       },
     });
   } catch (error) {
