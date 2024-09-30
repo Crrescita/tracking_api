@@ -572,60 +572,64 @@ exports.getCheckInOut = async (req, res, next) => {
     // SQL query to get the first check-in and last check-out along with relevant details
     const query = `
       WITH first_checkins AS (
-        SELECT 
-          emp_id,
-          MIN(check_in_time) AS first_checkin_time,
-          MIN(lat_check_in) AS lat_check_in,
-          MIN(long_check_in) AS long_check_in,
-          MIN(checkin_img) AS checkin_img,
-          MIN(battery_status_at_checkIn) AS battery_status_at_checkIn
-        FROM check_in
-        WHERE company_id = ? AND date = ?
-        GROUP BY emp_id
-      ),
-      last_checkouts AS (
-        SELECT 
-          emp_id,
-          MAX(check_out_time) AS last_checkout_time,
-          MAX(lat_check_out) AS lat_check_out,
-          MAX(long_check_out) AS long_check_out,
-          MAX(checkout_img) AS checkout_img,
-          MAX(checkin_status) AS lastCheckinStatus,
-          MAX(battery_status_at_checkout) AS battery_status_at_checkout
-        FROM check_in
-        WHERE company_id = ? AND date = ?
-        GROUP BY emp_id
-      ),
-      latest_checkins AS (
-        SELECT 
-          emp_id,
-          checkin_status
-        FROM check_in
-        WHERE company_id = ? AND date = ?
-        ORDER BY id DESC
-        LIMIT 1
-      )
-      SELECT 
-        u.id,
-        u.name,
-        u.image,
-        ci.first_checkin_time,
-        ci.lat_check_in,
-        ci.long_check_in,
-        ci.checkin_img,
-        ci.battery_status_at_checkIn,
-        co.last_checkout_time,
-        co.lastCheckinStatus,
-        co.lat_check_out,
-        co.long_check_out,
-        co.checkout_img,
-        co.battery_status_at_checkout,
-        lc.checkin_status AS latestCheckinStatus
-      FROM employees u
-      LEFT JOIN first_checkins ci ON u.id = ci.emp_id
-      LEFT JOIN last_checkouts co ON u.id = co.emp_id
-      LEFT JOIN latest_checkins lc ON u.id = lc.emp_id
-      WHERE u.company_id = ?;
+  SELECT 
+    emp_id,
+    MIN(check_in_time) AS first_checkin_time,
+    MIN(lat_check_in) AS lat_check_in,
+    MIN(long_check_in) AS long_check_in,
+    MIN(checkin_img) AS checkin_img,
+    MIN(battery_status_at_checkIn) AS battery_status_at_checkIn
+  FROM check_in
+  WHERE company_id = ? AND date = ?
+  GROUP BY emp_id
+),
+last_checkouts AS (
+  SELECT 
+    emp_id,
+    MAX(check_out_time) AS last_checkout_time,
+    MAX(lat_check_out) AS lat_check_out,
+    MAX(long_check_out) AS long_check_out,
+    MAX(checkout_img) AS checkout_img,
+    MAX(checkin_status) AS lastCheckinStatus,
+    MAX(battery_status_at_checkout) AS battery_status_at_checkout
+  FROM check_in
+  WHERE company_id = ? AND date = ?
+  GROUP BY emp_id
+),
+latest_checkins AS (
+  SELECT 
+    emp_id,
+    checkin_status,
+    ROW_NUMBER() OVER (PARTITION BY emp_id ORDER BY id DESC) AS row_num
+  FROM check_in
+  WHERE company_id = ? AND date = ?
+)
+SELECT 
+  u.id,
+  u.name,
+  u.image,
+  ci.first_checkin_time,
+  ci.lat_check_in,
+  ci.long_check_in,
+  ci.checkin_img,
+  ci.battery_status_at_checkIn,
+  co.last_checkout_time,
+  co.lastCheckinStatus,
+  co.lat_check_out,
+  co.long_check_out,
+  co.checkout_img,
+  co.battery_status_at_checkout,
+  lc.checkin_status AS latestCheckinStatus
+FROM employees u
+LEFT JOIN first_checkins ci ON u.id = ci.emp_id
+LEFT JOIN last_checkouts co ON u.id = co.emp_id
+LEFT JOIN (
+  SELECT emp_id, checkin_status
+  FROM latest_checkins
+  WHERE row_num = 1
+) lc ON u.id = lc.emp_id
+WHERE u.company_id = ?;
+
     `;
 
     // Execute the query
