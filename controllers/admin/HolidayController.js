@@ -207,11 +207,19 @@ exports.getUpcomingHoliday = async (req, res, next) => {
 
     const currentDate = getCurrentDate();
 
+    // const query = `
+    //   SELECT name,date
+    //   FROM company_holidays
+    //   WHERE date >= ? AND status = 'active'
+    //   ORDER BY date ASC
+    //   LIMIT
+    // `;
     const query = `
-      SELECT name,date
+      SELECT name, date
       FROM company_holidays
       WHERE date >= ? AND status = 'active'
       ORDER BY date ASC
+      LIMIT 5
     `;
 
     const data = await sqlModel.customQuery(query, [currentDate]);
