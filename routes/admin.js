@@ -192,6 +192,12 @@ router.get(
   EmployeeAttendanceController.getEmployeeMonthlyAttendance
 );
 
+// total attendance data
+router.get(
+  "/getTotalAttendance",
+  EmployeeAttendanceController.getTotalAttendance
+);
+
 // department
 router
   .route("/department/:id?")
