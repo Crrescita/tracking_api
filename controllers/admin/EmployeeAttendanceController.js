@@ -1115,7 +1115,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
     const holidayQuery = `
       SELECT date, name
       FROM company_holidays
-      WHERE company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
+      WHERE status = 'active' AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
     `;
     const holidayRecords = await sqlModel.customQuery(holidayQuery, [
       company_id,

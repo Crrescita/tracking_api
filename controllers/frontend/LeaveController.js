@@ -145,7 +145,7 @@ exports.createLeaveRequest = async (req, res, next) => {
     const holidaysQuery = `
       SELECT date
       FROM company_holidays
-      WHERE company_id = ? AND date BETWEEN ? AND ?
+      WHERE company_id = ? AND status = 'active' AND date BETWEEN ? AND ?
     `;
     const holidays = await sqlModel.customQuery(holidaysQuery, [
       employee.company_id,

@@ -442,6 +442,7 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
 
       const holidays = await sqlModel.select("company_holidays", ["date"], {
         company_id: companyId,
+        status: "active",
       });
       const holidayDates = holidays.map((holiday) => holiday.date);
 
@@ -770,7 +771,7 @@ exports.leaveDetail = async (req, res, next) => {
     const holidaysQuery = `
       SELECT date
       FROM company_holidays
-      WHERE company_id = ? AND date BETWEEN ? AND ?
+      WHERE status = 'active' AND company_id = ? AND date BETWEEN ? AND ?
     `;
     const holidays = await sqlModel.customQuery(holidaysQuery, [
       company_id,

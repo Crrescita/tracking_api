@@ -69,7 +69,7 @@ const verifyToken = async (req, res, next) => {
   }
 
   const token = authHeader.split(" ")[1];
-  console.log(token);
+
   try {
     // Query the user_session table instead of directly querying users/company
     const [session] = await sqlModel.select(
@@ -164,6 +164,9 @@ router.get("/checkInDetail", CheckInController.getCheckIn);
 
 router.get("/checkInDetailAllDate", CheckInController.getCheckInAllDate);
 
+// check in/out
+router.get("/checkInOut", CheckInController.getCheckInOut);
+
 // employee coordinates
 router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
 router.get("/getCoordinatesv2", EmployeeTrackController.getCoordinatesv2);
@@ -227,6 +230,9 @@ router.post(
   "/holidays-delete-multiple",
   HolidayController.deleteMultipleHolidays
 );
+
+// upcoming hoilday
+router.get("/getUpcomingHoliday", HolidayController.getUpcomingHoliday);
 
 // leave
 
