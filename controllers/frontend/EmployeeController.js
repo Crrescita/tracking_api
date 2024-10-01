@@ -701,7 +701,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
       designation: data[0]?.designation,
       employee_id: data[0]?.employee_id,
       image: data[0]?.image,
-      checkInsByDate: checkInDates,
+      checkInData: checkInDates,
     };
 
     res.status(200).send({
