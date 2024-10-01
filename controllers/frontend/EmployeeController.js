@@ -701,7 +701,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
       designation: data[0]?.designation,
       employee_id: data[0]?.employee_id,
       image: data[0]?.image,
-      checkInsByDate: checkInDates,
+      checkInData: checkInDates,
     };
 
     res.status(200).send({
@@ -714,220 +714,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
 };
 
 // emp attendance by date
-// exports.getEmployeeAttendanceByDate = async (req, res, next) => {
-//   try {
-//     const token = req.headers.authorization?.split(" ")[1];
 
-//     if (!token) {
-//       return res
-//         .status(400)
-//         .send({ status: false, message: "Token is required" });
-//     }
-
-//     const [employee] = await sqlModel.select(
-//       "employees",
-//       ["id", "company_id"],
-//       { api_token: token }
-//     );
-
-//     if (!employee) {
-//       return res
-//         .status(404)
-//         .send({ status: false, message: "Employee not found" });
-//     }
-
-//     const emp_id = employee.id;
-//     const company_id = employee.company_id;
-//     const requestedDate = req.query.date;
-
-//     if (!emp_id || !company_id || !requestedDate) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Employee ID, company ID, and date are required",
-//       });
-//     }
-
-//     const query = `
-//         SELECT
-//           e.id,
-//           e.name,
-//           e.mobile,
-//           e.email,
-//           e.designation,
-//           e.employee_id,
-//           CASE
-//             WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-//             ELSE e.image
-//           END AS image,
-//           c.date,
-//           c.check_in_time,
-//           c.check_out_time
-//         FROM employees e
-//         LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
-//         WHERE e.id = ? AND e.company_id = ? AND c.date = ?
-//         ORDER BY c.check_in_time
-//       `;
-
-//     const values = [process.env.BASE_URL, emp_id, company_id, requestedDate];
-//     const data = await sqlModel.customQuery(query, values);
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({
-//         status: false,
-//         message: "No data found for the specified date",
-//       });
-//     }
-
-//     const companyQuery = `
-//         SELECT
-//           check_in_time_start,
-//           check_in_time_end
-//         FROM company
-//         WHERE id = ?
-//       `;
-
-//     const companyValues = [company_id];
-//     const companyData = await sqlModel.customQuery(companyQuery, companyValues);
-
-//     const { check_in_time_start, check_in_time_end } = companyData[0] || {};
-
-//     const startDateTime = new Date(`1970-01-01T${check_in_time_start}Z`);
-//     const endDateTime = new Date(`1970-01-01T${check_in_time_end}Z`);
-
-//     // const formatDuration = (totalSeconds) => {
-//     //   if (isNaN(totalSeconds) || totalSeconds < 0) {
-//     //     console.error("Invalid totalSeconds value:", totalSeconds);
-//     //     return "0h 0m 0s";
-//     //   }
-//     //   const hours = Math.floor(totalSeconds / 3600);
-//     //   const minutes = Math.floor((totalSeconds % 3600) / 60);
-//     //   const seconds = Math.floor(totalSeconds % 60);
-//     //   return `${hours}h ${minutes}m ${seconds}s`;
-//     // };
-
-//     const formatDuration = (totalSeconds) => {
-//       if (isNaN(totalSeconds) || totalSeconds < 0) {
-//         return "00:00:00";
-//       }
-
-//       const hours = Math.floor(totalSeconds / 3600);
-//       const minutes = Math.floor((totalSeconds % 3600) / 60);
-//       const seconds = Math.floor(totalSeconds % 60);
-
-//       const formattedHours = String(hours).padStart(2, "0");
-//       const formattedMinutes = String(minutes).padStart(2, "0");
-//       const formattedSeconds = String(seconds).padStart(2, "0");
-
-//       return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-//     };
-
-//     const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
-//       if (!checkInTime || !checkOutTime) {
-//         return 0; // Return 0 if checkInTime or checkOutTime is null or undefined
-//       }
-//       const checkIn = new Date(`1970-01-01T${checkInTime}Z`);
-//       const checkOut = new Date(`1970-01-01T${checkOutTime}Z`);
-//       const durationInSeconds = (checkOut - checkIn) / 1000;
-//       return durationInSeconds < 0 ? 0 : durationInSeconds;
-//     };
-
-//     const groupedData = {
-//       date: requestedDate,
-//       checkIns: [],
-//       totalDurationInSeconds: 0,
-//       earliestCheckInTime: null,
-//       latestCheckOutTime: null,
-//       checkin_status: "Absent",
-//       attendance_status: "Absent",
-//       timeDifference: "0h 0m 0s",
-//       totalDuration: "0h 0m 0s",
-//     };
-
-//     data.forEach((item) => {
-//       const checkInDateTime = new Date(`1970-01-01T${item.check_in_time}Z`);
-//       let checkin_status = "On Time";
-//       let timeDifferenceSeconds = 0;
-
-//       if (checkInDateTime < startDateTime) {
-//         checkin_status = "Early";
-//         timeDifferenceSeconds = Math.abs(
-//           (startDateTime - checkInDateTime) / 1000
-//         );
-//       } else if (checkInDateTime > endDateTime) {
-//         checkin_status = "Late";
-//         timeDifferenceSeconds = Math.abs(
-//           (checkInDateTime - endDateTime) / 1000
-//         );
-//       }
-
-//       const durationInSeconds = calculateDurationInSeconds(
-//         item.check_in_time,
-//         item.check_out_time
-//       );
-
-//       groupedData.checkIns.push({
-//         check_in_time: item.check_in_time,
-//         check_out_time: item.check_out_time || null,
-//         duration: formatDuration(durationInSeconds),
-//       });
-
-//       groupedData.totalDurationInSeconds += durationInSeconds;
-
-//       if (item.check_in_time) {
-//         groupedData.attendance_status = "Present";
-//         if (
-//           !groupedData.earliestCheckInTime ||
-//           item.check_in_time < groupedData.earliestCheckInTime
-//         ) {
-//           groupedData.earliestCheckInTime = item.check_in_time;
-//         }
-//       }
-
-//       if (item.check_out_time !== null) {
-//         if (
-//           !groupedData.latestCheckOutTime ||
-//           item.check_out_time > groupedData.latestCheckOutTime
-//         ) {
-//           groupedData.latestCheckOutTime = item.check_out_time;
-//         }
-//       } else {
-//         groupedData.latestCheckOutTime = null;
-//       }
-
-//       groupedData.checkin_status = checkin_status;
-//       groupedData.timeDifference = formatDuration(timeDifferenceSeconds);
-//     });
-
-//     //    groupedData.earliestCheckInTime = groupedData.earliestCheckInTime || "00:00:00";
-//     //    groupedData.latestCheckOutTime = groupedData.latestCheckOutTime || "00:00:00";
-
-//     groupedData.totalDuration = formatDuration(
-//       groupedData.totalDurationInSeconds
-//     );
-
-//     const employeeData = {
-//       id: data[0].id,
-//       name: data[0].name,
-//       mobile: data[0].mobile,
-//       email: data[0].email,
-//       designation: data[0].designation,
-//       employee_id: data[0].employee_id,
-//       image: data[0].image,
-//       checkInData: groupedData,
-//     };
-
-//     res.status(200).send({
-//       status: true,
-//       data: employeeData,
-//     });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
 exports.getEmployeeAttendanceByDate = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -1079,7 +866,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
       designation: data[0]?.designation,
       employee_id: data[0]?.employee_id,
       image: data[0]?.image,
-      checkInData: groupedData,
+      checkInsByDate: groupedData,
     };
 
     res.status(200).send({

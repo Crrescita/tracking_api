@@ -688,13 +688,6 @@ WHERE u.company_id = ?;
       checkOutArray,
     });
   } catch (error) {
-    // Log the error for debugging
-    console.error("Error fetching check-in/check-out data:", error);
-
-    // Ensure error is an object with a message property
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-
     // Send the response
     res.status(500).send({
       status: false,

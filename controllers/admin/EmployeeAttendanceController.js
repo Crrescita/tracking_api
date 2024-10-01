@@ -713,3 +713,132 @@ exports.getTotalAttendance = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
+
+// Helper function to get the current week's dates (Monday to Sunday)
+const getWeekDates = (currentDate, weekOffset = 0) => {
+  const current = new Date(currentDate);
+
+  const currentDayOfWeek = current.getDay();
+
+  // Adjust the day to start from Monday (0 = Monday, ..., 6 = Sunday)
+  const dayOffset = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+
+  // Calculate the Monday of the current week
+  const firstDayOfWeek = new Date(
+    current.setDate(current.getDate() - dayOffset + weekOffset * 7)
+  );
+
+  const weekDates = [];
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(firstDayOfWeek);
+    date.setDate(firstDayOfWeek.getDate() + i); // Move to the next day
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    weekDates.push(`${year}-${month}-${day}`);
+  }
+
+  return weekDates;
+};
+
+exports.getWeeklyAttendance = async (req, res, next) => {
+  try {
+    const { company_id, weekOffset = 0 } = req.query;
+
+    // Validate the required parameters
+    if (!company_id) {
+      return res.status(400).send({
+        status: false,
+        message: "Company ID is required",
+      });
+    }
+
+    const currentDate = getCurrentDate(); // Function to get current date
+    const weekDates = getWeekDates(currentDate, parseInt(weekOffset)); // Pass weekOffset to get the correct week dates
+
+    // Function to process attendance data for a given date
+    const processAttendanceData = async (date) => {
+      const query = `
+        SELECT
+          e.id,
+          e.name,
+          a.checkin_status,
+          c.check_in_time
+        FROM employees e
+        LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
+        LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
+        WHERE e.company_id = ?
+      `;
+
+      const values = [date, date, company_id];
+      const data = await sqlModel.customQuery(query, values);
+
+      // Process the data
+      const processedData = data.reduce((acc, item) => {
+        let attendance_status = "Absent";
+        if (item.checkin_status === "Leave") {
+          attendance_status = "Leave";
+        } else if (item.check_in_time || item.checkin_status) {
+          attendance_status = "Present";
+        }
+
+        const existingEmployee = acc.find((emp) => emp.id === item.id);
+        if (!existingEmployee) {
+          acc.push({
+            id: item.id,
+            attendance_status: attendance_status,
+          });
+        }
+        return acc;
+      }, []);
+
+      const totalEmployees = processedData.length;
+      const totalPresent = processedData.filter(
+        (emp) => emp.attendance_status === "Present"
+      ).length;
+      const totalAbsent = processedData.filter(
+        (emp) => emp.attendance_status === "Absent"
+      ).length;
+      const totalLeave = processedData.filter(
+        (emp) => emp.attendance_status === "Leave"
+      ).length;
+
+      return {
+        totalEmployees,
+        totalPresent,
+        totalAbsent,
+        totalLeave,
+      };
+    };
+
+    // Process attendance for each day of the week
+    const weeklyAttendance = {};
+    for (const date of weekDates) {
+      weeklyAttendance[date] = await processAttendanceData(date);
+    }
+
+    // Structure the response for chart data
+    const attendanceSeries = {
+      present: [],
+      absent: [],
+      onLeave: [],
+    };
+    weekDates.forEach((date) => {
+      const attendance = weeklyAttendance[date];
+      attendanceSeries.present.push(attendance.totalPresent);
+      attendanceSeries.absent.push(attendance.totalAbsent);
+      attendanceSeries.onLeave.push(attendance.totalLeave);
+    });
+
+    res.status(200).send({
+      status: true,
+      weekDates,
+      attendanceSeries,
+    });
+  } catch (error) {
+    res.status(500).send({ status: false, error: error.message });
+  }
+};
