@@ -379,6 +379,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
         const day = new Date(date).getDay(); // 0 = Sunday
         acc[date] = {
           date,
+          day: dayOfWeek,
           checkin_status: "Absent",
           attendance_status: day == 0 ? "Holiday" : "Absent", // Mark Sundays as "Holiday"
           timeDifference: "00:00:00",
