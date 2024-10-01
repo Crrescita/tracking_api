@@ -376,6 +376,9 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
 
       // Initialize groupedData with default values, mark Sundays as "Holiday"
       const groupedData = allDays.reduce((acc, date) => {
+        const dayOfWeek = new Date(date).toLocaleString("en-US", {
+          weekday: "short",
+        });
         const day = new Date(date).getDay(); // 0 = Sunday
         acc[date] = {
           date,
