@@ -645,6 +645,7 @@ exports.getTotalAttendance = async (req, res, next) => {
         SELECT
           e.id,
           e.name,
+          e.status
           a.checkin_status,
           c.check_in_time
         FROM employees e
@@ -689,11 +690,20 @@ exports.getTotalAttendance = async (req, res, next) => {
         (emp) => emp.attendance_status === "Leave"
       ).length;
 
+      const totalActive = processedData.filter(
+        (emp) => emp.status == "active"
+      ).length;
+      const totalInactive = processedData.filter(
+        (emp) => emp.status == "inactive"
+      ).length;
+
       return {
         totalEmployees,
         totalPresent,
         totalAbsent,
         totalLeave,
+        totalActive,
+        totalInactive,
       };
     };
 
