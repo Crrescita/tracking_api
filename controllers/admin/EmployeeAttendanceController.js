@@ -673,11 +673,12 @@ exports.getTotalAttendance = async (req, res, next) => {
           acc.push({
             id: item.id,
             attendance_status: attendance_status,
+            status: item.status,
           });
         }
         return acc;
       }, []);
-
+      console.log(processedData);
       // Calculate totals
       const totalEmployees = processedData.length;
       const totalPresent = processedData.filter(
