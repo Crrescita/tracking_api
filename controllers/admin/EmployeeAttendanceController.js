@@ -645,7 +645,7 @@ exports.getTotalAttendance = async (req, res, next) => {
         SELECT
           e.id,
           e.name,
-          e.status
+          e.status,
           a.checkin_status,
           c.check_in_time
         FROM employees e
