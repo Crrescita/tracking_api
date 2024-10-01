@@ -34,7 +34,7 @@ exports.login = async (req, res, next) => {
     });
 
     if (!validation.valid) {
-      return res.status(200).send({
+      return res.status(403).send({
         status: false,
         message: validation.message,
         statusCode: 1,
