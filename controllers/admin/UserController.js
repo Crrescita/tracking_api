@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const baseDir = path.join(__dirname, "uploads");
 const saltRounds = 10;
+const sendMail = require("../../mail/nodemailer");
 
 // exports.login = async (req, res, next) => {
 //   try {
@@ -134,165 +135,195 @@ exports.login = async (req, res, next) => {
 
 exports.forgetPass = async (req, res, next) => {
   try {
-    let email = req.body.email;
-    let type = req.body.type;
+    const { email, user_type } = req.body;
 
-    // Check if user with email exists
-    let [result] = await sqlModel.select("users", {}, { email: email });
+    const table = user_type === "administrator" ? "users" : "company";
 
-    if (!result) {
-      return res.status(200).send({ status: false, message: "User not found" });
+    const [user] = await sqlModel.select(table, {}, { email });
+
+    if (!user) {
+      return res.status(200).send({
+        status: false,
+        message: "Email does not exist",
+        statusCode: 4,
+      });
     }
 
-    // Generate reset token
-    let token = crypto.randomBytes(20).toString("hex");
-    resetToken = token;
-    resetTokenExpires = Date.now() + 3600000; // Token expires in 1 hour
+    if (user_type == "company" && user.status != "active") {
+      return res.status(200).send({
+        status: false,
+        message: "Company account is inactive",
+        statusCode: 5,
+      });
+    }
 
-    var insert = {
-      reset_token: resetToken,
-      token_expire: resetTokenExpires,
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetTokenExpires = Date.now() + 3600000; // 1 hour validity
+
+    await sqlModel.update(
+      table,
+      {
+        reset_token: resetToken,
+        token_expire: resetTokenExpires,
+      },
+      { id: user.id }
+    );
+
+    const resetLink =
+      user_type === "administrator"
+        ? `${process.env.BASE_URL}/auth/pass-change?userType=administrator&token=${resetToken}`
+        : `${process.env.BASE_URL}/auth/pass-change?userType=company&token=${resetToken}`;
+
+    const data = {
+      email,
+      resetLink,
+      name: user_type === "administrator" ? user.username : user.name,
     };
 
-    result = await sqlModel.update("users", insert, { email: email });
+    await sendMail.forgotPassword(data);
 
-    // Send reset email
-    // let resetLink = "";
-    // if (type == "user") {
-    //   resetLink = `http://localhost:4200/preacher-question?token=${token}`;
-    // } else if (type == "admin") {
-    //   resetLink = `http://localhost:4200/auth/pass-change?token=${token}`;
-    // } else {
-    //   res.status(200).send({ status: true, message: "Role is not define" });
-    // }
-
-    let data = {
-      // resetLink
-      resetLink:
-        type == "user"
-          ? `https://rmd.crrescita.com/ask-questions?token=${token}`
-          : `https://rmdadmin.crrescita.com/auth/pass-change?token=${token}`,
-    };
-    // let a = sendMail.forget(email, data);
-    res.status(200).send({ status: true, message: "Mail Sent" });
+    // Send a response indicating that the mail was sent
+    return res.status(200).send({
+      status: true,
+      message: "Password reset link has been sent to your email",
+    });
   } catch (error) {
-    res.status(200).send({ status: false, error: error.message });
+    return res.status(500).send({
+      status: false,
+      message: "An error occurred while processing the password reset",
+      error: error.message,
+    });
   }
 };
 
 exports.resetPass = async (req, res, next) => {
   try {
-    var token = req.body.token;
-    var new_password = req.body.new_password;
+    const { token, new_password, user_type } = req.body;
 
-    // Find user by reset token
-    var user = await sqlModel.select("users", {}, { reset_token: token });
-    console.log(user[0]);
-    if (!user[0] || user[0].resetTokenExpires < Date.now()) {
-      console.log("working");
+    const table = user_type === "administrator" ? "users" : "company";
 
-      return res.status(200).send("Invalid or expired reset token");
+    const [user] = await sqlModel.select(table, {}, { reset_token: token });
+
+    if (!user || user.token_expire < Date.now()) {
+      return res.status(200).send({
+        status: false,
+        message: "Invalid or expired reset token",
+      });
     }
-    var insert = user[0];
-    const idString_pre = String(new_password);
-    console.log("3");
 
-    // Create a Buffer from the string
-    const buffer_pre = Buffer.from(idString_pre);
+    const hashedPassword = await bcrypt.hash(new_password, 10);
 
-    // Convert the Buffer to Base64
-    const pass = buffer_pre.toString("base64");
-    insert.password = pass;
-    insert.reset_token = "";
-    insert.token_expire = "";
+    const updateData = {
+      password: hashedPassword,
+      reset_token: "",
+      token_expire: "",
+    };
 
-    result = await sqlModel.update("users", insert, { email: user[0].email });
+    await sqlModel.update(table, updateData, { email: user.email });
 
-    res
-      .status(200)
-      .send({ status: true, message: "Password reset successful" });
+    res.status(200).send({
+      status: true,
+      message: "Password reset successful",
+    });
   } catch (error) {
-    res.status(200).send({ status: false, error: error.message });
+    res.status(500).send({
+      status: false,
+      message: "An error occurred during password reset",
+      error: error.message,
+    });
   }
 };
 
-exports.update_details = async (req, res, next) => {
+exports.updateDetails = async (req, res, next) => {
   try {
-    let token = req.body.api_token;
-    const insert = {
-      username: req.body.username,
-      email: req.body.email,
-      update_at: getCurrentDateTime(),
+    const { username, email, user_type } = req.body;
+
+    const table = user_type === "administrator" ? "users" : "company";
+    const updateData = {
+      email,
     };
+    if (user_type == "administrator") {
+      updateData.username;
+      updateData.update_at = getCurrentDateTime();
+    } else {
+      updateData.name = username;
+      updateData.updated_at = getCurrentDateTime();
+    }
 
-    result = await sqlModel.update("users", insert, { api_token: token });
+    const result = await sqlModel.update(table, updateData, { email });
 
-    resMsg = {
+    // Check if any records were updated
+    if (result.affectedRows === 0) {
+      return res.status(200).send({
+        status: false,
+        message: "No record found with the provided token",
+        statusCode: 2,
+      });
+    }
+
+    // Success response
+    res.status(200).send({
       status: true,
-      message: "Record update successfully",
+      message: "Record updated successfully",
       statusCode: 3,
-    };
-    return res.status(200).send(resMsg);
+    });
   } catch (error) {
-    return res.status(200).json({
+    // Error response
+    res.status(500).json({
       status: false,
-      statuscode: 2,
-      message: "Something went wrong!" + error,
+      statusCode: 2,
+      message: "Something went wrong! " + error.message,
     });
   }
 };
 
 exports.update_password = async (req, res, next) => {
   try {
-    let token = req.body.api_token;
+    const { api_token, old_password, new_password, user_type } = req.body;
 
-    let old = req.body.old_password ? req.body.old_password : "";
-    if (old) {
-      old_pass = await sqlModel.select("users", {}, { api_token: token });
-
-      console.log(old_pass);
-      console.log(old_pass[0].password);
-      const buffer = Buffer.from(old_pass[0].password, "base64");
-
-      // Convert the Buffer to a string
-      const str = buffer.toString("utf8");
-      console.log(str);
-
-      if (req.body.old_password != str) {
-        resMsg = {
-          message: "Old password is not correct",
-        };
-        return res.status(200).send(resMsg);
-      } else {
-        if (req.body.password != "") {
-          const idString_pre = String(req.body.password);
-          console.log("3");
-
-          // Create a Buffer from the string
-          const buffer_pre = Buffer.from(idString_pre);
-
-          // Convert the Buffer to Base64
-          const pass = buffer_pre.toString("base64");
-          const newData = {
-            password: pass,
-          };
-          await sqlModel.update("users", newData, { api_token: token });
-        }
-      }
+    if (!old_password || !new_password) {
+      return res.status(400).send({
+        status: false,
+        message: "Old and new passwords are required",
+      });
     }
 
-    resMsg = {
-      status: true,
-      message: "Record update successfully",
-      statusCode: 3,
-    };
+    const table = user_type === "administrator" ? "users" : "company";
+    const [user] = await sqlModel.select(table, {}, { api_token: api_token });
 
-    return res.status(200).send(resMsg);
+    if (!user) {
+      return res.status(404).send({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    const passwordMatch = await bcrypt.compare(old_password, user.password);
+    if (!passwordMatch) {
+      return res.status(400).send({
+        status: false,
+        message: "Old password is incorrect",
+      });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(new_password, 10);
+
+    await sqlModel.update(
+      table,
+      { password: hashedNewPassword },
+      { api_token: api_token }
+    );
+
+    res.status(200).send({
+      status: true,
+      message: "Password updated successfully",
+      statusCode: 3,
+    });
   } catch (error) {
-    return res.status(200).json({
+    return res.status(500).json({
       status: false,
-      statuscode: 2,
-      message: "Something went wrong!" + error,
+      statusCode: 2,
+      message: "Something went wrong! " + error.message,
     });
   }
 };

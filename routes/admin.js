@@ -120,7 +120,7 @@ const verifyToken = async (req, res, next) => {
 router.post("/login", UserController.login);
 router.get("/get_users", UserController.get_users);
 router.post("/signup", UserController.signup);
-router.post("/update_details", UserController.update_details);
+router.post("/update_details", UserController.updateDetails);
 router.post("/update_password", UserController.update_password);
 
 router.post("/forgetPass", UserController.forgetPass);

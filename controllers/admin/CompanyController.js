@@ -57,10 +57,12 @@ exports.companyInsert = async (req, res, next) => {
     }
 
     if (insert.password) {
-      plainPassword = insert.password;
+      console.log("ff");
       insert.password = await bcrypt.hash(insert.password, saltRounds);
+    } else {
+      delete insert.password;
     }
-
+    console.log(insert.password);
     if (id) {
       // Fetch the original email and password hash
       const companyRecord = await sqlModel.select(
@@ -68,6 +70,7 @@ exports.companyInsert = async (req, res, next) => {
         ["email", "password"],
         { id }
       );
+      console.log(insert.password);
 
       if (companyRecord.error || companyRecord.length === 0) {
         return res
@@ -154,6 +157,23 @@ exports.companyInsert = async (req, res, next) => {
       const saveData = await sqlModel.update("company", insert, { id });
       const msg = "Data Updated";
 
+      if (req.body.password) {
+        if (req.body.email || plainPassword) {
+          if (
+            originalEmail !== req.body.email ||
+            !(await bcrypt.compare(plainPassword, originalPasswordHash))
+          ) {
+            const emailData = {
+              name: req.body.name,
+              email: req.body.email,
+              password: plainPassword,
+            };
+
+            sendMail.sendEmailToCompany(emailData);
+          }
+        }
+      }
+
       if (saveData.error) {
         return res.status(200).send(saveData);
       } else {
@@ -161,20 +181,6 @@ exports.companyInsert = async (req, res, next) => {
       }
 
       // Check if email or password has changed and send email
-      if (req.body.email || plainPassword) {
-        if (
-          originalEmail !== req.body.email ||
-          !(await bcrypt.compare(plainPassword, originalPasswordHash))
-        ) {
-          const emailData = {
-            name: req.body.name,
-            email: req.body.email,
-            password: plainPassword,
-          };
-
-          sendMail.sendEmailToCompany(emailData);
-        }
-      }
     } else {
       if (req.body.name) {
         insert.slug = createSlug(req.body.name);
