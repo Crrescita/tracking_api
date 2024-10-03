@@ -7,44 +7,96 @@ const saltRounds = 10;
 const crypto = require("crypto");
 
 //employees
+const getCurrentDate = () => {
+  const currentDate = new Date();
+
+  const options = {
+    timeZone: "Asia/Kolkata",
+  };
+  const year = currentDate.toLocaleString("en-US", {
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const day = String(currentDate.getDate()).padStart(2, "0");
+
+  const formattedDate = `${year}-${month}-${day}`;
+
+  return formattedDate;
+};
 
 // exports.employeesGet = async (req, res, next) => {
 //   try {
 //     const id = req.params?.id || "";
 //     const companyId = req.query?.company_id || "";
 
-//     let whereClause = {};
+//     let whereClause = "";
+//     const queryParams = [];
+
 //     if (id) {
-//       whereClause.id = id;
+//       whereClause += " AND e.id = ?";
+//       queryParams.push(id);
 //     }
 //     if (companyId) {
-//       whereClause.company_id = companyId;
+//       whereClause += " AND e.company_id = ?";
+//       queryParams.push(companyId);
 //     }
 
-//     const data = await sqlModel.select("employees", {}, whereClause);
+//     const query = `
+//       SELECT
+//         e.id,
+//         e.company_id,
+//         e.name,
+//         e.mobile,
+//         e.email,
+//         e.status,
+//         e.address,
+//         e.dob,
+//         e.employee_id,
+//         e.joining_date,
+//         e.gender,
+//         e.designation,
+//         e.department,
+//         e.state,
+//         e.city,
+//         e.zip_code,
+//         d.name AS department_name,
+//         de.name AS designation_name,
+//         e.employee_id,
+//         CASE
+//           WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+//           ELSE e.image
+//         END AS image
+//       FROM employees e
+//       LEFT JOIN department d ON e.department = d.id
+//        LEFT JOIN designation de ON e.designation = de.id
+//       WHERE 1=1 ${whereClause}
+//     `;
+
+//     const data = await sqlModel.customQuery(query, [
+//       process.env.BASE_URL,
+//       ...queryParams,
+//     ]);
 
 //     if (data.error) {
 //       return res.status(200).send(data);
 //     }
 
-//     const result = await Promise.all(
-//       data.map(async (item) => {
-//         item.image = item.image ? `${process.env.BASE_URL}${item.image}` : "";
-//         delete item.password;
-//         return item;
-//       })
-//     );
+//     const result = data.map((item) => {
+//       delete item.password; // Assuming the password field exists but should not be returned
+//       return item;
+//     });
 
 //     res.status(200).send({ status: true, data: result });
 //   } catch (error) {
 //     res.status(200).send({ status: false, error: error.message });
 //   }
 // };
-
 exports.employeesGet = async (req, res, next) => {
   try {
     const id = req.params?.id || "";
     const companyId = req.query?.company_id || "";
+    const date = getCurrentDate();
 
     let whereClause = "";
     const queryParams = [];
@@ -58,13 +110,22 @@ exports.employeesGet = async (req, res, next) => {
       queryParams.push(companyId);
     }
 
+    const checkInSubquery = `
+      SELECT 
+        emp_id,
+        checkin_status,
+        ROW_NUMBER() OVER (PARTITION BY emp_id ORDER BY id DESC) AS row_num
+      FROM check_in
+      WHERE company_id = ? AND date = ?
+    `;
+
     const query = `
       SELECT
         e.id,
         e.company_id,
         e.name,
         e.mobile,
-        e.email,    
+        e.email,
         e.status,
         e.address,
         e.dob,
@@ -82,15 +143,26 @@ exports.employeesGet = async (req, res, next) => {
         CASE
           WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
           ELSE e.image
-        END AS image
+        END AS image,
+        latest_checkin.checkin_status
       FROM employees e
       LEFT JOIN department d ON e.department = d.id
-       LEFT JOIN designation de ON e.designation = de.id
+      LEFT JOIN designation de ON e.designation = de.id
+      LEFT JOIN (
+        SELECT emp_id, checkin_status 
+        FROM (${checkInSubquery}) AS ranked_checkins 
+        WHERE row_num = 1
+      ) AS latest_checkin ON e.id = latest_checkin.emp_id
       WHERE 1=1 ${whereClause}
     `;
 
+    console.log("Query Params:", companyId, date); // Log parameters
+
     const data = await sqlModel.customQuery(query, [
       process.env.BASE_URL,
+      companyId, // Using company_id in the subquery
+      date, // Using date in the subquery
+
       ...queryParams,
     ]);
 
