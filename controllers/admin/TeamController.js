@@ -118,11 +118,11 @@ exports.deleteDepartment = async (req, res, next) => {
 exports.deleteMultipleDepartments = async (req, res, next) => {
   try {
     const ids = req.body.ids;
-    console.log(ids);
+
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).send({ status: false, message: "Invalid input" });
     }
-    console.log(ids);
+
     const results = await Promise.all(
       ids.map((id) => sqlModel.delete("department", { id }))
     );

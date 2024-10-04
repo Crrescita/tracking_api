@@ -57,12 +57,11 @@ exports.companyInsert = async (req, res, next) => {
     }
 
     if (insert.password) {
-      console.log("ff");
       insert.password = await bcrypt.hash(insert.password, saltRounds);
     } else {
       delete insert.password;
     }
-    console.log(insert.password);
+
     if (id) {
       // Fetch the original email and password hash
       const companyRecord = await sqlModel.select(
@@ -70,7 +69,6 @@ exports.companyInsert = async (req, res, next) => {
         ["email", "password"],
         { id }
       );
-      console.log(insert.password);
 
       if (companyRecord.error || companyRecord.length === 0) {
         return res

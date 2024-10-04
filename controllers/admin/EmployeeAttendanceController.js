@@ -138,6 +138,7 @@ exports.getAttendance = async (req, res, next) => {
       a.total_distance,
       c.date,
       c.check_in_time,
+      c.checkin_status AS latestCheckInStatus,
       c.check_out_time,
       c.duration
     FROM employees e
@@ -180,6 +181,11 @@ exports.getAttendance = async (req, res, next) => {
         } else if (existingEmployee.checkIns.length > 0) {
           existingEmployee.latestCheckOutTime = null;
         }
+        if (item.latestCheckInStatus) {
+          existingEmployee.latestCheckInStatus = item.latestCheckInStatus;
+        } else if (existingEmployee.checkIns.length > 0) {
+          existingEmployee.latestCheckInStatus = null;
+        }
 
         existingEmployee.checkin_status = item.checkin_status || "Absent";
         existingEmployee.timeDifference = item.time_difference || "-";
@@ -206,6 +212,7 @@ exports.getAttendance = async (req, res, next) => {
             : [],
           latestCheckInTime: item.check_in_time || null,
           latestCheckOutTime: item.check_out_time || null,
+          latestCheckInStatus: item.latestCheckInStatus || null,
           totalDuration: item.total_duration || "0h 0m 0s",
           totalDistance: item.total_distance || 0,
           checkin_status: item.checkin_status || "Absent",
@@ -678,7 +685,7 @@ exports.getTotalAttendance = async (req, res, next) => {
         }
         return acc;
       }, []);
-      console.log(processedData);
+
       // Calculate totals
       const totalEmployees = processedData.length;
       const totalPresent = processedData.filter(
