@@ -156,13 +156,10 @@ exports.employeesGet = async (req, res, next) => {
       WHERE 1=1 ${whereClause}
     `;
 
-    console.log("Query Params:", companyId, date); // Log parameters
-
     const data = await sqlModel.customQuery(query, [
       process.env.BASE_URL,
-      companyId, // Using company_id in the subquery
-      date, // Using date in the subquery
-
+      companyId,
+      date,
       ...queryParams,
     ]);
 

@@ -294,7 +294,18 @@ router.post("/setFcmToken", FirebaseController.setFcmToken);
 // get notification
 router.get("/getNotification/:id", NotificationController.getNotification);
 
+router.delete(
+  "/notificationDelete/:id",
+  NotificationController.deletenotification
+);
+
+router.post(
+  "/notification-delete-multiple",
+  NotificationController.deleteMultiplenotifications
+);
+
 router.post("/markAsRead", NotificationController.markAsRead);
+router.post("/clearAll", NotificationController.clearAll);
 
 // logs
 router.get("/logs", LogController.getLogs);

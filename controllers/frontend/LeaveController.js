@@ -246,6 +246,7 @@ exports.createLeaveRequest = async (req, res, next) => {
         title: "New",
         body: messageContent,
         image: employee.image,
+        status: "unread",
         timestamp: getCurrentDateTime(),
       };
 

@@ -280,6 +280,144 @@ exports.deleteMultipleLeaveType = async (req, res, next) => {
 };
 
 // leave request
+// exports.getLeaveRequest = async (req, res, next) => {
+//   try {
+//     const { company_id } = req.query;
+
+//     if (!company_id) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Company ID is required",
+//       });
+//     }
+
+//     const currentDate = new Date().toISOString().split("T")[0];
+
+//     const updateExpiredQuery = `
+//         UPDATE leave_request
+//         SET status = 'Expired'
+//         WHERE company_id = ?
+//         AND status = 'Pending'
+//         AND from_date <= ?
+//       `;
+//     await sqlModel.customQuery(updateExpiredQuery, [company_id, currentDate]);
+
+//     const query = `
+//     SELECT
+//       lr.leave_type AS leaveType_id,
+//       lr.from_date,
+//       lr.to_date,
+//       lr.status,
+//       lr.reason,
+//       lr.created_at,
+//       lr.id,
+//       lt.name AS leave_type,
+//       lr.no_of_days,
+//       lt.total_leave_days,
+//       e.name,
+//       e.mobile,
+//       e.email,
+//       e.id AS emp_id,
+//       e.employee_id,
+//       de.name AS designation,
+//       dep.name AS department,
+//       COALESCE(CONCAT(?, e.image), '') AS image
+//     FROM leave_request lr
+//     LEFT JOIN employees e ON lr.emp_id = e.id
+//     LEFT JOIN designation de ON e.designation = de.id
+//      LEFT JOIN department dep ON e.department = dep.id
+//     LEFT JOIN leave_type lt ON lr.leave_type = lt.id AND lt.company_id = lr.company_id
+//     LEFT JOIN leave_record lre ON lt.id = lre.leave_type
+//     WHERE lr.company_id = ?
+//       AND lr.status = 'Pending'
+//   `;
+
+//     const values = [process.env.BASE_URL, company_id];
+//     const data = await sqlModel.customQuery(query, values);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+//     console.log(data);
+//     res.status(200).send({ status: true, data: data });
+//   } catch (error) {
+//     return res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+// exports.getLeaveRequest = async (req, res, next) => {
+//   try {
+//     const { company_id } = req.query;
+
+//     if (!company_id) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Company ID is required",
+//       });
+//     }
+
+//     const currentDate = new Date().toISOString().split("T")[0];
+
+//     const updateExpiredQuery = `
+//         UPDATE leave_request
+//         SET status = 'Expired'
+//         WHERE company_id = ?
+//         AND status = 'Pending'
+//         AND from_date <= ?
+//       `;
+//     await sqlModel.customQuery(updateExpiredQuery, [company_id, currentDate]);
+
+//     const query = `
+//     SELECT
+//       lr.leave_type AS leaveType_id,
+//       lr.from_date,
+//       lr.to_date,
+//       lr.status,
+//       lr.reason,
+//       lr.created_at,
+//       lr.id,
+//       lt.name AS leave_type,
+//       lr.no_of_days,
+//       lt.total_leave_days,
+//       e.name,
+//       e.mobile,
+//       e.email,
+//       e.id AS emp_id,
+//       e.employee_id,
+//       de.name AS designation,
+//       dep.name AS department,
+//       COALESCE(CONCAT(?, e.image), '') AS image
+//     FROM leave_request lr
+//     LEFT JOIN employees e ON lr.emp_id = e.id
+//     LEFT JOIN designation de ON e.designation = de.id
+//     LEFT JOIN department dep ON e.department = dep.id
+//     LEFT JOIN leave_type lt ON lr.leave_type = lt.id AND lt.company_id = lr.company_id
+//     LEFT JOIN leave_record lre ON lt.id = lre.leave_type
+//     WHERE lr.company_id = ?
+//      ORDER BY created_at DESC
+//     GROUP BY lr.id
+//   `;
+
+//     const values = [process.env.BASE_URL, company_id];
+//     const data = await sqlModel.customQuery(query, values);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       return res.status(200).send({ status: false, message: "No data found" });
+//     }
+
+//     console.log(data);
+//     res.status(200).send({ status: true, data: data });
+//   } catch (error) {
+//     return res.status(500).send({ status: false, error: error.message });
+//   }
+// };
 exports.getLeaveRequest = async (req, res, next) => {
   try {
     const { company_id } = req.query;
@@ -293,47 +431,63 @@ exports.getLeaveRequest = async (req, res, next) => {
 
     const currentDate = new Date().toISOString().split("T")[0];
 
+    // Update leave status to 'Expired' for outdated leave requests
     const updateExpiredQuery = `
-        UPDATE leave_request 
-        SET status = 'Expired' 
-        WHERE company_id = ? 
-        AND status = 'Pending' 
-        AND from_date <= ?
-      `;
+      UPDATE leave_request 
+      SET status = 'Expired' 
+      WHERE company_id = ? 
+      AND status = 'Pending' 
+      AND from_date <= ?
+    `;
     await sqlModel.customQuery(updateExpiredQuery, [company_id, currentDate]);
 
+    // Query to fetch leave requests
     const query = `
-    SELECT 
-      lr.leave_type AS leaveType_id, 
-      lr.from_date, 
-      lr.to_date, 
-      lr.status, 
-      lr.reason, 
-      lr.created_at, 
-      lr.id, 
-      lt.name AS leave_type, 
-      lre.no_of_days,
-      lt.total_leave_days,
-      e.name, 
-      e.mobile,
-      e.email,
-      e.id AS emp_id,
-      e.employee_id,
-      de.name AS designation,
-      dep.name AS department,
-      COALESCE(CONCAT(?, e.image), '') AS image 
-    FROM leave_request lr
-    LEFT JOIN employees e ON lr.emp_id = e.id   
-    LEFT JOIN designation de ON e.designation = de.id
-     LEFT JOIN department dep ON e.department = dep.id
-    LEFT JOIN leave_type lt ON lr.leave_type = lt.id AND lt.company_id = lr.company_id 
-    LEFT JOIN leave_record lre ON lt.id = lre.leave_type 
-    WHERE lr.company_id = ? 
-      AND lr.status = 'Pending'
-  `;
+      SELECT 
+        lr.leave_type AS leaveType_id, 
+        lr.from_date, 
+        lr.to_date, 
+        lr.status, 
+        lr.reason, 
+        lr.created_at, 
+        lr.id, 
+        lt.name AS leave_type, 
+        lr.no_of_days,
+        lt.total_leave_days,
+        e.name, 
+        e.mobile,
+        e.email,
+        e.id AS emp_id,
+        e.employee_id,
+        de.name AS designation,
+        dep.name AS department,
+        COALESCE(CONCAT(?, e.image), '') AS image 
+      FROM leave_request lr
+      LEFT JOIN employees e ON lr.emp_id = e.id   
+      LEFT JOIN designation de ON e.designation = de.id
+      LEFT JOIN department dep ON e.department = dep.id
+      LEFT JOIN leave_type lt ON lr.leave_type = lt.id AND lt.company_id = lr.company_id 
+      WHERE lr.company_id = ? 
+      ORDER BY lr.created_at DESC
+    `;
 
     const values = [process.env.BASE_URL, company_id];
     const data = await sqlModel.customQuery(query, values);
+    console.log(data);
+    const totalApproval = data.filter(
+      (leave) => leave.status.toLowerCase() == "approve"
+    ).length;
+
+    const totalReject = data.filter(
+      (leave) => leave.status.toLowerCase() == "reject"
+    ).length;
+
+    const totalPending = data.filter(
+      (leave) => leave.status.toLowerCase() == "pending"
+    ).length;
+
+    // Set pending count
+    // leaveRequests.counts.pendingCount = leaveRequests.data.length - (leaveRequests.counts.approvedCount + leaveRequests.counts.rejectedCount);
 
     if (data.error) {
       return res.status(500).send(data);
@@ -343,7 +497,15 @@ exports.getLeaveRequest = async (req, res, next) => {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
-    res.status(200).send({ status: true, data: data });
+    res.status(200).send({
+      status: true,
+      data: data,
+      leaveCount: {
+        totalApproval,
+        totalReject,
+        totalPending,
+      },
+    });
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
   }
@@ -399,10 +561,126 @@ exports.createLeaveRequest = async (req, res, next) => {
   }
 };
 
+// exports.updateLeaveRequestStatus = async (req, res, next) => {
+//   try {
+//     const id = req.params.id || "";
+//     const { status, admin_reason } = req.body;
+
+//     const validation = validateFields({ id, status });
+
+//     if (!validation.valid) {
+//       return res.status(400).send({
+//         status: false,
+//         message: validation.message,
+//         statusCode: 1,
+//       });
+//     }
+//     if (typeof admin_reason == "undefined") {
+//       admin_reason = null;
+//     }
+
+//     const insert = { status, admin_reason };
+
+//     const leaveRecord = await sqlModel.select("leave_request", ["*"], { id });
+
+//     if (leaveRecord.error || leaveRecord.length === 0) {
+//       return res.status(200).send({
+//         status: false,
+//         message: "Leave not found",
+//       });
+//     }
+
+//     insert.updated_at = getCurrentDateTime();
+
+//     const saveData = await sqlModel.update("leave_request", insert, { id });
+
+//     if (saveData.error) {
+//       return res.status(200).send(saveData);
+//     }
+
+//     if (status == "Approved") {
+//       const fromDate = new Date(leaveRecord[0].from_date);
+//       const toDate = new Date(leaveRecord[0].to_date);
+//       const empId = leaveRecord[0].emp_id;
+//       const companyId = leaveRecord[0].company_id;
+//       const leaveType = leaveRecord[0].leave_type;
+
+//       const holidays = await sqlModel.select("company_holidays", ["date"], {
+//         company_id: companyId,
+//         status: "active",
+//       });
+//       const holidayDates = holidays.map((holiday) => holiday.date);
+
+//       let currentDate = new Date(fromDate);
+//       let noOfDays = 0;
+
+//       while (currentDate <= toDate) {
+//         const dayOfWeek = currentDate.getDay();
+//         const formattedDate = currentDate.toISOString().split("T")[0];
+
+//         // Exclude Sundays and holidays
+//         if (dayOfWeek !== 0 && !holidayDates.includes(formattedDate)) {
+//           noOfDays++;
+//           const checkInData = {
+//             emp_id: empId,
+//             company_id: companyId,
+//             date: formattedDate,
+//             checkin_status: "Leave",
+//             created_at: getCurrentDateTime(),
+//           };
+
+//           await sqlModel.insert("emp_attendance", checkInData);
+//         }
+
+//         // Move to the next day
+//         currentDate.setDate(currentDate.getDate() + 1);
+//       }
+
+//       // Check if leave record already exists
+//       const existingLeaveRecord = await sqlModel.select(
+//         "leave_record",
+//         ["id", "no_of_days"],
+//         {
+//           emp_id: empId,
+//           company_id: companyId,
+//           leave_type: leaveType,
+//         }
+//       );
+
+//       if (existingLeaveRecord.length > 0) {
+//         const updatedDays =
+//           parseInt(existingLeaveRecord[0].no_of_days) + noOfDays;
+//         await sqlModel.update(
+//           "leave_record",
+//           {
+//             no_of_days: updatedDays.toString(),
+//             updated_at: getCurrentDateTime(),
+//           },
+//           { id: existingLeaveRecord[0].id }
+//         );
+//       } else {
+//         const leaveRecordData = {
+//           emp_id: empId,
+//           company_id: companyId,
+//           leave_type: leaveType,
+//           no_of_days: noOfDays.toString(),
+//           created_at: getCurrentDateTime(),
+//         };
+
+//         await sqlModel.insert("leave_record", leaveRecordData);
+//       }
+//     }
+
+//     return res.status(200).send({ status: true, message: "Data Updated" });
+//   } catch (error) {
+//     return res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.updateLeaveRequestStatus = async (req, res, next) => {
   try {
     const id = req.params.id || "";
-    const { status, admin_reason } = req.body;
+    let { status, admin_reason } = req.body;
 
     const validation = validateFields({ id, status });
 
@@ -412,6 +690,11 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
         message: validation.message,
         statusCode: 1,
       });
+    }
+
+    // Ensure admin_reason is defined, set it to null if not provided
+    if (typeof admin_reason === "undefined") {
+      admin_reason = null;
     }
 
     const insert = { status, admin_reason };
@@ -740,7 +1023,7 @@ exports.leaveDetail = async (req, res, next) => {
 
     // Fetch leave request details if `id` is provided
     const leaveRequestQuery = `
-      SELECT lr.from_date, lr.to_date, lt.name, lr.reason, lr.no_of_days, lr.created_at
+      SELECT lr.from_date, lr.to_date, lr.status ,lt.name, lr.reason, lr.no_of_days, lr.created_at
       FROM leave_request lr
       LEFT JOIN leave_type lt ON lr.leave_type = lt.id
       WHERE lr.id = ?
@@ -754,7 +1037,7 @@ exports.leaveDetail = async (req, res, next) => {
       });
     }
 
-    const { from_date, to_date, name, reason, no_of_days, created_at } =
+    const { from_date, to_date, status, name, reason, no_of_days, created_at } =
       leaveRequest[0];
 
     // Calculate number of Sundays between from_date and to_date
@@ -814,6 +1097,7 @@ exports.leaveDetail = async (req, res, next) => {
       leave_details: {
         from_date: from_date,
         to_date: to_date,
+        status: status,
         number_of_sundays: sundayCount,
         number_of_holidays: holidayCount,
         leave_type: name,
