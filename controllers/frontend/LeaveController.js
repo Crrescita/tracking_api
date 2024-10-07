@@ -81,7 +81,8 @@ exports.createLeaveRequest = async (req, res, next) => {
     if (totalUsedDays >= totalLeaveDays) {
       return res.status(200).send({
         status: false,
-        message: "All leave days for this leave type have been used.",
+        message:
+          "You have reached the maximum number of leave days permitted for this leave type.",
       });
     }
 
