@@ -473,7 +473,7 @@ exports.getLeaveRequest = async (req, res, next) => {
 
     const values = [process.env.BASE_URL, company_id];
     const data = await sqlModel.customQuery(query, values);
-    console.log(data);
+
     const totalApproval = data.filter(
       (leave) => leave.status.toLowerCase() == "approve"
     ).length;
@@ -484,6 +484,10 @@ exports.getLeaveRequest = async (req, res, next) => {
 
     const totalPending = data.filter(
       (leave) => leave.status.toLowerCase() == "pending"
+    ).length;
+
+    const totalExpired = data.filter(
+      (leave) => leave.status.toLowerCase() == "expired"
     ).length;
 
     // Set pending count
@@ -504,6 +508,7 @@ exports.getLeaveRequest = async (req, res, next) => {
         totalApproval,
         totalReject,
         totalPending,
+        totalExpired,
       },
     });
   } catch (error) {
@@ -716,7 +721,7 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
       return res.status(200).send(saveData);
     }
 
-    if (status == "Approved") {
+    if (status == "Approve") {
       const fromDate = new Date(leaveRecord[0].from_date);
       const toDate = new Date(leaveRecord[0].to_date);
       const empId = leaveRecord[0].emp_id;
@@ -1014,9 +1019,47 @@ exports.leaveDetail = async (req, res, next) => {
 
     // If no `id` is provided, return only the processedResults
     if (!id) {
+      const empleaveRequestQuery = `
+      SELECT lr.from_date, lr.to_date, lr.status, lt.name, lr.reason, lr.no_of_days, lr.created_at
+      FROM leave_request lr
+      LEFT JOIN leave_type lt ON lr.leave_type = lt.id
+      WHERE lr.emp_id = ? AND lr.status IN ('Approve', 'Reject', 'Pending') ORDER BY created_at DESC
+    `;
+      const empleaveRequest = await sqlModel.customQuery(empleaveRequestQuery, [
+        emp_id,
+      ]);
+
+      const approvedLeaves = empleaveRequest.filter(
+        (leave) => leave.status === "Approve"
+      );
+      const rejectedLeaves = empleaveRequest.filter(
+        (leave) => leave.status === "Reject"
+      );
+
+      const pendingLeaves = empleaveRequest.filter(
+        (leave) => leave.status === "Pending"
+      );
+
+      const expiredLeaves = empleaveRequest.filter(
+        (leave) => leave.status === "Expired"
+      );
+
+      // if (empleaveRequest.length === 0) {
+      //   return res.status(404).json({
+      //     status: false,
+      //     message: "No leave requests found for Approve or Reject status",
+      //   });
+      // }
+
       return res.status(200).json({
         status: true,
-        message: "Leave records fetched successfully",
+        message: "Leave records fetched successfullyswww",
+        leaveData: {
+          approvedLeaves,
+          rejectedLeaves,
+          pendingLeaves,
+          expiredLeaves,
+        },
         data: processedResults,
       });
     }
