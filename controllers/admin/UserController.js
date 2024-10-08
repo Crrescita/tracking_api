@@ -432,3 +432,15 @@ exports.get_users = async (req, res, next) => {
     res.status(200).send({ status: false, error: error.message });
   }
 };
+
+exports.getQueryParam = async (req, res, next) => {
+  try {
+    const queryParams = req.query;
+    res.json({
+      message: "Query Parameters",
+      data: queryParams,
+    });
+  } catch (error) {
+    res.status(200).send({ status: false, error: error.message });
+  }
+};
