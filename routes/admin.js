@@ -15,7 +15,7 @@ const AddressController = require("../controllers/admin/AddressController");
 const FirebaseController = require("../controllers/admin/FirebaseController");
 const NotificationController = require("../controllers/admin/NotificationController");
 const LogController = require("../controllers/admin/LogController");
-
+const AssignTaskController = require("../controllers/admin/AssignTaskController");
 // for testing it is comment
 // const verifyToken = async (req, res, next) => {
 //   const authHeader = req.headers["authorization"];
@@ -125,6 +125,7 @@ router.post("/update_password", UserController.update_password);
 
 router.post("/forgetPass", UserController.forgetPass);
 router.post("/resetPass", UserController.resetPass);
+router.get("/getQueryParam", UserController.getQueryParam);
 
 router.use(verifyToken);
 
@@ -306,6 +307,15 @@ router.post(
 
 router.post("/markAsRead", NotificationController.markAsRead);
 router.post("/clearAll", NotificationController.clearAll);
+
+// assign task
+
+router
+  .route("/assignTask/:id?")
+  .get(AssignTaskController.getAssignTask)
+  .post(AssignTaskController.assignTask)
+  .put(AssignTaskController.assignTask);
+// .delete(AssignTaskController.deleteLeaveType);
 
 // logs
 router.get("/logs", LogController.getLogs);
