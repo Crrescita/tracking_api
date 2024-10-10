@@ -435,23 +435,25 @@ exports.get_users = async (req, res, next) => {
 
 exports.getWebhook = async (req, res, next) => {
   try {
-    const queryParams = req.query;
-    res.json({
-      message: "Query Parameters",
-      data: queryParams,
-    });
+    // const queryParams = req.query;
+    // res.json({
+    //   message: "Query Parameters",
+    //   data: queryParams,
+    // });
 
-    let mode = req.query.["hub.mode"];
-    let challange = req.query.["hub.challenge"];
-    let token = req.query.["hub.verify_token"];
+    let mode = req.query["hub.mode"];
+    let challange = req.query["hub.challenge"];
+    let token = req.query["hub.verify_token"];
     const mytoken = "qwerty";
     if (mode && token) {
-      if (mode === "subcribe" && token === mytoken) {
+      if (mode === "subscribe" && token === mytoken) {
         console.log(challange);
         res.status(200).send(challange);
       } else {
         res.status(403);
       }
+    } else {
+      res.status(403);
     }
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
