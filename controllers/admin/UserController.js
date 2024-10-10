@@ -475,7 +475,7 @@ exports.postWebhook = async (req, res, next) => {
         axios({
           method: "POST",
           url:
-            "https://graph.facebook.com/v13.0/" +
+            "https://graph.facebook.com/v21.0/" +
             phon_no_id +
             "/messages?access_token=EAAYd8x4ZCKdABOznGeQPoeLYrLnJFWRUm23ZAVfaiUFh0wqQ3H2hQduchqgnQvRZADLGsDDf0N5BbGzdW0SF3OJhgWr9ZCNBP45ZCXrHVbpaBTYH2fqx9ZAm1ij5XSU5ZBd5GXY9t35bBavi2XAYP7nrgQZC4XFhvBLFJvcEZA3ahXU9jAehuN5eV6K9Ii6ucLZB3EYZCpdBChL05ei7aHHYHZCIiOxTWZA1qsjCrCWafS3ZAY",
           data: {
@@ -491,6 +491,9 @@ exports.postWebhook = async (req, res, next) => {
         })
           .then((response) => {
             console.log("Message sent:", response.data);
+          })
+          .error((res) => {
+            console.log(res);
           })
           .catch((error) => {
             console.error("Error sending message:", error);
