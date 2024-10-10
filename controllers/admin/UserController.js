@@ -433,13 +433,76 @@ exports.get_users = async (req, res, next) => {
   }
 };
 
-exports.getQueryParam = async (req, res, next) => {
+exports.getWebhook = async (req, res, next) => {
   try {
     const queryParams = req.query;
     res.json({
       message: "Query Parameters",
       data: queryParams,
     });
+
+    let mode = req.query["hub-mode"];
+    let challange = req.query["hub. challenge"];
+    let token = req.query["hub. verify_token"];
+    const mytoken = "qwerty";
+    if (mode && token) {
+      if (mode === "subcribe" && token === mytoken) {
+        res.status(200).send(challange);
+      } else {
+        res.status(403);
+      }
+    }
+  } catch (error) {
+    res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+exports.postWebhook = async (req, res, next) => {
+  try {
+    let body_param = req.body;
+    console.log(JSON.stringify(body_param, null, 2));
+    if (body_param.object) {
+      if (
+        body_param.entry &&
+        body_param.entry[0].changes &&
+        body_param.entry[0].changes[0].value.message &&
+        body_param.entry[0].changes[0].value.message[0]
+      ) {
+        let phon_no_id = "108184898862859";
+        body_param.entry[0].challange[0].value.metadata.phone_number_id;
+        let from = body_param.entry[0].changes[0].value.messages[0].from;
+        let msg_body =
+          body_param.entry[0].changes[0].value - messages[0].text.body;
+
+        axios({
+          method: "POST",
+          url:
+            "https://graph.facebook.com/v13.0/" +
+            phon_no_id +
+            "/messages?access_token=EAAYd8x4ZCKdABOyf6y1qj3wJiZAfC30R8lYZCP00sdZB8xOkwBvbdpy2esGZB5AF7amMWmHb6ZCZBTSi2UldH42TxYqSHvmjJcFeZB7weamZAzPeMgZAS7wo1pkDD7vZByZAKU20I90N0cL0PSM0cyZCWJmOigCs9LTJHuGCi8hZBFL29X5ZAYIZAwAnKNtrF7qQNZAZAL2blxWXXinso78ZAZBq6zzMGyPw0KSmlnUZD",
+          data: {
+            messaging_product: "whatsapp",
+            to: from,
+            text: {
+              body: "Hi.. I'm Prasath",
+            },
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            console.log("Message sent:", response.data);
+          })
+          .catch((error) => {
+            console.error("Error sending message:", error);
+          });
+
+        res.sendStatus(200);
+      } else {
+        res.sendStatus(404);
+      }
+    }
   } catch (error) {
     res.status(200).send({ status: false, error: error.message });
   }

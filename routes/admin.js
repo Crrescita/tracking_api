@@ -125,7 +125,11 @@ router.post("/update_password", UserController.update_password);
 
 router.post("/forgetPass", UserController.forgetPass);
 router.post("/resetPass", UserController.resetPass);
-router.get("/getQueryParam", UserController.getQueryParam);
+
+router
+  .route("/webhook")
+  .get(UserController.getWebhook)
+  .post(UserController.postWebhook);
 
 router.use(verifyToken);
 
@@ -314,8 +318,13 @@ router
   .route("/assignTask/:id?")
   .get(AssignTaskController.getAssignTask)
   .post(AssignTaskController.assignTask)
-  .put(AssignTaskController.assignTask);
-// .delete(AssignTaskController.deleteLeaveType);
+  .put(AssignTaskController.assignTask)
+  .delete(AssignTaskController.deleteAssignTask);
+
+router.post(
+  "/assignTask-delete-multiple",
+  AssignTaskController.deleteMultipleAssignTask
+);
 
 // logs
 router.get("/logs", LogController.getLogs);
