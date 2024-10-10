@@ -447,6 +447,7 @@ exports.getWebhook = async (req, res, next) => {
     const mytoken = "qwerty";
     if (mode && token) {
       if (mode === "subcribe" && token === mytoken) {
+        console.log(challange);
         res.status(200).send(challange);
       } else {
         res.status(403);
