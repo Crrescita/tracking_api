@@ -1,33 +1,11 @@
 const sqlModel = require("../../config/db");
 
-// exports.getAssignTask = async (req, res, next) => {
-//   try {
-//     const whereClause = {};
-//     for (const key in req.query) {
-//       if (req.query.hasOwnProperty(key)) {
-//         whereClause[key] = req.query[key];
-//       }
-//     }
-
-//     const data = await sqlModel.select(
-//       "assign_task",
-//       {},
-//       whereClause,
-//       "ORDER BY start_date ASC"
-//     );
-
-//     if (data.error) {
-//       return res.status(500).send(data);
-//     }
-
-//     if (data.length === 0) {
-//       return res.status(200).send({ status: false, message: "No data found" });
-//     }
-//     res.status(200).send({ status: true, data: data });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
+const generateTaskID = () => {
+  const prefix = "TMS";
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const randomPart = Math.floor(1000 + Math.random() * 9000);
+  return `${prefix}${datePart}${randomPart}`;
+};
 
 exports.getAssignTask = async (req, res, next) => {
   try {
@@ -53,44 +31,29 @@ exports.getAssignTask = async (req, res, next) => {
       return res.status(200).send({ status: false, message: "No data found" });
     }
 
-    // Step 1: Collect all unique emp_ids from the tasks
     let allEmpIds = [];
     tasks.forEach((task) => {
       if (task.emp_id) {
         const empIds = task.emp_id.split(",").map((id) => parseInt(id.trim()));
         allEmpIds = [...allEmpIds, ...empIds];
-        console.log("Collected Employee IDs: ", allEmpIds);
       }
     });
 
-    // Remove duplicate employee IDs
     allEmpIds = [...new Set(allEmpIds)];
-    console.log("allEmpIds", allEmpIds);
 
-    // Step 2: Fetch employee details one by one
     const employeeDetails = [];
     for (const empId of allEmpIds) {
-      const empDetail = await sqlModel.select(
-        "employees",
-        {},
-        { id: empId } // Fetching one employee at a time
-      );
+      const empDetail = await sqlModel.select("employees", {}, { id: empId });
 
       if (empDetail.error) {
         return res.status(500).send(empDetail);
       }
 
       if (empDetail.length > 0) {
-        employeeDetails.push(empDetail[0]); // Assuming empDetail is an array
-      } else {
-        console.log(`No employee found for ID: ${empId}`);
+        employeeDetails.push(empDetail[0]);
       }
     }
 
-    // Log employee details to verify
-    console.log("Employee Details Fetched: ", employeeDetails);
-
-    // Step 3: Create a map of employee details by ID for easy lookup
     const employeeMap = {};
     employeeDetails.forEach((emp) => {
       if (emp && emp.id) {
@@ -102,10 +65,6 @@ exports.getAssignTask = async (req, res, next) => {
       }
     });
 
-    // Log employee map to verify
-    console.log("Employee Map: ", employeeMap);
-
-    // Step 4: Map employee details to tasks
     tasks.forEach((task) => {
       if (task.emp_id) {
         const empIds = task.emp_id.split(",").map((id) => parseInt(id.trim()));
@@ -115,13 +74,8 @@ exports.getAssignTask = async (req, res, next) => {
       }
     });
 
-    // Log tasks to verify employee details
-    console.log("Tasks with Employee Details: ", tasks);
-
-    // Return tasks with employee details attached
     res.status(200).send({ status: true, data: tasks });
   } catch (error) {
-    console.error("Error fetching assigned tasks: ", error); // Log error for better visibility
     res.status(500).send({ status: false, error: error.message });
   }
 };
@@ -150,6 +104,7 @@ exports.assignTask = async (req, res, next) => {
         return res.status(200).send({ status: true, message: "Data Updated" });
       }
     } else {
+      insert.task_id = generateTaskID();
       insert.created_at = getCurrentDateTime();
       const saveData = await sqlModel.insert("assign_task", insert);
 
@@ -161,5 +116,54 @@ exports.assignTask = async (req, res, next) => {
     }
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
+  }
+};
+
+exports.deleteAssignTask = async (req, res, next) => {
+  try {
+    let id = req.params.id;
+
+    const assign_taskRecord = await sqlModel.select("assign_task", {}, { id });
+
+    if (assign_taskRecord.error || assign_taskRecord.length === 0) {
+      return res.status(200).send({ status: false, message: "Data not found" });
+    }
+
+    let result = await sqlModel.delete("assign_task", { id: id });
+
+    if (!result.error) {
+      res.status(200).send({ status: true, message: "Record deleted" });
+    } else {
+      res.status(200).send(result);
+    }
+  } catch (error) {
+    res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+exports.deleteMultipleAssignTask = async (req, res, next) => {
+  try {
+    const ids = req.body.ids;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).send({ status: false, message: "Invalid input" });
+    }
+
+    const results = await Promise.all(
+      ids.map((id) => sqlModel.delete("assign_task", { id }))
+    );
+
+    const errors = results.filter((result) => result.error);
+    if (errors.length > 0) {
+      return res.status(200).send({
+        status: false,
+        message: "Some records could not be deleted",
+        errors,
+      });
+    } else {
+      return res.status(200).send({ status: true, message: "Records deleted" });
+    }
+  } catch (error) {
+    return res.status(500).send({ status: false, error: error.message });
   }
 };
