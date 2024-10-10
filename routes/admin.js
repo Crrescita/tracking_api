@@ -126,10 +126,8 @@ router.post("/update_password", UserController.update_password);
 router.post("/forgetPass", UserController.forgetPass);
 router.post("/resetPass", UserController.resetPass);
 
-router
-  .route("/webhooks")
-  .get(UserController.getWebhook)
-  .post(UserController.postWebhook);
+router.get("/webhooks", UserController.getWebhook);
+router.post("/webhooks", UserController.postWebhook);
 
 router.use(verifyToken);
 
