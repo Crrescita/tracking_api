@@ -127,7 +127,7 @@ router.post("/forgetPass", UserController.forgetPass);
 router.post("/resetPass", UserController.resetPass);
 
 router
-  .route("/webhook")
+  .route("/webhooks")
   .get(UserController.getWebhook)
   .post(UserController.postWebhook);
 
