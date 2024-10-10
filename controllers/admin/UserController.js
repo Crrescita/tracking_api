@@ -442,7 +442,7 @@ exports.getWebhook = async (req, res, next) => {
     });
 
     let mode = req.query["hub-mode"];
-    let challange = req.query["hub.challenge"];
+    let challange = req.query.hub.challenge;
     let token = req.query["hub.verify_token"];
     const mytoken = "qwerty";
     if (mode && token) {
