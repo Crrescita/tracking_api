@@ -468,14 +468,14 @@ exports.postWebhook = async (req, res, next) => {
       if (
         body_param.entry &&
         body_param.entry[0].changes &&
-        body_param.entry[0].changes[0].value.message &&
-        body_param.entry[0].changes[0].value.message[0]
+        body_param.entry[0].changes[0].value.messages &&
+        body_param.entry[0].changes[0].value.messages[0]
       ) {
         let phon_no_id = "108184898862859";
         body_param.entry[0].challange[0].value.metadata.phone_number_id;
         let from = body_param.entry[0].changes[0].value.messages[0].from;
         let msg_body =
-          body_param.entry[0].changes[0].value - messages[0].text.body;
+          body_param.entry[0].changes[0].value.messages[0].text.body;
 
         axios({
           method: "POST",
