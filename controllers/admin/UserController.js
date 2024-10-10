@@ -441,9 +441,9 @@ exports.getWebhook = async (req, res, next) => {
       data: queryParams,
     });
 
-    let mode = req.query["hub-mode"];
+    let mode = req.query.hub.mode;
     let challange = req.query.hub.challenge;
-    let token = req.query["hub.verify_token"];
+    let token = req.query.hub.verify_token;
     const mytoken = "qwerty";
     if (mode && token) {
       if (mode === "subcribe" && token === mytoken) {
@@ -454,7 +454,7 @@ exports.getWebhook = async (req, res, next) => {
       }
     }
   } catch (error) {
-    res.status(200).send({ status: false, error: error.message });
+    res.status(500).send({ status: false, error: error.message });
   }
 };
 
