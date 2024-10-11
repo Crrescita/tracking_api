@@ -404,7 +404,7 @@ WHERE u.company_id = ?;
         checkInArray.push({
           empId: result.id,
           name: result.name,
-          image: `${process.env.BASE_URL}${result.image}`,
+          image: result.image ? `${process.env.BASE_URL}${result.image}` : "",
           checkInTime: result.first_checkin_time,
           latCheckIn: result.lat_check_in,
           longCheckIn: result.long_check_in,
@@ -422,7 +422,7 @@ WHERE u.company_id = ?;
         checkOutArray.push({
           empId: result.id,
           name: result.name,
-          image: `${process.env.BASE_URL}${result.image}`,
+          image: result.image ? `${process.env.BASE_URL}${result.image}` : "",
           checkOutTime: result.last_checkout_time,
           latCheckOut: result.lat_check_out,
           longCheckOut: result.long_check_out,
