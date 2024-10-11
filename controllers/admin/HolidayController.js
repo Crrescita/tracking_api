@@ -196,9 +196,56 @@ exports.deleteMultipleHolidays = async (req, res, next) => {
 };
 
 // upcoming hoildays
+// exports.getUpcomingHoliday = async (req, res, next) => {
+//   try {
+//     const whereClause = {};
+//     for (const key in req.query) {
+//       if (req.query.hasOwnProperty(key)) {
+//         whereClause[key] = req.query[key];
+//       }
+//     }
+
+//     const currentDate = getCurrentDate();
+
+//     const query = `
+//       SELECT name, date
+//       FROM company_holidays
+//       WHERE date >= ? AND status = 'active'
+//       ORDER BY date ASC
+//       LIMIT 5
+//     `;
+
+//     const data = await sqlModel.customQuery(query, [currentDate]);
+
+//     if (data.error) {
+//       return res.status(500).send(data);
+//     }
+
+//     if (data.length === 0) {
+//       return res.status(200).send({
+//         status: false,
+//         message: "No upcoming holidays found",
+//       });
+//     }
+
+//     // Calculate relative time for each holiday
+//     const holidaysWithRelativeTime = data.map((holiday) => ({
+//       ...holiday,
+//       daysUntilHoliday: getFutureRelativeTime(holiday.date), // Add relative time
+//     }));
+
+//     res.status(200).send({ status: true, data: holidaysWithRelativeTime });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getUpcomingHoliday = async (req, res, next) => {
   try {
+    // Build whereClause from req.query
     const whereClause = {};
+    const queryParams = []; // To store query values
+
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
         whereClause[key] = req.query[key];
@@ -206,23 +253,25 @@ exports.getUpcomingHoliday = async (req, res, next) => {
     }
 
     const currentDate = getCurrentDate();
+    queryParams.push(currentDate); // Add currentDate as the first parameter
 
-    // const query = `
-    //   SELECT name,date
-    //   FROM company_holidays
-    //   WHERE date >= ? AND status = 'active'
-    //   ORDER BY date ASC
-    //   LIMIT
-    // `;
-    const query = `
+    // Start building the query
+    let query = `
       SELECT name, date
       FROM company_holidays
       WHERE date >= ? AND status = 'active'
-      ORDER BY date ASC
-      LIMIT 5
     `;
 
-    const data = await sqlModel.customQuery(query, [currentDate]);
+    // Add conditions from whereClause
+    for (const key in whereClause) {
+      query += ` AND ${key} = ?`; // Add each condition to the query
+      queryParams.push(whereClause[key]); // Push the corresponding value
+    }
+
+    query += ` ORDER BY date ASC LIMIT 5`; // Finalize the query
+
+    // Execute the query with parameters
+    const data = await sqlModel.customQuery(query, queryParams);
 
     if (data.error) {
       return res.status(500).send(data);
