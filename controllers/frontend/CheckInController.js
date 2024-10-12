@@ -19,6 +19,28 @@ const getCurrentDate = () => {
   return formattedDate;
 };
 
+// const getCurrentDate = () => {
+//   const currentDate = new Date();
+
+//   // Ensure we get the correct date parts from the Asia/Kolkata timezone
+//   const year = currentDate.toLocaleString("en-US", {
+//     year: "numeric",
+//     timeZone: "Asia/Kolkata",
+//   });
+//   const month = currentDate.toLocaleString("en-US", {
+//     month: "2-digit",
+//     timeZone: "Asia/Kolkata",
+//   });
+//   const day = currentDate.toLocaleString("en-US", {
+//     day: "2-digit",
+//     timeZone: "Asia/Kolkata",
+//   });
+
+//   const formattedDate = `${year}-${month}-${day}`;
+
+//   return formattedDate;
+// };
+
 const getCurrentTime = () => {
   const currentDate = new Date();
 
@@ -137,8 +159,9 @@ exports.getCheckIn = async (req, res, next) => {
       });
     }
 
-    const queryDate = req.query.date || new Date().toISOString().split("T")[0];
-
+    // const queryDate = req.query.date || new Date().toISOString().split("T")[0];
+    const queryDate = req.query.date || getCurrentDate();
+    // console.log(queryDate);
     const query = `
       SELECT 
         ea.date,
