@@ -20,7 +20,7 @@ async function sendEmailToEmp(data) {
     let info = await transporter.sendMail({
       //   from: '"Your Name" <your-email@gmail.com>',
       to: data.email,
-      subject: "Welcome",
+      subject: `Welcome to ${data.company} Attendance App – Start Your Daily Login Today!`,
       //   text: "Hello world?",
       html: compiledHtml,
     });

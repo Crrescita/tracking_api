@@ -49,7 +49,7 @@
       .card-text {
         font-size: 16px;
         color: #666666;
-        text-align: center;
+        text-align: left;
         margin-bottom: 15px;
         margin-top: 15px;
       }
@@ -105,6 +105,10 @@
         padding: 10px 20px;
         text-decoration: none;
       }
+
+      .bold-class {
+        font-weight: bold;
+      }
     </style>
   </head>
 
@@ -113,20 +117,48 @@
       <div class="card">
         <div class="center logo">
           <img
-            src="https://emptracking.crrescita.com/assets/images/logo.png"
+            src="<%= companyLogo %>"
             alt="crrescita"
             style="max-width: 200px"
           />
         </div>
-        <h2 class="card-title">Registration Successful</h2>
-        <p class="card-text">Thank you for registering with our service.</p>
+        <h2 class="card-title">Welcome To <%= company %></h2>
+        <p class="card-text">Dear <%= name %> .</p>
         <p class="card-text">
-          You can now access all our features using your credentials.
+          Welcome to <%= company %> Attendance App! We are excited to have you
+          on board.
         </p>
+        <p class="card-text">
+          To ensure smooth tracking of your attendance, please follow these
+          steps:
+        </p>
+        <ul class="card-text">
+          <li>
+            <span class="bold-class">Login Daily</span>: Use the app to log your
+            attendance at the start and end of each workday.
+          </li>
+          <li>
+            <span class="bold-class">Stay Updated</span>: Keep your profile and
+            work details up to date in the app.
+          </li>
+          <li>
+            <span class="bold-class">Access Your Details</span>: You can check
+            your attendance history, and much more.
+          </li>
+        </ul>
         <p class="normal-text">
-          Here are your login details:<br />
+          <span class="bold-class">Login Details:</span> <br />
           Email: <%= email %><br />
           Password: <%= password %>
+        </p>
+
+        <p class="card-text">
+          For any assistance, feel free to reach out to our support team.
+        </p>
+
+        <p class="card-text">Best regards,</p>
+        <p class="card-text">
+          <span class="bold-class"> <%= company %></span>
         </p>
 
         <div class="footer">
