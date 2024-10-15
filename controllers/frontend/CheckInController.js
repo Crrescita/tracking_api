@@ -658,10 +658,10 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
 
     comsole.log("checkout function runs pass", employee);
 
-    const { id: emp_id, company_id } = employee;
+    // const { id: emp_id, company_id } = employee;
 
-    const { lat_check_out, long_check_out, battery_status_at_checkout } =
-      req.body;
+    // const { lat_check_out, long_check_out, battery_status_at_checkout } =
+    //   req.body;
 
     // if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
     //   return res.status(200).json({
