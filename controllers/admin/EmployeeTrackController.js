@@ -46,7 +46,7 @@ const haversineDistances = (coord1, coord2) => {
 exports.getCoordinates = async (req, res, next) => {
   try {
     let query =
-      "SELECT emp_id,company_id,date,battery_status,gps_status,internet_status,motion,created_at,updated_at,datetime_mobile as time round(latitude,6) as latitude, round(longitude,6) as longitude FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
+      "SELECT emp_id,company_id,date,battery_status,gps_status,internet_status,motion,created_at,updated_at,datetime_mobile as time, round(latitude,6) as latitude, round(longitude,6) as longitude FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
 
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
