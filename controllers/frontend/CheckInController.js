@@ -663,12 +663,12 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
     const { lat_check_out, long_check_out, battery_status_at_checkout } =
       req.body;
 
-    if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
-      return res.status(200).json({
-        status: false,
-        message: "All check-out details are required",
-      });
-    }
+    // if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
+    //   return res.status(200).json({
+    //     status: false,
+    //     message: "All check-out details are required",
+    //   });
+    // }
 
     const date = getCurrentDate();
     const checkOutTime = getCurrentTime();
@@ -677,7 +677,7 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
     const checkInData = await sqlModel.select(
       "check_in",
       ["*"],
-      { emp_id, company_id, date },
+      { emp_id: req.body.emp_id, company_id, date },
       "ORDER BY id DESC"
     );
 
