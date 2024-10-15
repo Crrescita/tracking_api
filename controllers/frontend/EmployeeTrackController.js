@@ -242,23 +242,61 @@ exports.setCoordinates = async (req, res, next) => {
     }
 
     // Prepare new data for insertion into emp_tracking
+    // const newCheckInData = {
+    //   company_id,
+    //   emp_id,
+    //   latitude,
+    //   longitude,
+    //   battery_status,
+    //   date: getCurrentDate(),
+    //   time: getCurrentTime(),
+    //   created_at: getCurrentDateTime(),
+    //   gps_status,
+    //   internet_status,
+    //   motion,
+    //   datetime_mobile,
+    //   row_id,
+    //   ...rest,
+    // };
+
+    const parseDateTime = (datetimeMobile) => {
+      let dateTimeFormatted;
+
+      if (!isNaN(datetimeMobile)) {
+        const dateObj = new Date(parseFloat(datetimeMobile) * 1000);
+        const date = dateObj.toISOString().split("T")[0];
+        const time = dateObj.toTimeString().split(" ")[0];
+
+        dateTimeFormatted = `${date} ${time}`;
+      } else {
+        dateTimeFormatted = datetimeMobile;
+      }
+
+      return dateTimeFormatted;
+    };
+
+    const datetimeFormatted = parseDateTime(datetime_mobile); // Format datetime_mobile
+
+    const [date, time] = datetimeFormatted.split(" "); // Split into date and time
+
     const newCheckInData = {
       company_id,
       emp_id,
       latitude,
       longitude,
       battery_status,
-      date: getCurrentDate(), // Custom helper function to get current date
-      time: getCurrentTime(), // Custom helper function to get current time
-      created_at: getCurrentDateTime(), // Custom helper for datetime
+      date,
+      time,
+      created_at: getCurrentDateTime(),
       gps_status,
       internet_status,
       motion,
-      datetime_mobile,
+      datetime_mobile: datetimeFormatted,
       row_id,
       ...rest,
     };
 
+    // console.log(newCheckInData);
     // Insert tracking data into emp_tracking table
     const result = await sqlModel.insert("emp_tracking", newCheckInData);
 
@@ -294,106 +332,6 @@ exports.setCoordinates = async (req, res, next) => {
     });
   }
 };
-
-// exports.setAllCoordinates = async (req, res, next) => {
-//   try {
-//     const dataArray = req.body;
-
-//     if (!Array.isArray(dataArray) || dataArray.length === 0) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Data should be a non-empty array",
-//       });
-//     }
-
-//     // Extract emp_id and company_id from the first item
-//     const { emp_id, company_id } = dataArray[0];
-
-//     // Fetch timer value from the employees table
-//     const employee = await sqlModel.select("employees", ["timer"], {
-//       id: emp_id,
-//       company_id,
-//     });
-
-//     if (!employee.length) {
-//       return res.status(404).send({
-//         status: false,
-//         message: "Employee not found",
-//       });
-//     }
-
-//     const timerValue = employee[0].timer || 30000;
-
-//     // Insert data into emp_tracking table
-//     for (const item of dataArray) {
-//       const {
-//         company_id,
-//         emp_id,
-//         latitude,
-//         longitude,
-//         battery_status,
-//         gps_status,
-//         internet_status,
-//         motion,
-//         ...rest
-//       } = item;
-
-//       const requiredFields = {
-//         company_id,
-//         emp_id,
-//         latitude,
-//         longitude,
-//         battery_status,
-//         gps_status,
-//         internet_status,
-//         motion,
-//       };
-
-//       for (const [key, value] of Object.entries(requiredFields)) {
-//         if (!value) {
-//           return res.status(400).send({
-//             status: false,
-//             message: `${key.replace("_", " ")} is required`,
-//           });
-//         }
-//       }
-
-//       // if (parseFloat(latitude) == 0 || parseFloat(longitude) == 0) {
-//       //   return res.status(204).send();
-//       // }
-
-//       const newCheckInData = {
-//         company_id,
-//         emp_id,
-//         latitude,
-//         longitude,
-//         battery_status,
-//         date: getCurrentDate(),
-//         time: getCurrentTime(),
-//         created_at: getCurrentDateTime(),
-//         gps_status,
-//         internet_status,
-//         motion,
-//         ...rest,
-//       };
-
-//       await sqlModel.insert("emp_tracking", newCheckInData);
-//     }
-
-//     return res.status(200).send({
-//       status: true,
-//       message: "Data submitted successfully",
-//       timer: timerValue, // Include the timer value in the response
-//     });
-//   } catch (error) {
-//     console.error("Error during data submission:", error);
-//     return res.status(500).send({
-//       status: false,
-//       message: "An error occurred during data submission",
-//       error: error.message,
-//     });
-//   }
-// };
 
 exports.setAllCoordinates = async (req, res, next) => {
   try {
@@ -466,23 +404,60 @@ exports.setAllCoordinates = async (req, res, next) => {
         }
       }
 
-      // Prepare the data for insertion
+      const parseDateTime = (datetimeMobile) => {
+        let dateTimeFormatted;
+
+        if (!isNaN(datetimeMobile)) {
+          const dateObj = new Date(parseFloat(datetimeMobile) * 1000);
+          const date = dateObj.toISOString().split("T")[0];
+          const time = dateObj.toTimeString().split(" ")[0];
+
+          dateTimeFormatted = `${date} ${time}`;
+        } else {
+          dateTimeFormatted = datetimeMobile;
+        }
+
+        return dateTimeFormatted;
+      };
+
+      const datetimeFormatted = parseDateTime(datetime_mobile); // Format datetime_mobile
+
+      const [date, time] = datetimeFormatted.split(" "); // Split into date and time
+
       const newCheckInData = {
         company_id,
         emp_id,
         latitude,
         longitude,
         battery_status,
-        date: getCurrentDate(), // Custom helper function to get current date
-        time: getCurrentTime(), // Custom helper function to get current time
-        created_at: getCurrentDateTime(), // Custom helper for datetime
+        date,
+        time,
+        created_at: getCurrentDateTime(),
         gps_status,
         internet_status,
         motion,
-        datetime_mobile,
+        datetime_mobile: datetimeFormatted,
         row_id,
         ...rest,
       };
+
+      // Prepare the data for insertion
+      // const newCheckInData = {
+      //   company_id,
+      //   emp_id,
+      //   latitude,
+      //   longitude,
+      //   battery_status,
+      //   date: getCurrentDate(), // Custom helper function to get current date
+      //   time: getCurrentTime(), // Custom helper function to get current time
+      //   created_at: getCurrentDateTime(), // Custom helper for datetime
+      //   gps_status,
+      //   internet_status,
+      //   motion,
+      //   datetime_mobile,
+      //   row_id,
+      //   ...rest,
+      // };
 
       // Insert the tracking data into the database
       await sqlModel.insert("emp_tracking", newCheckInData);
