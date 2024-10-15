@@ -46,14 +46,14 @@ const haversineDistances = (coord1, coord2) => {
 exports.getCoordinates = async (req, res, next) => {
   try {
     let query =
-      "SELECT * , round(latitude,6) as latitude, round(longitude,6) as longitude FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
+      "SELECT * ,time(datetime_mobile) as time round(latitude,6) as latitude, round(longitude,6) as longitude FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
 
     for (const key in req.query) {
       if (req.query.hasOwnProperty(key)) {
         query += ` AND ${key} = '${req.query[key]}'`;
       }
     }
-
+    query += ` order by datetime_mobile asc`;
     const data = await sqlModel.customQuery(query);
 
     if (data.error) {
