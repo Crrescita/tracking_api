@@ -632,43 +632,24 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
   return [totalDurationInSeconds, totalDistance];
 }
 
+// Fixing autoSchedulecheckOut function for auto-check-out process
 exports.autoSchedulecheckOut = async (req, res, next) => {
   try {
     console.log("checkout function runs");
-    // const token = req.headers.authorization?.split(" ")[1];
 
-    // if (!token) {
-    //   return res
-    //     .status(200)
-    //     .json({ status: false, message: "Token is required" });
-    // }
-
-    // Fetch employee details using the token
+    // Fetch employee details using emp_id and company_id
     const [employee] = await sqlModel.select(
       "employees",
       ["id", "company_id"],
       { id: req.body.emp_id, company_id: req.body.company_id }
     );
-    console.log("checkout function runs pass", employee);
+
+    console.log("checkout function runs, employee found:", employee);
     if (!employee) {
       return res
         .status(200)
         .json({ status: false, message: "Employee not found" });
     }
-
-    comsole.log("checkout function runs pass", employee);
-
-    // const { id: emp_id, company_id } = employee;
-
-    // const { lat_check_out, long_check_out, battery_status_at_checkout } =
-    //   req.body;
-
-    // if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
-    //   return res.status(200).json({
-    //     status: false,
-    //     message: "All check-out details are required",
-    //   });
-    // }
 
     const date = getCurrentDate();
     const checkOutTime = getCurrentTime();
@@ -677,11 +658,11 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
     const checkInData = await sqlModel.select(
       "check_in",
       ["*"],
-      { emp_id: req.body.emp_id, company_id, date },
+      { emp_id: req.body.emp_id, company_id: employee.company_id, date },
       "ORDER BY id DESC"
     );
 
-    console.log(checkInData);
+    console.log("Check-in data:", checkInData);
     if (
       checkInData.length === 0 ||
       checkInData[0].checkin_status !== "Check-in" ||
@@ -699,10 +680,11 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
       lastCheckIn.check_in_time,
       checkOutTime
     );
+
     const updateData = {
-      lat_check_out,
-      long_check_out,
-      battery_status_at_checkout,
+      lat_check_out: req.body.lat_check_out,
+      long_check_out: req.body.long_check_out,
+      battery_status_at_checkout: req.body.battery_status_at_checkout,
       check_out_time: checkOutTime,
       checkin_status: "Check-out",
       updated_at: getCurrentDateTime(),
@@ -717,14 +699,19 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
 
     // Calculate total duration and distance
     const [totalDurationInSeconds, totalDistance] =
-      await calculateTotalDurationAndDistance(emp_id, company_id, date);
+      await calculateTotalDurationAndDistance(
+        req.body.emp_id,
+        employee.company_id,
+        date
+      );
 
     // Insert or update analytics data
     const existingAnalytics = await sqlModel.select("emp_attendance", ["*"], {
-      emp_id,
-      company_id,
+      emp_id: req.body.emp_id,
+      company_id: employee.company_id,
       date,
     });
+
     const analyticsData = {
       total_duration: formatDuration(totalDurationInSeconds),
       total_distance: totalDistance,
@@ -733,15 +720,15 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
 
     if (existingAnalytics.length > 0) {
       await sqlModel.update("emp_attendance", analyticsData, {
-        emp_id,
-        company_id,
+        emp_id: req.body.emp_id,
+        company_id: employee.company_id,
         date,
       });
     } else {
       await sqlModel.insert("emp_attendance", {
         ...analyticsData,
-        emp_id,
-        company_id,
+        emp_id: req.body.emp_id,
+        company_id: employee.company_id,
         date,
         created_at: getCurrentDateTime(),
       });
@@ -756,11 +743,11 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
         latestCheckOutTime: checkOutTime,
         checkin_status: "Check-out",
         total_duration: formatDuration(totalDurationInSeconds),
-        // totalDistance,
       },
     });
   } catch (error) {
-    return res.status(200).json({
+    console.error("Error in autoSchedulecheckOut:", error);
+    return res.status(500).json({
       status: false,
       message: "An error occurred during check-out",
       error: error.message,
@@ -768,7 +755,7 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
   }
 };
 
-// schedule checkout
+// Fixing autoCheckOut function
 async function autoCheckOut(companyId) {
   try {
     console.log(`Running auto check-out for company ${companyId}`);
@@ -783,7 +770,6 @@ async function autoCheckOut(companyId) {
       const res = {
         status: (statusCode) => ({
           json: (data) => {
-            // Handle response if necessary
             return data;
           },
         }),
@@ -793,13 +779,12 @@ async function autoCheckOut(companyId) {
         body: {
           emp_id: employee.emp_id,
           company_id: employee.company_id,
-          lat_check_out: null, // or provide default lat/long
+          lat_check_out: null,
           long_check_out: null,
           battery_status_at_checkout: null,
         },
       };
-      // console.log("request", req);
-      // Await for checkOut function to process check-out
+
       await exports.autoSchedulecheckOut(req, res, null); // Ensure this function exists and works
     }
   } catch (error) {
@@ -810,7 +795,7 @@ async function autoCheckOut(companyId) {
   }
 }
 
-// Function to schedule auto-checkouts for companies based on their check-out time
+// Fixing scheduleAutoCheckOuts function
 async function scheduleAutoCheckOuts() {
   try {
     const companies = await sqlModel.select("company", [
@@ -833,7 +818,6 @@ async function scheduleAutoCheckOuts() {
     for (const checkOutTime in companiesByTime) {
       const [hour, minute] = checkOutTime.split(":");
 
-      // Validate the hour and minute
       if (
         hour &&
         minute &&
