@@ -634,7 +634,7 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
 
 exports.autoSchedulecheckOut = async (req, res, next) => {
   try {
-    // console.log("checkout function runs");
+    console.log("checkout function runs");
     // const token = req.headers.authorization?.split(" ")[1];
 
     // if (!token) {
@@ -649,7 +649,7 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
       ["id", "company_id"],
       { id: req.body.emp_id, company_id: req.body.company_id }
     );
-    comsole.log("checkout function runs pass", employee);
+    console.log("checkout function runs pass", employee);
     if (!employee) {
       return res
         .status(200)
