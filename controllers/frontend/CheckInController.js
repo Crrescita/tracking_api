@@ -633,9 +633,6 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
 async function autoCheckOut(companyId) {
   try {
     console.log(`Running auto check-out for company ${companyId}`);
-    const currentTime = getCurrentTime();
-
-    // Fetch employees who are currently checked in for the specific company
     const employees = await sqlModel.customQuery(
       `SELECT c.id AS checkin_id, c.emp_id, c.company_id 
        FROM check_in c 
@@ -644,17 +641,15 @@ async function autoCheckOut(companyId) {
     );
 
     for (const employee of employees) {
-      // Create a mock res object to handle the response
       const res = {
         status: (statusCode) => ({
           json: (data) => {
-            // console.log(`Response status: ${statusCode}`, data);
+            // Handle response if necessary
             return data;
           },
         }),
       };
 
-      // Call the checkOut function with necessary data
       const req = {
         body: {
           emp_id: employee.emp_id,
@@ -665,43 +660,67 @@ async function autoCheckOut(companyId) {
         },
       };
 
-      await exports.checkOut(req, res, null); // Pass the mock res object
+      // Await for checkOut function to process check-out
+      await exports.checkOut(req, res, null); // Ensure this function exists and works
     }
   } catch (error) {
-    console.error("Error during auto check-out:", error);
+    console.error(
+      `Error during auto check-out for company ${companyId}:`,
+      error
+    );
   }
 }
 
+// Function to schedule auto-checkouts for companies based on their check-out time
 async function scheduleAutoCheckOuts() {
-  const companies = await sqlModel.select("company", ["id", "check_out_time"]);
+  try {
+    const companies = await sqlModel.select("company", [
+      "id",
+      "check_out_time",
+    ]);
 
-  // Group companies by check_out_time
-  const companiesByTime = companies.reduce((acc, company) => {
-    if (!acc[company.check_out_time]) {
-      acc[company.check_out_time] = [];
+    // Group companies by their check_out_time
+    const companiesByTime = companies.reduce((acc, company) => {
+      if (company.check_out_time) {
+        if (!acc[company.check_out_time]) {
+          acc[company.check_out_time] = [];
+        }
+        acc[company.check_out_time].push(company.id);
+      }
+      return acc;
+    }, {});
+
+    // Schedule cron jobs for each unique check_out_time
+    for (const checkOutTime in companiesByTime) {
+      const [hour, minute] = checkOutTime.split(":");
+
+      // Validate the hour and minute
+      if (
+        hour &&
+        minute &&
+        !isNaN(hour) &&
+        !isNaN(minute) &&
+        hour >= 0 &&
+        hour < 24 &&
+        minute >= 0 &&
+        minute < 60
+      ) {
+        cron.schedule(`${minute} ${hour} * * *`, () => {
+          const companyIds = companiesByTime[checkOutTime];
+          companyIds.forEach((companyId) => autoCheckOut(companyId));
+        });
+
+        console.log(`Scheduled auto check-out for ${checkOutTime}`);
+      } else {
+        console.error(
+          `Invalid check_out_time: ${checkOutTime} for companies: ${companiesByTime[
+            checkOutTime
+          ].join(", ")}`
+        );
+      }
     }
-    acc[company.check_out_time].push(company.id);
-    return acc;
-  }, {});
-
-  // Schedule a cron job for each unique check-out time
-  for (const checkOutTime in companiesByTime) {
-    const [hour, minute] = checkOutTime.split(":");
-
-    // Validate hour and minute
-    if (!hour || !minute || isNaN(hour) || isNaN(minute)) {
-      console.error(
-        `Invalid check_out_time: ${checkOutTime} for companies: ${companiesByTime[
-          checkOutTime
-        ].join(", ")}`
-      );
-      continue; // Skip this invalid time
-    }
-
-    cron.schedule(`${minute} ${hour} * * *`, () => {
-      const companyIds = companiesByTime[checkOutTime];
-      companyIds.forEach(autoCheckOut);
-    });
+  } catch (error) {
+    console.error("Error scheduling auto check-outs:", error);
   }
 }
 
