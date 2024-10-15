@@ -447,7 +447,6 @@ exports.checkIn = async (req, res, next) => {
 
 exports.checkOut = async (req, res, next) => {
   try {
-    console.log("checkout function runs");
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
@@ -468,8 +467,6 @@ exports.checkOut = async (req, res, next) => {
         .status(200)
         .json({ status: false, message: "Employee not found" });
     }
-
-    comsole.log("checkout function runs pass");
 
     const { id: emp_id, company_id } = employee;
 
