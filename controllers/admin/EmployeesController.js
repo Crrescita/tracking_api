@@ -266,7 +266,7 @@ exports.employeesInsert = async (req, res, next) => {
         ) {
           const emailData = {
             company: company.name,
-            companyLogo: `${process.env.BASE_URL} ${company.logo}`,
+            companyLogo: `${process.env.BASE_URL}${company.logo}`,
             name: req.body.name,
             email: req.body.email,
             password: plainPassword || originalPasswordHash, // Use existing password if not provided
