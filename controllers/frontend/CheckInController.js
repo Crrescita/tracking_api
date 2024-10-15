@@ -632,6 +632,142 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
   return [totalDurationInSeconds, totalDistance];
 }
 
+exports.autoSchedulecheckOut = async (req, res, next) => {
+  try {
+    console.log("checkout function runs");
+    // const token = req.headers.authorization?.split(" ")[1];
+
+    // if (!token) {
+    //   return res
+    //     .status(200)
+    //     .json({ status: false, message: "Token is required" });
+    // }
+
+    // Fetch employee details using the token
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { id: req.body.emp_id, company_id: req.body.company_id }
+    );
+
+    if (!employee) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Employee not found" });
+    }
+
+    comsole.log("checkout function runs pass", employee);
+
+    const { id: emp_id, company_id } = employee;
+
+    const { lat_check_out, long_check_out, battery_status_at_checkout } =
+      req.body;
+
+    if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
+      return res.status(200).json({
+        status: false,
+        message: "All check-out details are required",
+      });
+    }
+
+    const date = getCurrentDate();
+    const checkOutTime = getCurrentTime();
+
+    // Fetch the latest check-in data
+    const checkInData = await sqlModel.select(
+      "check_in",
+      ["*"],
+      { emp_id, company_id, date },
+      "ORDER BY id DESC"
+    );
+
+    console.log(checkInData);
+    if (
+      checkInData.length === 0 ||
+      checkInData[0].checkin_status !== "Check-in" ||
+      checkInData[0].check_out_time
+    ) {
+      return res.status(200).json({
+        status: false,
+        message:
+          "Cannot check out: No valid check-in record found or already checked out",
+      });
+    }
+
+    const lastCheckIn = checkInData[0];
+    const durationInSeconds = calculateDurationInSeconds(
+      lastCheckIn.check_in_time,
+      checkOutTime
+    );
+    const updateData = {
+      lat_check_out,
+      long_check_out,
+      battery_status_at_checkout,
+      check_out_time: checkOutTime,
+      checkin_status: "Check-out",
+      updated_at: getCurrentDateTime(),
+      checkout_img: req.files?.checkout_img
+        ? req.files.checkout_img[0].path
+        : null,
+      duration: formatDuration(durationInSeconds),
+    };
+
+    // Update check-in record with check-out data
+    await sqlModel.update("check_in", updateData, { id: lastCheckIn.id });
+
+    // Calculate total duration and distance
+    const [totalDurationInSeconds, totalDistance] =
+      await calculateTotalDurationAndDistance(emp_id, company_id, date);
+
+    // Insert or update analytics data
+    const existingAnalytics = await sqlModel.select("emp_attendance", ["*"], {
+      emp_id,
+      company_id,
+      date,
+    });
+    const analyticsData = {
+      total_duration: formatDuration(totalDurationInSeconds),
+      total_distance: totalDistance,
+      updated_at: getCurrentDateTime(),
+    };
+
+    if (existingAnalytics.length > 0) {
+      await sqlModel.update("emp_attendance", analyticsData, {
+        emp_id,
+        company_id,
+        date,
+      });
+    } else {
+      await sqlModel.insert("emp_attendance", {
+        ...analyticsData,
+        emp_id,
+        company_id,
+        date,
+        created_at: getCurrentDateTime(),
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Check-out successful",
+      data: {
+        date,
+        earliestCheckInTime: checkInData[checkInData.length - 1]?.check_in_time,
+        latestCheckOutTime: checkOutTime,
+        checkin_status: "Check-out",
+        total_duration: formatDuration(totalDurationInSeconds),
+        // totalDistance,
+      },
+    });
+  } catch (error) {
+    return res.status(200).json({
+      status: false,
+      message: "An error occurred during check-out",
+      error: error.message,
+    });
+  }
+};
+
 // schedule checkout
 async function autoCheckOut(companyId) {
   try {
@@ -664,7 +800,7 @@ async function autoCheckOut(companyId) {
       };
       console.log("request", req);
       // Await for checkOut function to process check-out
-      await exports.checkOut(req, res, null); // Ensure this function exists and works
+      await exports.autoSchedulecheckOut(req, res, null); // Ensure this function exists and works
     }
   } catch (error) {
     console.error(
