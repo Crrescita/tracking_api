@@ -25,73 +25,6 @@ const getCurrentDate = () => {
   return formattedDate;
 };
 
-// exports.employeesGet = async (req, res, next) => {
-//   try {
-//     const id = req.params?.id || "";
-//     const companyId = req.query?.company_id || "";
-
-//     let whereClause = "";
-//     const queryParams = [];
-
-//     if (id) {
-//       whereClause += " AND e.id = ?";
-//       queryParams.push(id);
-//     }
-//     if (companyId) {
-//       whereClause += " AND e.company_id = ?";
-//       queryParams.push(companyId);
-//     }
-
-//     const query = `
-//       SELECT
-//         e.id,
-//         e.company_id,
-//         e.name,
-//         e.mobile,
-//         e.email,
-//         e.status,
-//         e.address,
-//         e.dob,
-//         e.employee_id,
-//         e.joining_date,
-//         e.gender,
-//         e.designation,
-//         e.department,
-//         e.state,
-//         e.city,
-//         e.zip_code,
-//         d.name AS department_name,
-//         de.name AS designation_name,
-//         e.employee_id,
-//         CASE
-//           WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-//           ELSE e.image
-//         END AS image
-//       FROM employees e
-//       LEFT JOIN department d ON e.department = d.id
-//        LEFT JOIN designation de ON e.designation = de.id
-//       WHERE 1=1 ${whereClause}
-//     `;
-
-//     const data = await sqlModel.customQuery(query, [
-//       process.env.BASE_URL,
-//       ...queryParams,
-//     ]);
-
-//     if (data.error) {
-//       return res.status(200).send(data);
-//     }
-
-//     const result = data.map((item) => {
-//       delete item.password; // Assuming the password field exists but should not be returned
-//       return item;
-//     });
-
-//     res.status(200).send({ status: true, data: result });
-//   } catch (error) {
-//     res.status(200).send({ status: false, error: error.message });
-//   }
-// };
 exports.employeesGet = async (req, res, next) => {
   try {
     const id = req.params?.id || "";
@@ -332,6 +265,8 @@ exports.employeesInsert = async (req, res, next) => {
             !(await bcrypt.compare(plainPassword, originalPasswordHash)))
         ) {
           const emailData = {
+            company: company.name,
+            companyLogo: `${process.env.BASE_URL} ${company.logo}`,
             name: req.body.name,
             email: req.body.email,
             password: plainPassword || originalPasswordHash, // Use existing password if not provided
@@ -367,6 +302,8 @@ exports.employeesInsert = async (req, res, next) => {
       const saveData = await sqlModel.insert("employees", insert);
 
       const emailData = {
+        company: company.name,
+        companyLogo: `${process.env.BASE_URL}${company.logo}`,
         name: req.body.name,
         email: req.body.email,
         password: plainPassword,
