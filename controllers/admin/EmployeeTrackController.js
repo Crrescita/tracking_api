@@ -53,7 +53,7 @@ exports.getCoordinates = async (req, res, next) => {
         query += ` AND ${key} = '${req.query[key]}'`;
       }
     }
-    query += ` order by datetime_mobile asc`;
+    query += `group by latitude, longitude order by datetime_mobile asc`;
     const data = await sqlModel.customQuery(query);
 
     if (data.error) {
