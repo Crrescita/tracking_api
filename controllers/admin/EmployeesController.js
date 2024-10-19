@@ -100,12 +100,12 @@ exports.employeesGet = async (req, res, next) => {
       return res.status(200).send(data);
     }
 
-    const result = data.map((item) => {
-      // delete item.password;
-      return item;
-    });
+    // const result = data.map((item) => {
+    //   // delete item.password;
+    //   return item;
+    // });
 
-    res.status(200).send({ status: true, data: result });
+    res.status(200).send({ status: true, data: data });
   } catch (error) {
     res.status(200).send({ status: false, error: error.message });
   }
