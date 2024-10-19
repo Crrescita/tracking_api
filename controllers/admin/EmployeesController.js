@@ -101,7 +101,7 @@ exports.employeesGet = async (req, res, next) => {
     }
 
     const result = data.map((item) => {
-      delete item.password; // Assuming the password field exists but should not be returned
+      // delete item.password;
       return item;
     });
 
