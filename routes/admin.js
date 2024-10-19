@@ -16,46 +16,7 @@ const FirebaseController = require("../controllers/admin/FirebaseController");
 const NotificationController = require("../controllers/admin/NotificationController");
 const LogController = require("../controllers/admin/LogController");
 const AssignTaskController = require("../controllers/admin/AssignTaskController");
-// for testing it is comment
-// const verifyToken = async (req, res, next) => {
-//   const authHeader = req.headers["authorization"];
-//   const userType = req.headers["usertype"];
-
-//   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-//     return res.status(401).json({
-//       status: false,
-//       message: "Unauthorized: Token not provided",
-//     });
-//   }
-
-//   const token = authHeader.split(" ")[1];
-
-//   try {
-//     const authuserTable = userType === "company" ? "company" : "users";
-
-//     const [user] = await sqlModel.select(
-//       authuserTable,
-//       {},
-//       { api_token: token }
-//     );
-
-//     if (!user) {
-//       return res.status(403).json({
-//         status: false,
-//         message: "Forbidden: Invalid or expired token",
-//       });
-//     }
-//     req.user = user;
-//     next();
-//   } catch (error) {
-//     console.error("Error querying database:", error);
-//     return res.status(500).json({
-//       status: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
+const WhatsappController = require("../controllers/admin/WhatsappController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -128,6 +89,8 @@ router.post("/resetPass", UserController.resetPass);
 
 router.get("/webhooks", UserController.getWebhook);
 router.post("/webhooks", UserController.postWebhook);
+
+router.get("/sendMessage", WhatsappController.whatsapp);
 
 router.use(verifyToken);
 

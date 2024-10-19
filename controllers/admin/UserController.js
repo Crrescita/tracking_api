@@ -435,7 +435,7 @@ exports.get_users = async (req, res, next) => {
 
 exports.getWebhook = async (req, res, next) => {
   try {
-    // const queryParams = req.query;
+    const queryParams = req.query;
     // res.json({
     //   message: "Query Parameters",
     //   data: queryParams,
@@ -444,16 +444,18 @@ exports.getWebhook = async (req, res, next) => {
     let mode = req.query["hub.mode"];
     let challange = req.query["hub.challenge"];
     let token = req.query["hub.verify_token"];
-    const mytoken = "qwerty";
+    const mytoken = "4b92d6c4-5bef-43b0-9685-556212d55afe";
     if (mode && token) {
       if (mode === "subscribe" && token === mytoken) {
         console.log(challange);
         res.status(200).send(challange);
       } else {
-        res.status(403);
+        console.log(queryParams);
+        res.status(200);
       }
     } else {
-      res.status(403);
+      console.log(queryParams);
+      res.status(200);
     }
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
