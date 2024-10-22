@@ -830,7 +830,7 @@ async function scheduleAutoCheckOuts() {
           companyIds.forEach((companyId) => autoCheckOut(companyId));
         });
 
-        // console.log(`Scheduled auto check-out for ${checkOutTime}`);
+        console.log(`Scheduled auto check-out for ${checkOutTime}`);
       } else {
         console.error(
           `Invalid check_out_time: ${checkOutTime} for companies: ${companiesByTime[
