@@ -147,18 +147,12 @@ exports.getAttendance = async (req, res, next) => {
     LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-    LEFT JOIN (
-    SELECT emp_id, battery_status
-    FROM emp_tracking
-    WHERE company_id = ? 
-    ORDER BY created_at DESC
-    LIMIT 1
-  ) la ON la.emp_id = e.id
+    LEFT JOIN emp_tracking la ON e.id = la.emp_id AND c.date = ? AND e.company_id = la.company_id
     WHERE e.company_id = ?
     ORDER BY c.check_in_time DESC
 `;
 
-    const values = [baseUrl, date, date, company_id, company_id];
+    const values = [baseUrl, date, date, date, company_id];
     const data = await sqlModel.customQuery(query, values);
     console.log(data);
     // Process the data
