@@ -199,6 +199,7 @@ exports.getAttendance = async (req, res, next) => {
         existingEmployee.checkin_status = item.checkin_status || "Absent";
         existingEmployee.timeDifference = item.time_difference || "-";
         existingEmployee.attendance_status = attendance_status;
+        existingEmployee.last_battery_status = last_battery_status;
       } else {
         acc.push({
           id: item.id,
@@ -227,6 +228,7 @@ exports.getAttendance = async (req, res, next) => {
           checkin_status: item.checkin_status || "Absent",
           attendance_status: attendance_status,
           timeDifference: item.time_difference || "-",
+          last_battery_status: item.last_battery_status,
         });
       }
       return acc;
