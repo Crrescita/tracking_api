@@ -342,12 +342,12 @@ exports.whatsapp = async (req, res, next) => {
       callbackData: "First Message",
       type: "Template",
       template: {
-        name: "abpalinvite_lu",
+        name: "checkinalert",
         languageCode: "en",
         // headerValues: [
         //   "https://telindia.s3.ap-south-1.amazonaws.com/abpalLogofinal.png",
         // ],
-        bodyValues: [inviteLink, user.email, user.password],
+        // bodyValues: [inviteLink, user.email, user.password],
       },
     };
 
