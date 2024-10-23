@@ -149,7 +149,7 @@ exports.getAttendance = async (req, res, next) => {
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
     LEFT JOIN (
     SELECT emp_id, battery_status
-    FROM emp_attendance
+    FROM emp_tracking
     WHERE company_id = ? 
     ORDER BY created_at DESC
     LIMIT 1
