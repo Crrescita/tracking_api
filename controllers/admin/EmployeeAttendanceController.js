@@ -147,7 +147,7 @@ exports.getAttendance = async (req, res, next) => {
     LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-    LEFT JOIN emp_tracking la ON e.id = la.emp_id AND c.date = ? AND e.company_id = la.company_id
+    LEFT JOIN emp_tracking la ON e.id = la.emp_id AND la.date = ? AND e.company_id = la.company_id
     WHERE e.company_id = ?
     ORDER BY c.check_in_time DESC
 `;
