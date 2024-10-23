@@ -140,14 +140,12 @@ exports.getAttendance = async (req, res, next) => {
       c.check_in_time,
       c.checkin_status AS latestCheckInStatus,
       c.check_out_time,
-      c.duration,
-    
+      c.duration   
     FROM employees e
     LEFT JOIN department d ON e.department = d.id
     LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-
     WHERE e.company_id = ?
     ORDER BY c.check_in_time DESC
 `;
