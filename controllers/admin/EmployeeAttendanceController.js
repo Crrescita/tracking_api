@@ -140,7 +140,8 @@ exports.getAttendance = async (req, res, next) => {
       c.check_in_time,
       c.checkin_status AS latestCheckInStatus,
       c.check_out_time,
-      c.duration
+      c.duration,
+        la.battery_status AS last_battery_status
     FROM employees e
     LEFT JOIN department d ON e.department = d.id
     LEFT JOIN designation de ON e.designation = de.id
