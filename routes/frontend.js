@@ -10,6 +10,7 @@ const PageController = require("../controllers/frontend/PagesController");
 const LeaveController = require("../controllers/frontend/LeaveController");
 const MyRecordController = require("../controllers/frontend/MyRecordController");
 const SupportController = require("../controllers/frontend/SupportController");
+const VersionController = require("../controllers/frontend/VersionController");
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
@@ -64,6 +65,10 @@ router.post(
 );
 
 router.get("/getWelcomePage", PageController.getWelcomePage);
+
+//app manage
+router.post("/insert-app-version", VersionController.manageVersionInsert);
+router.post("/app-version", VersionController.manageVersion);
 
 router.use(verifyToken);
 
