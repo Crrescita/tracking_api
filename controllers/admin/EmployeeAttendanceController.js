@@ -141,18 +141,18 @@ exports.getAttendance = async (req, res, next) => {
       c.checkin_status AS latestCheckInStatus,
       c.check_out_time,
       c.duration,
-      la.battery_status AS last_battery_status
+    
     FROM employees e
     LEFT JOIN department d ON e.department = d.id
     LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-    LEFT JOIN emp_tracking la ON e.id = la.emp_id AND la.date = ? AND e.company_id = la.company_id
+
     WHERE e.company_id = ?
     ORDER BY c.check_in_time DESC
 `;
 
-    const values = [baseUrl, date, date, date, company_id];
+    const values = [baseUrl, date, date, company_id];
     const data = await sqlModel.customQuery(query, values);
     console.log(data);
     // Process the data
@@ -222,7 +222,7 @@ exports.getAttendance = async (req, res, next) => {
           checkin_status: item.checkin_status || "Absent",
           attendance_status: attendance_status,
           timeDifference: item.time_difference || "-",
-          last_battery_status: item.last_battery_status,
+          // last_battery_status: item.last_battery_status,
         });
       }
       return acc;
