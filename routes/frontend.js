@@ -11,6 +11,8 @@ const LeaveController = require("../controllers/frontend/LeaveController");
 const MyRecordController = require("../controllers/frontend/MyRecordController");
 const SupportController = require("../controllers/frontend/SupportController");
 const VersionController = require("../controllers/frontend/VersionController");
+const FirebaseController = require("../controllers/frontend/FirebaseController");
+
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
@@ -129,6 +131,9 @@ router.post(
 
 //app-version for user
 router.post("/app-version", VersionController.manageVersion);
+
+//set fcm token
+router.post("/setFcmToken", FirebaseController.setFcmToken);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
