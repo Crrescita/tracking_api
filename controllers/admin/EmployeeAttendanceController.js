@@ -152,7 +152,7 @@ exports.getAttendance = async (req, res, next) => {
 
     const values = [baseUrl, date, date, company_id];
     const data = await sqlModel.customQuery(query, values);
-    console.log(data);
+    // console.log(data);
     // Process the data
     const processedData = data.reduce((acc, item) => {
       const existingEmployee = acc.find((emp) => emp.id === item.id);

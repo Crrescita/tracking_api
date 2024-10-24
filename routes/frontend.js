@@ -68,7 +68,6 @@ router.get("/getWelcomePage", PageController.getWelcomePage);
 
 //app manage
 router.post("/insert-app-version", VersionController.manageVersionInsert);
-router.post("/app-version", VersionController.manageVersion);
 
 router.use(verifyToken);
 
@@ -127,6 +126,9 @@ router.post(
   upload.fields([{ name: "image", maxCount: 1 }]),
   SupportController.createSupport
 );
+
+//app-version for user
+router.post("/app-version", VersionController.manageVersion);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
