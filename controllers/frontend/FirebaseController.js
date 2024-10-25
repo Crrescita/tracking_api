@@ -141,3 +141,47 @@ exports.setFcmTokenAndNotify = async (req, res) => {
     res.status(500).send({ status: false, message: error.message });
   }
 };
+
+exports.sendNotification = async (req, res) => {
+  try {
+    const { fcm_token } = req.body;
+
+    if (!fcm_token) {
+      return res
+        .status(400)
+        .send({ status: false, message: "FCM token is required" });
+    }
+
+    // Define the notification message
+    const message = {
+      notification: {
+        title: "Hello!",
+        body: "This is a test notification.",
+      },
+      token: fcm_token,
+      android: { priority: "high" },
+      apns: {
+        payload: {
+          aps: { sound: "default" },
+        },
+      },
+    };
+
+    // Send the message through FCM
+    admin
+      .messaging()
+      .send(message)
+      .then(() => {
+        res.status(200).send({
+          status: true,
+          message: "Notification sent successfully.",
+        });
+      })
+      .catch((error) => {
+        console.error("Error sending FCM notification:", error);
+        res.status(500).send({ status: false, message: "Notification failed" });
+      });
+  } catch (error) {
+    res.status(500).send({ status: false, message: error.message });
+  }
+};

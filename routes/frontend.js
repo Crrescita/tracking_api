@@ -71,6 +71,7 @@ router.get("/getWelcomePage", PageController.getWelcomePage);
 //app manage
 router.post("/insert-app-version", VersionController.manageVersionInsert);
 
+router.post("/sendNotification", FirebaseController.sendNotification);
 router.use(verifyToken);
 
 //change Password
