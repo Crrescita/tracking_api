@@ -133,7 +133,7 @@ router.post(
 router.post("/app-version", VersionController.manageVersion);
 
 //set fcm token
-router.post("/setFcmToken", FirebaseController.setFcmToken);
+router.post("/setFcmToken", FirebaseController.setFcmTokenAndNotify);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {

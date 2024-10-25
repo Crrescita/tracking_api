@@ -250,7 +250,7 @@ exports.createLeaveRequest = async (req, res, next) => {
         status: "unread",
         timestamp: getCurrentDateTime(),
       };
-
+      console.log(insertNotification);
       await sqlModel.insert("notification", insertNotification);
 
       try {
