@@ -45,7 +45,14 @@ exports.setFcmToken = async (req, res) => {
 
 exports.sendCustomNotification = async (req, res) => {
   try {
-    const { emp_id, type, fcm_token: requestFcmToken } = req.body;
+    const {
+      emp_id,
+      type,
+      fcm_token: requestFcmToken,
+      title: customTitle,
+      body: customBody,
+      type: notification_type,
+    } = req.body;
 
     if (!emp_id || !type) {
       return res.status(400).send({
@@ -71,28 +78,39 @@ exports.sendCustomNotification = async (req, res) => {
 
     let title = "Notification";
     let body = `Hello Employee ${employee.name}, you have a new notification.`;
+    let dataPayload = {
+      emp_id: emp_id.toString(),
+      type: type.toString(),
+      requestFcmToken: requestFcmToken || "",
+      request_live_location: type == "1" ? "true" : "false",
+      click_action: "FLUTTER_NOTIFICATION_CLICK",
+    };
 
     if (type == "1") {
+      // Live Location Request
       title = "Live Location Request";
       body = `Hello Employee ${employee.name}, please share your live location.`;
-    } else if (type === "task") {
-      title = "New Task Assigned";
-      body = `Hello Employee ${employee.name}, a new task has been assigned to you.`;
-    } else if (type === "reminder") {
-      title = "Reminder";
-      body = `Hello Employee ${employee.name}, this is a reminder for your upcoming task.`;
+    } else if (type == "2" && customTitle && customBody && notification_type) {
+      title = customTitle;
+      body = customBody;
+
+      const notificationRecord = await sqlModel.insert("emp_notification", {
+        emp_id,
+        title: customTitle,
+        body: customBody,
+        type: notification_type,
+        created_at: getCurrentDateTime(),
+      });
+
+      const notification_id = notificationRecord.insertId;
+      dataPayload.notification_id = notification_id.toString();
+      dataPayload.notification_type = notification_type.toString();
     }
 
     const message = {
       token: fcm_token,
       notification: { title, body },
-      data: {
-        emp_id: emp_id.toString(),
-        type: type.toString(),
-        requestFcmToken,
-        request_live_location: type == "1" ? "true" : "false",
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
+      data: dataPayload,
       android: {
         priority: "high",
         notification: {
@@ -113,7 +131,7 @@ exports.sendCustomNotification = async (req, res) => {
         },
       },
     };
-    // console.log(message);
+    console.log(message);
     // Send the FCM message
     admin
       .messaging()
@@ -122,6 +140,7 @@ exports.sendCustomNotification = async (req, res) => {
         res.status(200).send({
           status: true,
           message: "Notification sent successfully.",
+          notification_id: dataPayload.notification_id, // Return the notification ID in response
         });
       })
       .catch((error) => {
@@ -132,6 +151,96 @@ exports.sendCustomNotification = async (req, res) => {
     res.status(500).send({ status: false, message: error.message });
   }
 };
+
+// exports.sendCustomNotification = async (req, res) => {
+//   try {
+//     const { emp_id, type, fcm_token: requestFcmToken } = req.body;
+
+//     if (!emp_id || !type) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Employee ID and type are required",
+//       });
+//     }
+
+//     const [employee] = await sqlModel.select(
+//       "employees",
+//       ["fcm_token", "name"],
+//       { id: emp_id }
+//     );
+
+//     if (!employee || !employee.fcm_token) {
+//       return res.status(404).send({
+//         status: false,
+//         message: "Employee not found or FCM token not set",
+//       });
+//     }
+
+//     const fcm_token = employee.fcm_token;
+
+//     let title = "Notification";
+//     let body = `Hello Employee ${employee.name}, you have a new notification.`;
+
+//     if (type == "1") {
+//       title = "Live Location Request";
+//       body = `Hello Employee ${employee.name}, please share your live location.`;
+//     } else if (type === "task") {
+//       title = "New Task Assigned";
+//       body = `Hello Employee ${employee.name}, a new task has been assigned to you.`;
+//     } else if (type === "reminder") {
+//       title = "Reminder";
+//       body = `Hello Employee ${employee.name}, this is a reminder for your upcoming task.`;
+//     }
+
+//     const message = {
+//       token: fcm_token,
+//       notification: { title, body },
+//       data: {
+//         emp_id: emp_id.toString(),
+//         type: type.toString(),
+//         requestFcmToken,
+//         request_live_location: type == "1" ? "true" : "false",
+//         click_action: "FLUTTER_NOTIFICATION_CLICK",
+//       },
+//       android: {
+//         priority: "high",
+//         notification: {
+//           channel_id: "high_importance_channel",
+//           sound: "default",
+//           click_action: "OPEN_ACTIVITY_1",
+//         },
+//       },
+//       apns: {
+//         payload: {
+//           aps: {
+//             sound: "default",
+//             contentAvailable: true,
+//           },
+//         },
+//         headers: {
+//           "apns-priority": "10",
+//         },
+//       },
+//     };
+//     // console.log(message);
+//     // Send the FCM message
+//     admin
+//       .messaging()
+//       .send(message)
+//       .then(() => {
+//         res.status(200).send({
+//           status: true,
+//           message: "Notification sent successfully.",
+//         });
+//       })
+//       .catch((error) => {
+//         console.error("Error sending FCM notification:", error);
+//         res.status(500).send({ status: false, message: "Notification failed" });
+//       });
+//   } catch (error) {
+//     res.status(500).send({ status: false, message: error.message });
+//   }
+// };
 
 // const sendNotification = async (userId, message) => {
 //     const tokens = await FcmToken.findAll({ where: { userId } });
