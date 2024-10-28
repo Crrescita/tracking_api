@@ -142,6 +142,50 @@ exports.setFcmTokenAndNotify = async (req, res) => {
   }
 };
 
+// exports.sendNotification = async (req, res) => {
+//   try {
+//     const { fcm_token } = req.body;
+
+//     if (!fcm_token) {
+//       return res
+//         .status(400)
+//         .send({ status: false, message: "FCM token is required" });
+//     }
+
+//     // Define the notification message
+//     const message = {
+//       notification: {
+//         title: "Hello!",
+//         body: "This is a test notification.",
+//       },
+//       token: fcm_token,
+//       android: { priority: "high" },
+//       apns: {
+//         payload: {
+//           aps: { sound: "default" },
+//         },
+//       },
+//     };
+
+//     // Send the message through FCM
+//     admin
+//       .messaging()
+//       .send(message)
+//       .then(() => {
+//         res.status(200).send({
+//           status: true,
+//           message: "Notification sent successfully.",
+//         });
+//       })
+//       .catch((error) => {
+//         console.error("Error sending FCM notification:", error);
+//         res.status(500).send({ status: false, message: "Notification failed" });
+//       });
+//   } catch (error) {
+//     res.status(500).send({ status: false, message: error.message });
+//   }
+// };
+
 exports.sendNotification = async (req, res) => {
   try {
     const { fcm_token } = req.body;
@@ -152,22 +196,39 @@ exports.sendNotification = async (req, res) => {
         .send({ status: false, message: "FCM token is required" });
     }
 
-    // Define the notification message
     const message = {
+      token: fcm_token,
       notification: {
         title: "Hello!",
         body: "This is a test notification.",
       },
-      token: fcm_token,
-      android: { priority: "high" },
+      data: {
+        title: "Hello!",
+        body: "This is a data notification for handling in foreground.",
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channel_id: "high_importance_channel",
+          sound: "default",
+          color: "#FF0000",
+          click_action: "OPEN_ACTIVITY_1",
+        },
+      },
       apns: {
         payload: {
-          aps: { sound: "default" },
+          aps: {
+            sound: "default",
+            contentAvailable: true,
+          },
+        },
+        headers: {
+          "apns-priority": "10",
         },
       },
     };
 
-    // Send the message through FCM
     admin
       .messaging()
       .send(message)
