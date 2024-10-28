@@ -106,19 +106,20 @@ exports.sendCustomNotification = async (req, res) => {
       dataPayload.notification_id = notification_id.toString();
       dataPayload.notification_type = notification_type.toString();
     }
-
+    dataPayload.title = title;
+    dataPayload.body = body;
     const message = {
       token: fcm_token,
-      notification: { title, body },
+      // notification: { title, body },
       data: dataPayload,
-      android: {
-        priority: "high",
-        notification: {
-          channel_id: "high_importance_channel",
-          sound: "default",
-          click_action: "OPEN_ACTIVITY_1",
-        },
-      },
+      // android: {
+      //   priority: "high",
+      //   notification: {
+      //     channel_id: "high_importance_channel",
+      //     sound: "default",
+      //     click_action: "OPEN_ACTIVITY_1",
+      //   },
+      // },
       apns: {
         payload: {
           aps: {
