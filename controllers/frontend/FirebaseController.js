@@ -249,7 +249,15 @@ exports.sendNotification = async (req, res) => {
 
 exports.receiveLocationData = async (req, res) => {
   try {
-    const { emp_id, fcm_token, latitude, longitude } = req.body;
+    const {
+      emp_id,
+      fcm_token,
+      latitude,
+      longitude,
+      battery_status,
+      is_motion,
+      internet_status,
+    } = req.body;
 
     if (!emp_id || !fcm_token || !latitude || !longitude) {
       return res.status(400).send({
@@ -257,7 +265,7 @@ exports.receiveLocationData = async (req, res) => {
         message: "Employee ID, FCM token, latitude, and longitude are required",
       });
     }
-    console.log(req.body);
+
     // const [adminToken] = await sqlModel.select("fcm_tokens", ["fcm_token"], {
     //   fcm_token,
     // });
