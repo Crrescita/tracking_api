@@ -257,6 +257,9 @@ router.route("/address").post(AddressController.createAddress);
 // fcm token
 router.post("/setFcmToken", FirebaseController.setFcmToken);
 
+//request live location
+router.post("/requestLiveLocation", FirebaseController.sendCustomNotification);
+
 // get notification
 router.get("/getNotification/:id", NotificationController.getNotification);
 
