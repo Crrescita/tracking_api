@@ -293,6 +293,7 @@ exports.receiveLocationData = async (req, res) => {
       internet_status,
       motion,
       datetime_mobile: getCurrentDateTime(),
+      status: "requested",
       // row_id,
       // ...rest,
     };
