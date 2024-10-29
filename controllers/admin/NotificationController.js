@@ -31,7 +31,7 @@ exports.getNotification = async (req, res, next) => {
         return item;
       })
     );
-
+    console.log(result);
     res.status(200).send({ status: true, data: result });
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });

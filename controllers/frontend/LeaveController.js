@@ -253,11 +253,27 @@ exports.createLeaveRequest = async (req, res, next) => {
       console.log(insertNotification);
       await sqlModel.insert("notification", insertNotification);
 
-      try {
-        await admin.messaging().send(message);
-      } catch (error) {
-        console.error("Error sending notification:", error);
-      }
+      admin
+        .messaging()
+        .send(message)
+        .then(() => {
+          res.status(200).send({
+            status: true,
+            message: "Notification sent successfully.",
+          });
+        })
+        .catch((error) => {
+          console.error("Error sending FCM notification:", error);
+          res
+            .status(500)
+            .send({ status: false, message: "Notification failed" });
+        });
+
+      // try {
+      //   await admin.messaging().send(message);
+      // } catch (error) {
+      //   console.error("Error sending notification:", error);
+      // }
     }
 
     if (saveData.error) {

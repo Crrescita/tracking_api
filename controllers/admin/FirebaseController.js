@@ -24,7 +24,9 @@ exports.setFcmToken = async (req, res) => {
 
     if (existingToken.length > 0) {
       (tokenData.updated_at = getCurrentDateTime()),
-        await sqlModel.update("fcm_tokens", tokenData, { user_id: userId });
+        await sqlModel.update("fcm_tokens", tokenData, {
+          device_info: device_info,
+        });
       res
         .status(200)
         .send({ status: true, message: "FCM Token updated successfully." });

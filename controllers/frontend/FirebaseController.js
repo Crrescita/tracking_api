@@ -1,68 +1,34 @@
 const sqlModel = require("../../config/db");
 const admin = require("../../firebase");
-// exports.setFcmToken = async (req, res) => {
-//   try {
-//     const token = req.headers.authorization?.split(" ")[1];
+const getCurrentDate = () => {
+  const currentDate = new Date();
 
-//     if (!token) {
-//       return res
-//         .status(200)
-//         .send({ status: false, message: "Token is required" });
-//     }
+  const options = {
+    timeZone: "Asia/Kolkata",
+  };
+  const year = currentDate.toLocaleString("en-US", {
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const day = String(currentDate.getDate()).padStart(2, "0");
 
-//     const [employee] = await sqlModel.select(
-//       "employees",
-//       ["id", "company_id", "name", "image"],
-//       { api_token: token }
-//     );
+  const formattedDate = `${year}-${month}-${day}`;
 
-//     if (!employee) {
-//       return res
-//         .status(404)
-//         .send({ status: false, message: "Employee not found" });
-//     }
+  return formattedDate;
+};
 
-//     const { fcm_token } = req.body;
+const getCurrentTime = () => {
+  const currentDate = new Date();
 
-//     if (!fcm_token) {
-//       return res
-//         .status(400)
-//         .send({ status: false, message: "FCM token is required" });
-//     }
+  const hour = String(currentDate.getHours()).padStart(2, "0");
+  const minute = String(currentDate.getMinutes()).padStart(2, "0");
+  const second = String(currentDate.getSeconds()).padStart(2, "0");
 
-//     const existingToken = await sqlModel.select("employees", ["fcm_token"], {
-//       id: employee.id,
-//     });
+  const formattedTime = `${hour}:${minute}:${second}`;
 
-//     const tokenData = {
-//       fcm_token: fcm_token,
-//     };
-
-//     if (existingToken.length > 0) {
-//       tokenData.fmc_updated_at = getCurrentDateTime();
-//       await sqlModel.update("employees", tokenData, { id: employee.id });
-
-//       res
-//         .status(200)
-//         .send({ status: true, message: "FCM Token updated successfully." });
-//     } else {
-//       await sqlModel.update(
-//         "employees",
-//         {
-//           ...tokenData,
-//           fmc_created_at: getCurrentDateTime(),
-//         },
-//         { id: employee.id }
-//       );
-
-//       res
-//         .status(200)
-//         .send({ status: true, message: "FCM Token inserted successfully." });
-//     }
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
+  return formattedTime;
+};
 
 exports.setFcmTokenAndNotify = async (req, res) => {
   try {
@@ -255,46 +221,89 @@ exports.receiveLocationData = async (req, res) => {
       latitude,
       longitude,
       battery_status,
-      is_motion,
+      motion,
       internet_status,
     } = req.body;
 
-    if (!emp_id || !fcm_token || !latitude || !longitude) {
-      return res.status(400).send({
-        status: false,
-        message: "Employee ID, FCM token, latitude, and longitude are required",
-      });
+    const requiredFields = {
+      emp_id,
+      fcm_token,
+      latitude,
+      longitude,
+      battery_status,
+      motion,
+      internet_status,
+    };
+
+    for (const [key, value] of Object.entries(requiredFields)) {
+      if (!value) {
+        return res.status(200).json({
+          status: false,
+          message: `${key.replace("_", " ")} is required`,
+        });
+      }
     }
 
-    // const [adminToken] = await sqlModel.select("fcm_tokens", ["fcm_token"], {
-    //   fcm_token,
-    // });
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["name", "company_id"],
+      {
+        id: emp_id,
+      }
+    );
 
-    // if (!adminToken) {
-    //   return res.status(404).send({
-    //     status: false,
-    //     message: "adminToken not found",
-    //   });
-    // }
+    if (!employee) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Employee not found" });
+    }
 
-    // if (adminToken.fcm_token !== fcm_token) {
-    //   return res.status(403).send({
-    //     status: false,
-    //     message: "Invalid FCM token ",
-    //   });
-    // }
+    const company_id = employee.company_id;
 
-    // Save location data to the database
-    // await sqlModel.insert("employee_locations", {
-    //   emp_id,
-    //   latitude,
-    //   longitude,
-    //   timestamp: new Date(),
-    // });
+    // const parseDateTime = (datetimeMobile) => {
+    //   let dateTimeFormatted;
+
+    //   if (!isNaN(datetimeMobile)) {
+    //     const dateObj = new Date(parseFloat(datetimeMobile) * 1000);
+    //     const date = dateObj.toISOString().split("T")[0];
+    //     const time = dateObj.toTimeString().split(" ")[0];
+
+    //     dateTimeFormatted = `${date} ${time}`;
+    //   } else {
+    //     dateTimeFormatted = datetimeMobile;
+    //   }
+
+    //   return dateTimeFormatted;
+    // };
+
+    // const datetimeFormatted = parseDateTime(datetime_mobile); // Format datetime_mobile
+
+    // const [date, time] = datetimeFormatted.split(" "); // Split into date and time
+
+    const newCheckInData = {
+      company_id,
+      emp_id,
+      latitude,
+      longitude,
+      battery_status,
+      date: getCurrentDate(),
+      time: getCurrentTime(),
+      created_at: getCurrentDateTime(),
+      // gps_status: gps_status ? gps_status : "",
+      internet_status,
+      motion,
+      datetime_mobile: getCurrentDateTime(),
+      // row_id,
+      // ...rest,
+    };
+
+    // console.log(newCheckInData);
+    // Insert tracking data into emp_tracking table
+    const result = await sqlModel.insert("emp_tracking", newCheckInData);
 
     // Define the notification message
     const notificationTitle = "Location Update Received";
-    const notificationBody = `Hello , your location has been successfully updated.`;
+    const notificationBody = `Hello ${employee.name},location has been successfully updated.`;
 
     const message = {
       token: fcm_token,
