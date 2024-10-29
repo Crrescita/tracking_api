@@ -70,116 +70,6 @@ exports.getCoordinates = async (req, res, next) => {
   }
 };
 
-// exports.setCoordinates = async (req, res, next) => {
-//   try {
-//     const token = req.headers.authorization?.split(" ")[1];
-
-//     if (!token) {
-//       return res
-//         .status(400)
-//         .send({ status: false, message: "Token is required" });
-//     }
-
-//     const [employee] = await sqlModel.select(
-//       "employees",
-//       ["id", "company_id"],
-//       { api_token: token }
-//     );
-
-//     if (!employee) {
-//       return res
-//         .status(404)
-//         .send({ status: false, message: "Employee not found" });
-//     }
-
-//     const emp_id = employee.id;
-//     const company_id = employee.company_id;
-
-//     const {
-//       company_id,
-//       emp_id,
-//       latitude,
-//       longitude,
-//       battery_status,
-//       gps_status,
-//       internet_status,
-//       motion,
-//       datetime_mobile,
-//       row_id,
-//       ...rest
-//     } = req.body;
-
-//     // Validate required fields
-//     const requiredFields = {
-
-//       latitude,
-//       longitude,
-//       battery_status,
-//       gps_status,
-//       internet_status,
-//       motion,
-//     };
-
-//     for (const [key, value] of Object.entries(requiredFields)) {
-//       if (!value) {
-//         return res.status(400).send({
-//           status: false,
-//           message: `${key.replace("_", " ")} is required`,
-//         });
-//       }
-//     }
-
-//     const newCheckInData = {
-//       company_id,
-//       emp_id,
-//       latitude,
-//       longitude,
-//       battery_status,
-//       date: getCurrentDate(),
-//       time: getCurrentTime(),
-//       created_at: getCurrentDateTime(),
-//       gps_status,
-//       internet_status,
-//       motion,
-//       datetime_mobile,
-//       row_id,
-//       ...rest,
-//     };
-
-//     // Insert tracking data
-//     const result = await sqlModel.insert("emp_tracking", newCheckInData);
-
-//     const employee = await sqlModel.select("employees", ["timer"], {
-//       id: emp_id,
-//       company_id,
-//     });
-
-//     if (!employee.length) {
-//       return res.status(404).send({
-//         status: false,
-//         message: "Employee not found",
-//       });
-//     }
-
-//     const timerValue = employee[0].timer || 30000;
-
-//     return res.status(200).send({
-//       status: true,
-//       message: "Data submitted successfully",
-//       data: result,
-//       row_id: row_id,
-//       timer: timerValue, // Include the timer in the response
-//     });
-//   } catch (error) {
-//     console.error("Error during data submission:", error);
-//     return res.status(500).send({
-//       status: false,
-//       message: "An error occurred during data submission",
-//       error: error.message,
-//     });
-//   }
-// };
-
 exports.setCoordinates = async (req, res, next) => {
   try {
     // Retrieve and check the authorization token
@@ -293,6 +183,7 @@ exports.setCoordinates = async (req, res, next) => {
       motion,
       datetime_mobile: datetimeFormatted,
       row_id,
+      status: "regular",
       ...rest,
     };
 
@@ -438,6 +329,7 @@ exports.setAllCoordinates = async (req, res, next) => {
         motion,
         datetime_mobile: datetimeFormatted,
         row_id,
+        status: "regular",
         ...rest,
       };
 
