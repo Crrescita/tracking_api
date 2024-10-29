@@ -256,7 +256,7 @@ exports.getRecord = async (req, res, next) => {
       company_id,
       queryDates,
     ]);
-
+    console.log(checkdata);
     // Determine check-in status
     const checkin_status =
       checkdata.length > 0
