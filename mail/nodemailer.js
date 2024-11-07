@@ -5,8 +5,10 @@ const ejs = require("ejs");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "palsudhanshu13@gmail.com",
-    pass: "ulmh uaht rlss ojoi",
+    // user: "palsudhanshu13@gmail.com",
+    // pass: "ulmh uaht rlss ojoi",
+    user: "contact@crrescita.com",
+    pass: "zfhh oxft akyi huxy",
   },
 });
 
