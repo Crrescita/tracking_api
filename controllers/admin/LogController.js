@@ -3,21 +3,25 @@ const path = require("path");
 
 // Helper function to get file details
 const getFileDetails = (logDir, filterDate = null) => {
-  const files = fs.readdirSync(logDir).map((file) => {
-    const filePath = path.join(logDir, file);
-    const stats = fs.statSync(filePath);
+  const files = fs
+    .readdirSync(logDir)
+    .map((file) => {
+      const filePath = path.join(logDir, file);
+      const stats = fs.statSync(filePath);
 
-    // Include file only if it matches the filter date or no date is specified
-    if (!filterDate || file.includes(filterDate)) {
-      return {
-        filename: file,
-        size: stats.size, // File size in bytes
-        createdAt: stats.birthtime, // Creation date
-        filePath: filePath, // Absolute path for download
-      };
-    }
-    return null;
-  });
+      // Include file only if it matches the filter date or no date is specified
+      if (!filterDate || file.includes(filterDate)) {
+        return {
+          filename: file,
+          size: stats.size, // File size in bytes
+          createdAt: stats.birthtime, // Creation date
+          filePath: filePath, // Absolute path for download
+        };
+      }
+      return null;
+    })
+    .filter(Boolean) // Filter out null entries
+    .sort((a, b) => b.createdAt - a.createdAt);
 
   // Filter out null entries (for unmatched dates)
   return files.filter(Boolean);
