@@ -308,6 +308,12 @@ exports.checkIn = async (req, res, next) => {
     const { id: emp_id, company_id } = employee;
 
     const { lat_check_in, long_check_in, battery_status_at_checkIn } = req.body;
+    if (!lat_check_in) {
+      lat_check_in = 0.0;
+    }
+    if (!long_check_in) {
+      long_check_in = 0.0;
+    }
 
     if (!lat_check_in || !long_check_in || !battery_status_at_checkIn) {
       return res.status(200).json({
