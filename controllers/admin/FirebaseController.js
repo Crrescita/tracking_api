@@ -94,11 +94,7 @@ exports.sendCustomNotification = async (req, res) => {
       title = "Live Location Request";
       body = `Hello Employee ${employee.name}, please share your live location.`;
 
-      const randomBytes = crypto.randomBytes(4);
-      const randomInt = parseInt(randomBytes.toString("hex"), 16);
-      const random8DigitInt = 10000000 + (randomInt % 90000000);
-
-      dataPayload.notificationId = random8DigitInt;
+      dataPayload.notificationId = crypto.randomBytes(8).toString("hex");
       dataPayload.notificationType = type.toString();
     } else if (type == "2" && customTitle && customBody && notification_type) {
       title = customTitle;
