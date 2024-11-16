@@ -306,16 +306,15 @@ exports.checkIn = async (req, res, next) => {
     }
 
     const { id: emp_id, company_id } = employee;
-
+    if (!req.body.lat_check_in) {
+      req.body.lat_check_in = 0.0;
+    }
+    if (!req.body.long_check_in) {
+      req.body.long_check_in = 0.0;
+    }
     const { lat_check_in, long_check_in, battery_status_at_checkIn } = req.body;
-    if (!lat_check_in) {
-      lat_check_in = 0.0;
-    }
-    if (!long_check_in) {
-      long_check_in = 0.0;
-    }
 
-    if (!lat_check_in || !long_check_in || !battery_status_at_checkIn) {
+    if (!battery_status_at_checkIn) {
       return res.status(200).json({
         status: false,
         message: "All check-in details are required",
