@@ -82,16 +82,18 @@ exports.sendCustomNotification = async (req, res) => {
     let body = `Hello Employee ${employee.name}, you have a new notification.`;
     let dataPayload = {
       emp_id: emp_id.toString(),
-      type: type.toString(),
+      // type: type.toString(),
       requestFcmToken: requestFcmToken || "",
       request_live_location: type == "1" ? "true" : "false",
-      click_action: "FLUTTER_NOTIFICATION_CLICK",
+      // click_action: "FLUTTER_NOTIFICATION_CLICK",
     };
 
     if (type == "1") {
       // Live Location Request
       title = "Live Location Request";
       body = `Hello Employee ${employee.name}, please share your live location.`;
+      dataPayload.notificationId = crypto.randomBytes(8).toString("hex");
+      dataPayload.notificationType = type.toString();
     } else if (type == "2" && customTitle && customBody && notification_type) {
       title = customTitle;
       body = customBody;
@@ -105,8 +107,8 @@ exports.sendCustomNotification = async (req, res) => {
       });
 
       const notification_id = notificationRecord.insertId;
-      dataPayload.notification_id = notification_id.toString();
-      dataPayload.notification_type = notification_type.toString();
+      dataPayload.notificationId = notification_id.toString();
+      dataPayload.notificationType = type.toString();
     }
     dataPayload.title = title;
     dataPayload.body = body;
