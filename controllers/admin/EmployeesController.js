@@ -3,6 +3,7 @@ const path = require("path");
 const deleteOldFile = require("../../middleware/deleteImage");
 const bcrypt = require("bcrypt");
 const sendMail = require("../../mail/nodemailer");
+const sendWhatsapp = require("../../mail/whatsappMessage");
 const saltRounds = 10;
 const crypto = require("crypto");
 
@@ -211,6 +212,22 @@ exports.employeesInsert = async (req, res, next) => {
         }
       }
 
+      if (req.body.mobile) {
+        const existingemployeesWithMobile = await sqlModel.select(
+          "employees",
+          ["id"],
+          { mobile: req.body.mobile }
+        );
+        if (
+          existingemployeesWithMobile.length > 0 &&
+          existingemployeesWithMobile[0].id != id
+        ) {
+          return res
+            .status(200)
+            .send({ status: false, message: "Mobile Number already exists" });
+        }
+      }
+
       if (req.body.employee_id) {
         const existingemployeesWithId = await sqlModel.select(
           "employees",
@@ -285,6 +302,17 @@ exports.employeesInsert = async (req, res, next) => {
         return res
           .status(200)
           .send({ status: false, message: "Email already exists" });
+      }
+
+      const existingemployeesWithMobile = await sqlModel.select(
+        "employees",
+        ["id"],
+        { mobile: req.body.mobile }
+      );
+      if (existingemployeesWithMobile.length > 0) {
+        return res
+          .status(200)
+          .send({ status: false, message: "Mobile Number already exists" });
       }
 
       const existingemployeesWithId = await sqlModel.select(

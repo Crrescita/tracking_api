@@ -338,7 +338,7 @@ const axios = require("axios");
 //   },
 //   {
 //     name: "Ravinder Kaur",
-//     mobile: "8375986841",
+//     mobile: "9911706963",
 //     email: "ravinderkaur@abpal.com",
 //     password: "123456",
 //   },
@@ -747,109 +747,216 @@ const axios = require("axios");
 //   },
 // ];
 
-const users = [
-  {
-    name: "YOGESH RASTOGI",
-    mobile: "9891928489",
-    email: "yogesh.rastogi@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "JITENDER SAINI",
-    mobile: "9811691742",
-    email: "jitendra.saini@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "PANKAJ KUMAR",
-    mobile: "9717071910",
-    email: "pankaj.muz001@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "NARENDER KUMAR",
-    mobile: "9266530844",
-    email: "bhawna@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "PRADEEP KUMAR SINGH",
-    mobile: "9818749100",
-    email: "pradeep@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "JAMSED",
-    mobile: "9810376024",
-    email: "jamsed@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "VIPIN SINGH",
-    mobile: "9599785572",
-    email: "vipin@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "SATISH KUMAR YADAV",
-    mobile: "7683070301",
-    email: "satish.docs@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "VIMAL KUMAR",
-    mobile: "8383853879",
-    email: "vimal.docs@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "CHANDRESH",
-    mobile: "7838625937",
-    email: "chandresh@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "SHARWAN",
-    mobile: "7838156329",
-    email: "sharwan@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "SWATI CHAWLA",
-    mobile: "8700591920",
-    email: "swati@abpal.com",
-    password: "123456",
-  },
-  {
-    name: "SONALI BISHT",
-    mobile: "9205487358",
-    email: "sonaliabpal@gmail.com",
-    password: "123456",
-  },
-  {
-    name: "SAKSHI",
-    mobile: "9310226188",
-    email: "sakshi@abpal.com",
-    password: "123456",
-  },
+// const users = [
+//   {
+//     name: "YOGESH RASTOGI",
+//     mobile: "9891928489",
+//     email: "yogesh.rastogi@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "JITENDER SAINI",
+//     mobile: "9811691742",
+//     email: "jitendra.saini@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PANKAJ KUMAR",
+//     mobile: "9717071910",
+//     email: "pankaj.muz001@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "NARENDER KUMAR",
+//     mobile: "9266530844",
+//     email: "bhawna@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PRADEEP KUMAR SINGH",
+//     mobile: "9818749100",
+//     email: "pradeep@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "JAMSED",
+//     mobile: "9810376024",
+//     email: "jamsed@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "VIPIN SINGH",
+//     mobile: "9599785572",
+//     email: "vipin@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SATISH KUMAR YADAV",
+//     mobile: "7683070301",
+//     email: "satish.docs@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "VIMAL KUMAR",
+//     mobile: "8383853879",
+//     email: "vimal.docs@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "CHANDRESH",
+//     mobile: "7838625937",
+//     email: "chandresh@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SHARWAN",
+//     mobile: "7838156329",
+//     email: "sharwan@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SWATI CHAWLA",
+//     mobile: "8700591920",
+//     email: "swati@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SONALI BISHT",
+//     mobile: "9205487358",
+//     email: "sonaliabpal@gmail.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SAKSHI",
+//     mobile: "9310226188",
+//     email: "sakshi@abpal.com",
+//     password: "123456",
+//   },
 
+//   {
+//     name: "SHAFALI",
+//     mobile: "9891476718",
+//     email: "shafali.sales@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "ANKUR TIWARI",
+//     mobile: "8929308885",
+//     email: "ankur@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Sudhanshu Pal",
+//     mobile: "6265172538",
+//     email: "checknewpal@abpal.com",
+//     password: "palsword@321",
+//   },
+// ];
+
+// const users = [
+//     {
+//       name: "Yogesh Kumar",
+//       mobile: "9818015762",
+//       email: "ritika@abpal.com",
+//       password: "123456",
+//     },
+//     {
+//       name: "SUPERNA CHANDRA",
+//       mobile: "7001009427",
+//       email: "superna.sales@abpal.com",
+//       password: "123456",
+//     },
+//     {
+//       name: "Sharvan",
+//       mobile: "8860712896",
+//       email: "sharvan@abpal.com",
+//       password: "123456",
+//     },
+//     {
+//       name: "Ashutosh Kumar Pandey",
+//       mobile: "8448346309",
+//       email: "ashutosh@abpal.com",
+//       password: "123456",
+//     },
+//   {
+//     name: "Sudhanshu Pal",
+//     mobile: "6265172538",
+//     email: "checknewpal@abpal.com",
+//     password: "palsword@321",
+//   },
+//   {
+//     name: "Bhumesh Sharma",
+//     mobile: "9540573483",
+//     email: "bhumeshsharma916@gmail.com",
+//     password: "123456",
+//   },
+// ];
+
+const users = [
+  { name: "Sudnahsu", mobile: "6265172538" },
   {
-    name: "SHAFALI",
-    mobile: "9891476718",
-    email: "shafali.sales@abpal.com",
-    password: "123456",
+    Name: "Praveen Kumar",
+    mobile: "9211093259",
   },
   {
-    name: "ANKUR TIWARI",
-    mobile: "8929308885",
-    email: "ankur@abpal.com",
-    password: "123456",
+    Name: "Tushar Mishra",
+    mobile: "9899999317",
   },
   {
-    name: "Sudhanshu Pal",
-    mobile: "6265172538",
-    email: "checknewpal@abpal.com",
-    password: "palsword@321",
+    Name: "Munna Lal",
+    mobile: "9315809090",
+  },
+  {
+    Name: "Puneet Kumar",
+    mobile: "7983406641",
+  },
+  {
+    Name: "N.K. Sood",
+    mobile: "9818519969",
+  },
+  {
+    Name: "Sanjeev Kumar",
+    mobile: "9312643379",
+  },
+  {
+    Name: "Ravi Prakash Srivastava",
+    mobile: "9451462929",
+  },
+  {
+    Name: "Vishal Sharma",
+    mobile: "9871308531",
+  },
+  {
+    Name: "Vipin Singh",
+    mobile: "9810376083",
+  },
+  {
+    Name: "Yogesh Kumar",
+    mobile: "9818015762",
+  },
+  {
+    Name: "Ashutosh Kumar Pandey",
+    mobile: "8448346309",
+  },
+  {
+    Name: "Jatin Dhawan",
+    mobile: "9136337778",
+  },
+  {
+    Name: "Vijay Kumar",
+    mobile: "9899999791",
+  },
+  {
+    Name: "Sanjeev Choudhary",
+    mobile: "9013268587",
+  },
+  {
+    Name: "Narendra Singh Rana",
+    mobile: "9560669148",
+  },
+  {
+    Name: "Suneel Kumar Mishra",
+    mobile: "9871379336",
   },
 ];
 
@@ -862,8 +969,13 @@ exports.whatsapp = async (req, res, next) => {
   };
 
   // const inviteLink = "https://appdistribution.firebase.dev/i/5f3680be56486c2e";
+  // const inviteLink =
+  //   " https://drive.google.com/file/d/1E2cVqvTm1v5j8jNJ1n5y8HVjB9PcP3n9/view?usp=sharing";
   const inviteLink =
-    " https://drive.google.com/file/d/1E2cVqvTm1v5j8jNJ1n5y8HVjB9PcP3n9/view?usp=sharing";
+    "https://drive.google.com/file/d/1WZGYyL017eqUhvVLHVUPX0Hxg4beTsyw/view";
+
+  const imageurl =
+    "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg";
 
   for (let user of users) {
     const body = {
@@ -876,12 +988,15 @@ exports.whatsapp = async (req, res, next) => {
       template: {
         // invite = abpalinvite_lu
         // checkinalert = checkinalert
-        name: "checkinalert",
-        languageCode: "en",
+        // abpal51year
+        name: "abpal51year",
+        languageCode: "en_US",
         headerValues: [
-          "https://telindia.s3.ap-south-1.amazonaws.com/abpalLogofinal.png",
+          "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg",
         ],
         // bodyValues: [inviteLink, user.email, user.password],
+        bodyValues: [user.name],
+
         // bodyValues: [user.email, user.password],
       },
     };
