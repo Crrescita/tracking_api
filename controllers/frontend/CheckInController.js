@@ -478,7 +478,14 @@ exports.checkOut = async (req, res, next) => {
     const { lat_check_out, long_check_out, battery_status_at_checkout } =
       req.body;
 
-    if (!lat_check_out || !long_check_out || !battery_status_at_checkout) {
+    if (!req.body.lat_check_out) {
+      req.body.lat_check_out = 0.0;
+    }
+    if (!req.body.long_check_out) {
+      req.body.long_check_out = 0.0;
+    }
+
+    if (!battery_status_at_checkout) {
       return res.status(200).json({
         status: false,
         message: "All check-out details are required",
