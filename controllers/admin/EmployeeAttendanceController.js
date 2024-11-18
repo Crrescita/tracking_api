@@ -545,6 +545,10 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
       employeeAttendanceData.push(employeeData);
     }
 
+    employeeAttendanceData.sort(
+      (a, b) => b.totals.totalPresent - a.totals.totalPresent
+    );
+
     res.status(200).send({
       status: true,
       data: employeeAttendanceData,
