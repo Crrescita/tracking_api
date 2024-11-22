@@ -147,8 +147,9 @@ exports.getAttendance = async (req, res, next) => {
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
     LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
     WHERE e.company_id = ?
-    ORDER BY c.check_in_time DESC
+   
 `;
+    // ORDER BY c.check_in_time DESC
 
     const values = [baseUrl, date, date, company_id];
     const data = await sqlModel.customQuery(query, values);
@@ -280,6 +281,8 @@ exports.getAttendance = async (req, res, next) => {
         totalLate,
       });
     }
+
+    processedData.sort((a, b) => b.latestCheckInTime - a.latestCheckInTime);
 
     res.status(200).send({
       status: true,
