@@ -74,12 +74,12 @@ exports.setFcmTokenAndNotify = async (req, res) => {
 
     // Send notification after setting the FCM token
     const message = {
-      notification: {
-        title: "Welcome!",
-        body: `Hello ${employee.name}, you have successfully registered your device for notifications.`,
-      },
+      // notification: {
+      //   title: "Welcome!",
+      //   body: `Hello ${employee.name}, you have successfully registered your device for notifications.`,
+      // },
       token: fcm_token,
-      android: { priority: "high" },
+      // android: { priority: "high" },
       apns: {
         payload: {
           aps: { sound: "default" },
@@ -171,7 +171,7 @@ exports.sendNotification = async (req, res) => {
       data: {
         title: "Hello!",
         body: "This is a data notification for handling in foreground.",
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        // click_action: "FLUTTER_NOTIFICATION_CLICK",
       },
       android: {
         priority: "high",
@@ -179,7 +179,7 @@ exports.sendNotification = async (req, res) => {
           channel_id: "high_importance_channel",
           sound: "default",
           color: "#FF0000",
-          click_action: "OPEN_ACTIVITY_1",
+          // click_action: "OPEN_ACTIVITY_1",
         },
       },
       apns: {
@@ -223,6 +223,7 @@ exports.receiveLocationData = async (req, res) => {
       battery_status,
       motion,
       internet_status,
+      gps_status,
     } = req.body;
 
     const requiredFields = {
@@ -260,26 +261,6 @@ exports.receiveLocationData = async (req, res) => {
 
     const company_id = employee.company_id;
 
-    // const parseDateTime = (datetimeMobile) => {
-    //   let dateTimeFormatted;
-
-    //   if (!isNaN(datetimeMobile)) {
-    //     const dateObj = new Date(parseFloat(datetimeMobile) * 1000);
-    //     const date = dateObj.toISOString().split("T")[0];
-    //     const time = dateObj.toTimeString().split(" ")[0];
-
-    //     dateTimeFormatted = `${date} ${time}`;
-    //   } else {
-    //     dateTimeFormatted = datetimeMobile;
-    //   }
-
-    //   return dateTimeFormatted;
-    // };
-
-    // const datetimeFormatted = parseDateTime(datetime_mobile); // Format datetime_mobile
-
-    // const [date, time] = datetimeFormatted.split(" "); // Split into date and time
-
     const newCheckInData = {
       company_id,
       emp_id,
@@ -289,7 +270,7 @@ exports.receiveLocationData = async (req, res) => {
       date: getCurrentDate(),
       time: getCurrentTime(),
       created_at: getCurrentDateTime(),
-      // gps_status: gps_status ? gps_status : "",
+      gps_status: gps_status ? gps_status : "",
       internet_status,
       motion,
       datetime_mobile: getCurrentDateTime(),
@@ -316,6 +297,8 @@ exports.receiveLocationData = async (req, res) => {
         emp_id: emp_id.toString(),
         latitude: latitude.toString(),
         longitude: longitude.toString(),
+        gps_status: gps_status.toString(),
+        internet_status: internet_status.toString(),
         // click_action: "FLUTTER_NOTIFICATION_CLICK",
       },
       android: {
