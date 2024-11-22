@@ -283,8 +283,15 @@ exports.getAttendance = async (req, res, next) => {
     }
 
     processedData.sort((a, b) => {
-      const timeA = new Date(a.latestCheckInTime || 0).getTime();
-      const timeB = new Date(b.latestCheckInTime || 0).getTime();
+      const toSeconds = (time) => {
+        if (!time) return 0;
+        const [hours, minutes, seconds] = time.split(":").map(Number);
+        return hours * 3600 + minutes * 60 + seconds;
+      };
+
+      const timeA = toSeconds(a.latestCheckInTime);
+      const timeB = toSeconds(b.latestCheckInTime);
+
       return timeB - timeA;
     });
 
