@@ -23,13 +23,14 @@ const getCurrentDate = () => {
 
 exports.login = async (req, res, next) => {
   try {
-    const { email, password, device, ip_address, address } = req.body;
+    const { email, password, device, model_no, ip_address, address } = req.body;
 
     const validation = validateFields({
       email,
       password,
       device,
       ip_address,
+      model_no,
       address,
     });
 
@@ -111,6 +112,7 @@ exports.login = async (req, res, next) => {
       emp_id: updatedUser.id,
       device,
       ip_address,
+      model_no,
       address,
       date: getCurrentDate(),
       created_at: getCurrentDateTime(),
@@ -527,9 +529,7 @@ exports.logout = async (req, res, next) => {
     const [employee] = await sqlModel.select(
       "employees",
       {},
-      {
-        api_token: token,
-      }
+      { api_token: token }
     );
 
     if (!employee) {
@@ -538,6 +538,41 @@ exports.logout = async (req, res, next) => {
         .send({ status: false, message: "Employee not found" });
     }
 
+    const { device, model_no, ip_address, address } = req.body;
+
+    // Validate required fields
+    const validation = validateFields({
+      device,
+      model_no,
+      ip_address,
+      address,
+    });
+
+    if (!validation.valid) {
+      return res.status(400).send({
+        status: false,
+        message: validation.message,
+        statusCode: 1,
+      });
+    }
+
+    // Prepare data for logging device details
+    const insertData = {
+      employee_id: employee.id, // Ensure to log this action against the employee ID
+      device,
+      model_no,
+      ip_address,
+      address,
+      date: getCurrentDate(),
+      created_at: getCurrentDateTime(),
+    };
+
+    console.log("Inserting device details:", insertData);
+
+    // Insert device details into a dedicated logging table (assuming "logout_logs" exists)
+    // await sqlModel.insert("logout_logs", insertData);
+
+    // Update the employee's API token to null (logout the user)
     await sqlModel.update(
       "employees",
       { api_token: null },
@@ -549,6 +584,7 @@ exports.logout = async (req, res, next) => {
       message: "Logged out successfully",
     });
   } catch (error) {
+    console.error("Error during logout:", error);
     res.status(500).send({
       status: false,
       message: "Internal server error",

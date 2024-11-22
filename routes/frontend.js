@@ -139,7 +139,7 @@ router.post("/app-version", VersionController.manageVersion);
 router.post("/setFcmToken", FirebaseController.setFcmTokenAndNotify);
 
 // logout
-router.get("/logout", UserController.logout);
+router.post("/logout", UserController.logout);
 
 // account status
 router.get("/account/status", UserController.toggleAccountStatus);
