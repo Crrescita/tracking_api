@@ -282,7 +282,11 @@ exports.getAttendance = async (req, res, next) => {
       });
     }
 
-    processedData.sort((a, b) => a.latestCheckInTime - b.latestCheckInTime);
+    processedData.sort((a, b) => {
+      const timeA = new Date(a.latestCheckInTime || 0).getTime();
+      const timeB = new Date(b.latestCheckInTime || 0).getTime();
+      return timeB - timeA;
+    });
 
     res.status(200).send({
       status: true,
