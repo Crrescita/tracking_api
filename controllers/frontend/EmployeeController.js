@@ -701,7 +701,7 @@ exports.getEmployeeAttendance = async (req, res, next) => {
       designation: data[0]?.designation,
       employee_id: data[0]?.employee_id,
       image: data[0]?.image,
-      checkInData: checkInDates,
+      checkInsByDate: checkInDates,
     };
 
     res.status(200).send({
@@ -796,8 +796,8 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
       date: requestedDate,
       checkIns: [],
       // totalDurationInSeconds: 0,
-      earliestCheckInTime: null,
-      latestCheckOutTime: null,
+      earliestCheckInTime: "00:00:00",
+      latestCheckOutTime: "00:00:00",
       checkin_status: "Absent",
       attendance_status: "Absent",
       timeDifference: "00:00:00",
@@ -866,7 +866,7 @@ exports.getEmployeeAttendanceByDate = async (req, res, next) => {
       designation: data[0]?.designation,
       employee_id: data[0]?.employee_id,
       image: data[0]?.image,
-      checkInsByDate: groupedData,
+      checkInDate: groupedData,
     };
 
     res.status(200).send({

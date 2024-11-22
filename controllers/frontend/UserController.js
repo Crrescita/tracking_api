@@ -23,6 +23,9 @@ const getCurrentDate = () => {
 
 exports.login = async (req, res, next) => {
   try {
+	if(!req.body.model_no){
+req.body.model_no = "old_version";
+	}
     const { email, password, device, model_no, ip_address, address } = req.body;
 
     const validation = validateFields({
@@ -30,7 +33,6 @@ exports.login = async (req, res, next) => {
       password,
       device,
       ip_address,
-      model_no,
       address,
     });
 
