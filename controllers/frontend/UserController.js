@@ -30,7 +30,6 @@ exports.login = async (req, res, next) => {
       password,
       device,
       ip_address,
-      model_no,
       address,
     });
 
