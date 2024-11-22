@@ -68,7 +68,8 @@ exports.login = async (req, res, next) => {
     if (user.status !== "active") {
       return res.status(200).send({
         status: false,
-        message: "Employee account is inactive",
+        message:
+          "Your account is currently inactive. Please contact your administrator or support team to reactivate your account.",
         statusCode: 5,
       });
     }
@@ -506,6 +507,106 @@ exports.changePassword = async (req, res, next) => {
     });
   } catch (error) {
     res.status(200).send({
+      status: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.logout = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res
+        .status(200)
+        .send({ status: false, message: "Token is required" });
+    }
+
+    const [employee] = await sqlModel.select(
+      "employees",
+      {},
+      {
+        api_token: token,
+      }
+    );
+
+    if (!employee) {
+      return res
+        .status(200)
+        .send({ status: false, message: "Employee not found" });
+    }
+
+    await sqlModel.update(
+      "employees",
+      { api_token: null },
+      { id: employee.id }
+    );
+
+    res.status(200).send({
+      status: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      status: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.toggleAccountStatus = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res
+        .status(200)
+        .send({ status: false, message: "Token is required" });
+    }
+
+    const [employee] = await sqlModel.select(
+      "employees",
+      {},
+      { api_token: token }
+    );
+
+    if (!employee) {
+      return res
+        .status(200)
+        .send({ status: false, message: "Employee not found" });
+    }
+
+    const { status } = req.body;
+
+    if (status !== "inactive" && status !== "active") {
+      return res.status(200).send({
+        status: false,
+        message: "Invalid status value. Must be 'inactive' or 'active'.",
+        statusCode: 1,
+      });
+    }
+
+    await sqlModel.update("employees", { status }, { id: employee.id });
+
+    if (status == "inactive") {
+      res.status(200).send({
+        status: true,
+        message:
+          "Your account has been set to inactive. It will be permanently deleted after 90 days unless reactivated.",
+        currentStatus: status,
+      });
+    } else if (status === "active") {
+      res.status(200).send({
+        status: true,
+        message: "Your account has been reactivated successfully.",
+        currentStatus: status,
+      });
+    }
+  } catch (error) {
+    res.status(500).send({
       status: false,
       message: "Internal server error",
       error: error.message,

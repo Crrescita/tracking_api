@@ -138,6 +138,12 @@ router.post("/app-version", VersionController.manageVersion);
 //set fcm token
 router.post("/setFcmToken", FirebaseController.setFcmTokenAndNotify);
 
+// logout
+router.get("/logout", UserController.logout);
+
+// account status
+router.get("/account/status", UserController.toggleAccountStatus);
+
 /* GET home page. */
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
