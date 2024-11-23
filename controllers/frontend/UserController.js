@@ -463,7 +463,7 @@ exports.logout = async (req, res, next) => {
       created_at: getCurrentDateTime(),
     };
 
-    const saveData = await sqlModel.insert("emp_login_history", insert);
+    const saveData = await sqlModel.insert("emp_login_history", insertData);
 
     await sqlModel.update(
       "employees",
