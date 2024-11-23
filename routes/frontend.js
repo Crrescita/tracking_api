@@ -142,7 +142,7 @@ router.post("/setFcmToken", FirebaseController.setFcmTokenAndNotify);
 router.post("/logout", UserController.logout);
 
 // account status
-router.get("/account/status", UserController.toggleAccountStatus);
+router.post("/account/status", UserController.toggleAccountStatus);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
