@@ -23,9 +23,9 @@ const getCurrentDate = () => {
 
 exports.login = async (req, res, next) => {
   try {
-	if(!req.body.model_no){
-req.body.model_no = "old_version";
-	}
+    if (!req.body.model_no) {
+      req.body.model_no = "old_version";
+    }
     const { email, password, device, model_no, ip_address, address } = req.body;
 
     const validation = validateFields({
@@ -68,13 +68,31 @@ req.body.model_no = "old_version";
       });
     }
 
-    if (user.status !== "active") {
+    // if (user.status !== "active") {
+    //   return res.status(200).send({
+    //     status: false,
+    //     message:
+    //       "Your account is currently inactive. Please contact your administrator or support team to reactivate your account.",
+    //     statusCode: 5,
+    //   });
+    // }
+
+    if (user.status === "inactive") {
       return res.status(200).send({
         status: false,
         message:
-          "Your account is currently inactive. Please contact your administrator or support team to reactivate your account.",
+          "Your account is suspended by the administrator. Please contact your administrator for further assistance.",
         statusCode: 5,
       });
+    }
+
+    if (user.status === "user_inactive") {
+      // Reactivate the account
+      await sqlModel.update(
+        "employees",
+        { status: "active", deactivate_at: null },
+        { id: user.id }
+      );
     }
 
     // Verify password
@@ -115,6 +133,7 @@ req.body.model_no = "old_version";
       device,
       ip_address,
       model_no,
+      type: 1,
       address,
       date: getCurrentDate(),
       created_at: getCurrentDateTime(),
@@ -142,133 +161,6 @@ req.body.model_no = "old_version";
     });
   }
 };
-
-// exports.forgetPassword = async (req, res, next) => {
-//   try {
-//     const { email } = req.body;
-//     const validation = validateFields({
-//       email,
-//     });
-//     if (!validation.valid) {
-//       return res.status(400).send({
-//         status: false,
-//         message: validation.message,
-//         statusCode: 1,
-//       });
-//     }
-
-//     // if (!email) {
-//     //   return res
-//     //     .status(400)
-//     //     .send({ status: false, message: "Email is required" });
-//     // }
-
-//     const [user] = await sqlModel.select("employees", {}, { email });
-
-//     if (!user) {
-//       return res.status(404).send({ status: false, message: "User not found" });
-//     }
-
-//     const resetToken = crypto.randomBytes(20).toString("hex");
-//     const resetTokenExpires = Date.now() + 3600000; // Token expires in 1 hour
-
-//     await sqlModel.update(
-//       "employees",
-//       { reset_token: resetToken, token_expire: resetTokenExpires },
-//       { email }
-//     );
-
-//     const resetLink = `${process.env.WEBSITE_BASE_URL}auth/pass-change?user=employee&token=${resetToken}`;
-//     const data = {
-//       email,
-//       resetLink,
-//       name: user.name,
-//     };
-
-//     await sendMail.forgotPassword(data);
-
-//     return res
-//       .status(200)
-//       .send({ status: true, message: "Password reset email sent" });
-//   } catch (error) {
-//     res.status(500).send({
-//       status: false,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// exports.resetPassword = async (req, res, next) => {
-//   try {
-//     const { token, new_password } = req.body;
-
-//     const validation = validateFields({
-//       token,
-//       new_password,
-//     });
-
-//     if (!validation.valid) {
-//       return res.status(400).send({
-//         status: false,
-//         message: validation.message,
-//         statusCode: 1,
-//       });
-//     }
-
-//     // Validate input
-//     //   if (!token || !new_password) {
-//     //     return res.status(400).send({
-//     //       status: false,
-//     //       message: "Token and new password are required",
-//     //     });
-//     //   }
-
-//     // Find user by reset token
-//     const [user] = await sqlModel.select(
-//       "employees",
-//       {},
-//       { reset_token: token }
-//     );
-
-//     if (!user) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Invalid or expired reset token",
-//       });
-//     }
-
-//     if (user.token_expire < Date.now()) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Reset token has expired",
-//       });
-//     }
-
-//     // Hash the new password
-//     const hashedPassword = await bcrypt.hash(new_password, 10);
-
-//     // Update user's password and clear the reset token
-//     const updateData = {
-//       password: hashedPassword,
-//       reset_token: null,
-//       token_expire: null,
-//     };
-
-//     await sqlModel.update("employees", updateData, { email: user.email });
-
-//     return res.status(200).send({
-//       status: true,
-//       message: "Password reset successfull",
-//     });
-//   } catch (error) {
-//     return res.status(500).send({
-//       status: false,
-//       message: "An error occurred",
-//       error: error.message,
-//     });
-//   }
-// };
 
 exports.forgetPassword = async (req, res, next) => {
   try {
@@ -560,21 +452,19 @@ exports.logout = async (req, res, next) => {
 
     // Prepare data for logging device details
     const insertData = {
-      employee_id: employee.id, // Ensure to log this action against the employee ID
+      company_id: employee.company_id,
+      emp_id: employee.id, // Ensure to log this action against the employee ID
       device,
       model_no,
+      type: 0,
       ip_address,
       address,
       date: getCurrentDate(),
       created_at: getCurrentDateTime(),
     };
 
-    console.log("Inserting device details:", insertData);
+    const saveData = await sqlModel.insert("emp_login_history", insert);
 
-    // Insert device details into a dedicated logging table (assuming "logout_logs" exists)
-    // await sqlModel.insert("logout_logs", insertData);
-
-    // Update the employee's API token to null (logout the user)
     await sqlModel.update(
       "employees",
       { api_token: null },
@@ -627,7 +517,17 @@ exports.toggleAccountStatus = async (req, res, next) => {
       });
     }
 
-    await sqlModel.update("employees", { status }, { id: employee.id });
+    const updateData = {
+      status: status === "inactive" ? "user_inactive" : "active",
+    };
+
+    if (status === "inactive") {
+      updateData.deactivate_at = getCurrentDateTime();
+      updateData.api_token = null;
+      updateData.fcm_token = null;
+    }
+
+    await sqlModel.update("employees", updateData, { id: employee.id });
 
     if (status == "inactive") {
       res.status(200).send({
