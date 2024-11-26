@@ -98,6 +98,34 @@ exports.setCoordinates = async (req, res, next) => {
 
     const emp_id = employee.id;
     const company_id = employee.company_id;
+    const todayDatae = getCurrentDate();
+
+    const checkInData = await sqlModel.select(
+      "check_in",
+      ["*"],
+      { emp_id, company_id, date: todayDatae },
+      "ORDER BY id DESC"
+    );
+    // console.log(checkInData);
+    if (
+      checkInData.length === 0 ||
+      checkInData[0].checkin_status !== "Check-in" ||
+      checkInData[0].check_out_time
+    ) {
+      return res.status(200).json({
+        status: true,
+        message: "Data submitted successfully",
+        // data: result,
+        // row_id: row_id,
+        // timer: timerValue,
+      });
+
+      // return res.status(200).json({
+      //   status: false,
+      //   message:
+      //     "Cannot check out: No valid check-in record found or already checked out",
+      // });
+    }
 
     // Destructure the request body (remove duplicate emp_id and company_id)
     const {
