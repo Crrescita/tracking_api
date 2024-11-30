@@ -125,7 +125,7 @@ exports.setCoordinates = async (req, res, next) => {
     ) {
       return res.status(200).json({
         status: true,
-        message: "Data submitted successfully",
+        message: "Data submitted successfully check",
         // data: result,
         // row_id: row_id,
         // timer: timerValue,
@@ -140,15 +140,32 @@ exports.setCoordinates = async (req, res, next) => {
 
     const checkOutTime = company.check_out_time;
 
+    // const currentTime = getCurrentTime();
+    // const cuurentOpTime = new Date(`1970-01-01T${currentTime}Z`);
+    // console.log(currentTime, checkOutTime);
+
+    // if (cuurentOpTime >= checkOutTime) {
+    //   console.log("comapn");
+    //   return res.status(200).json({
+    //     status: true,
+    //     message: "Data submitted successfully time",
+    //   });
+    // }
+
     const currentTime = getCurrentTime();
     const cuurentOpTime = new Date(`1970-01-01T${currentTime}Z`);
 
-    if (cuurentOpTime >= checkOutTime) {
-      console.log("comapn");
-      return res.status(200).json({
-        status: true,
-        message: "Data submitted successfully",
-      });
+    console.log("Current Time:", currentTime, "Check-Out Time:", checkOutTime);
+
+    if (typeof checkOutTime === "string") {
+      const checkOutOpTime = new Date(`1970-01-01T${checkOutTime}Z`);
+
+      if (cuurentOpTime >= checkOutOpTime) {
+        return res.status(200).json({
+          status: true,
+          message: "Data submitted successfully within time",
+        });
+      }
     }
 
     // Destructure the request body (remove duplicate emp_id and company_id)
