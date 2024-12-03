@@ -196,6 +196,16 @@ router.post(
   TeamController.deleteMultipleDesignation
 );
 
+// branch
+router
+  .route("/branch/:id?")
+  .get(TeamController.getBranch)
+  .post(TeamController.createBranch)
+  .put(TeamController.createBranch)
+  .delete(TeamController.deleteBranch);
+
+router.post("/branch-delete-multiple", TeamController.deleteMultipleBranch);
+
 // holidays
 router
   .route("/holidays/:id?")

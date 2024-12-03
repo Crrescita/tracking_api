@@ -49,7 +49,7 @@ exports.companyInsert = async (req, res, next) => {
     let plainPassword = insert.password;
     let originalEmail = "";
     let originalPasswordHash = "";
-    console.log(insert);
+
     if (req.files) {
       if (req.files.logo) {
         insert.logo = req.fileFullPath.find((path) => path.includes("logo"));

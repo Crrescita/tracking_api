@@ -125,6 +125,7 @@ exports.getAttendance = async (req, res, next) => {
       e.name,
       e.mobile,
       e.email,
+       b.name AS branch,
       d.name AS department,
       de.name AS designation,
       e.employee_id,
@@ -142,6 +143,7 @@ exports.getAttendance = async (req, res, next) => {
       c.check_out_time,
       c.duration   
     FROM employees e
+     LEFT JOIN branch b ON e.branch = b.id
     LEFT JOIN department d ON e.department = d.id
     LEFT JOIN designation de ON e.designation = de.id
     LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
@@ -199,6 +201,7 @@ exports.getAttendance = async (req, res, next) => {
           name: item.name,
           mobile: item.mobile,
           email: item.email,
+          branch: item.branch,
           designation: item.designation,
           department: item.department,
           employee_id: item.employee_id,
@@ -333,6 +336,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
           e.email,
           e.mobile,
           e.employee_id,
+          b.name AS branch,
           d.name AS department,
           de.name AS designation,
           CASE
@@ -340,6 +344,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
             ELSE e.image
           END AS image
         FROM employees e
+         LEFT JOIN branch b ON e.branch = b.id
         LEFT JOIN department d ON e.department = d.id
         LEFT JOIN designation de ON e.designation = de.id
         WHERE e.company_id = ?
@@ -543,6 +548,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
         name: employee.name,
         mobile: employee.mobile,
         email: employee.email,
+        branch: employee.branch,
         designation: employee.designation,
         department: employee.department,
         employee_id: employee.employee_id,

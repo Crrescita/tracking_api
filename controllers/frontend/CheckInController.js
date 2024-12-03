@@ -502,7 +502,6 @@ exports.checkOut = async (req, res, next) => {
       "ORDER BY id DESC"
     );
 
-    console.log(checkInData);
     if (
       checkInData.length === 0 ||
       checkInData[0].checkin_status !== "Check-in" ||

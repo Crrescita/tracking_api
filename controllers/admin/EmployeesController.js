@@ -66,11 +66,14 @@ exports.employeesGet = async (req, res, next) => {
         e.employee_id,
         e.joining_date,
         e.gender,
+        e.branch,
         e.designation,
         e.department,
         e.state,
         e.city,
         e.zip_code,
+        e.timer,
+        b.name AS branch_name,
         d.name AS department_name,
         de.name AS designation_name,
         e.employee_id,
@@ -80,6 +83,7 @@ exports.employeesGet = async (req, res, next) => {
         END AS image,
         latest_checkin.checkin_status
       FROM employees e
+      LEFT JOIN branch b ON e.branch = b.id
       LEFT JOIN department d ON e.department = d.id
       LEFT JOIN designation de ON e.designation = de.id
       LEFT JOIN (
