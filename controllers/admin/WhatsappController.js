@@ -562,7 +562,7 @@ const axios = require("axios");
 
 // const users = [
 //   {
-//     name: "SHASHI SHEKHA JHA",
+//     name: "SHASHI SHEKHAR JHA",
 //     mobile: "8851470204",
 //     email: "shashi@abpal.com",
 //     password: "123456",
@@ -832,7 +832,6 @@ const axios = require("axios");
 //     email: "sakshi@abpal.com",
 //     password: "123456",
 //   },
-
 //   {
 //     name: "SHAFALI",
 //     mobile: "9891476718",
@@ -853,50 +852,62 @@ const axios = require("axios");
 //   },
 // ];
 
-const users = [
-  // {
-  //   name: "Yogesh Kumar",
-  //   mobile: "9818015762",
-  //   email: "ritika@abpal.com",
-  //   password: "123456",
-  // },
-  // {
-  //   name: "SUPERNA CHANDRA",
-  //   mobile: "7001009427",
-  //   email: "superna.sales@abpal.com",
-  //   password: "123456",
-  // },
-  // {
-  //   name: "Sharvan",
-  //   mobile: "8860712896",
-  //   email: "sharvan@abpal.com",
-  //   password: "123456",
-  // },
-  // {
-  //   name: "Ashutosh Kumar Pandey",
-  //   mobile: "8448346309",
-  //   email: "ashutosh@abpal.com",
-  //   password: "123456",
-  // },
-  {
-    name: "Sudhanshu Pal",
-    mobile: "6265172538",
-    email: "checknewpal@abpal.com",
-    password: "palsword@321",
-  },
-  // {
-  //   name: "Bhumesh Sharma",
-  //   mobile: "9540573483",
-  //   email: "bhumeshsharma916@gmail.com",
-  //   password: "123456",
-  // },
-  {
-    name: "Mohan Hira",
-    mobile: "9540021439",
-    email: "mhira162@gmail.com",
-    password: "123456",
-  },
-];
+// const users = [
+//   {
+//     name: "Yogesh Kumar",
+//     mobile: "9818015762",
+//     email: "ritika@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SUPERNA CHANDRA",
+//     mobile: "7001009427",
+//     email: "superna.sales@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Sharvan",
+//     mobile: "8860712896",
+//     email: "sharvan@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Ashutosh Kumar Pandey",
+//     mobile: "8448346309",
+//     email: "ashutosh@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Sudhanshu Pal",
+//     mobile: "6265172538",
+//     email: "checknewpal@abpal.com",
+//     password: "palsword@321",
+//   },
+//   {
+//     name: "Bhumesh Sharma",
+//     mobile: "9540573483",
+//     email: "bhumeshsharma916@gmail.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Aman",
+//     mobile: "7210603112",
+//     email: "as6049607@gmail.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Parul Malik",
+//     mobile: "8750080839",
+//     email: "parulmalik1417@gmail.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Mohan Hira",
+//     mobile: "9540021439",
+//     email: "mhira162@gmail.com",
+//     password: "123456",
+//   },
+// ];
 
 exports.whatsapp = async (req, res, next) => {
   const apiUrl = "https://api.interakt.ai/v1/public/message/";
@@ -909,8 +920,10 @@ exports.whatsapp = async (req, res, next) => {
   // const inviteLink = "https://appdistribution.firebase.dev/i/5f3680be56486c2e";
   // const inviteLink =
   //   " https://drive.google.com/file/d/1E2cVqvTm1v5j8jNJ1n5y8HVjB9PcP3n9/view?usp=sharing";
+  // const inviteLink =
+  //   "https://drive.google.com/file/d/1WZGYyL017eqUhvVLHVUPX0Hxg4beTsyw/view";
   const inviteLink =
-    "https://drive.google.com/file/d/1WZGYyL017eqUhvVLHVUPX0Hxg4beTsyw/view";
+    "https://drive.google.com/file/d/1pbIHQ0o_WXFPdZ_vdpXiPD0gDiMnhGah/view";
 
   const imageurl =
     "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg";
@@ -927,12 +940,14 @@ exports.whatsapp = async (req, res, next) => {
         // invite = abpalinvite_lu
         // checkinalert = checkinalert
         // abpal51year
-        name: "abpalinvite_lu",
+        // checking issue = Check_In_update
+        // app dist = new_app_distribute
+        name: "new_app_distribute",
         languageCode: "en",
         headerValues: [
           "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg",
         ],
-        bodyValues: [inviteLink, user.email, user.password],
+        bodyValues: [user.name, inviteLink, user.email, user.password],
         // bodyValues: [user.name],
 
         // bodyValues: [user.email, user.password],

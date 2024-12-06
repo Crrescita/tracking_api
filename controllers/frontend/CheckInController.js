@@ -259,6 +259,7 @@ const insertAnalyticsData = async (
       date,
       checkin_status,
       time_difference: formatDuration(timeDifferenceSeconds),
+      created_at: getCurrentDateTime(),
     };
 
     await sqlModel.insert("emp_attendance", empAnalyticsData);
@@ -639,10 +640,9 @@ async function calculateTotalDurationAndDistance(emp_id, company_id, date) {
   return [totalDurationInSeconds, totalDistance];
 }
 
-// Fixing autoSchedulecheckOut function for auto-check-out process
 exports.autoSchedulecheckOut = async (req, res, next) => {
   try {
-    console.log("checkout function runs");
+    // console.log("checkout function runs");
 
     // Fetch employee details using emp_id and company_id
     const [employee] = await sqlModel.select(
@@ -651,7 +651,7 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
       { id: req.body.emp_id, company_id: req.body.company_id }
     );
 
-    console.log("checkout function runs, employee found:", employee);
+    // console.log("checkout function runs, employee found:", employee);
     if (!employee) {
       return res
         .status(200)
@@ -669,7 +669,7 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
       "ORDER BY id DESC"
     );
 
-    console.log("Check-in data:", checkInData);
+    // console.log("Check-in data:", checkInData);
     if (
       checkInData.length === 0 ||
       checkInData[0].checkin_status !== "Check-in" ||
@@ -765,7 +765,7 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
 // Fixing autoCheckOut function
 async function autoCheckOut(companyId) {
   try {
-    console.log(`Running auto check-out for company ${companyId}`);
+    // console.log(`Running auto check-out for company ${companyId}`);
     const employees = await sqlModel.customQuery(
       `SELECT c.id AS checkin_id, c.emp_id, c.company_id 
        FROM check_in c 
@@ -840,7 +840,7 @@ async function scheduleAutoCheckOuts() {
           companyIds.forEach((companyId) => autoCheckOut(companyId));
         });
 
-        console.log(`Scheduled auto check-out for ${checkOutTime}`);
+        // console.log(`Scheduled auto check-out for ${checkOutTime}`);
       } else {
         console.error(
           `Invalid check_out_time: ${checkOutTime} for companies: ${companiesByTime[

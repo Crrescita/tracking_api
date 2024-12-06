@@ -249,6 +249,8 @@ router.put(
   LeaveManagmentController.updateLeaveRequestStatus
 );
 
+// leave policy
+router.post("/leavePolicy", LeaveManagmentController.leavePolicy);
 // leave setting
 router
   .route("/leaveSetting/:id?")

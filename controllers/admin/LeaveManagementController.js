@@ -11,6 +11,60 @@ const createSlug = (title) => {
     .replace(/-+$/, ""); // Trim - from end of text
 };
 
+exports.leavePolicy = async (req, res, next) => {
+  try {
+    const id = req.params.id || "";
+    const insert = { ...req.body };
+
+    if (id) {
+      const leavePolicyRecord = await sqlModel.select(
+        "leave_policy",
+        {},
+        { id }
+      );
+
+      if (leavePolicyRecord.error || leavePolicyRecord.length === 0) {
+        return res.status(404).send({
+          status: false,
+          message: "Leave Policy not found",
+        });
+      }
+
+      insert.updated_at = getCurrentDateTime();
+      const updateData = await sqlModel.update("leave_policy", insert, { id });
+
+      if (updateData.error) {
+        return res.status(500).send({
+          status: false,
+          message: "Error updating leave type",
+        });
+      }
+
+      return res.status(200).send({
+        status: true,
+        message: "Leave type updated successfully",
+      });
+    } else {
+      insert.created_at = getCurrentDateTime();
+      const saveData = await sqlModel.insert("leave_policy", insert);
+
+      if (saveData.error) {
+        return res.status(500).send({
+          status: false,
+          message: "Error saving leave policy",
+        });
+      }
+
+      return res.status(200).send({
+        status: true,
+        message: "Leave policy created successfully",
+      });
+    }
+  } catch (error) {
+    return res.status(500).send({ status: false, error: err.message });
+  }
+};
+
 exports.createLeaveType = async (req, res, next) => {
   try {
     const id = req.params.id || "";
