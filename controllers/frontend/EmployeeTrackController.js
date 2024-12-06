@@ -89,7 +89,7 @@ exports.setCoordinates = async (req, res, next) => {
         api_token: token,
       }
     );
-
+console.log(employee,"employeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
     if (!employee) {
       return res
         .status(200)
@@ -123,6 +123,7 @@ exports.setCoordinates = async (req, res, next) => {
       checkInData[0].checkin_status !== "Check-in" ||
       checkInData[0].check_out_time
     ) {
+console.log("check in check works"); 
       return res.status(200).json({
         status: true,
         message: "Data submitted successfully check",
@@ -158,9 +159,11 @@ exports.setCoordinates = async (req, res, next) => {
     console.log("Current Time:", currentTime, "Check-Out Time:", checkOutTime);
 
     if (typeof checkOutTime === "string") {
+//console.log("time check working")
       const checkOutOpTime = new Date(`1970-01-01T${checkOutTime}Z`);
 
       if (cuurentOpTime >= checkOutOpTime) {
+console.log("time check working time greater check");
         return res.status(200).json({
           status: true,
           message: "Data submitted successfully within time",
@@ -193,6 +196,7 @@ exports.setCoordinates = async (req, res, next) => {
 
     for (const [key, value] of Object.entries(requiredFields)) {
       if (!value) {
+console.log("valodation check for params");
         return res.status(200).json({
           status: false,
           message: `${key.replace("_", " ")} is required`,
@@ -256,9 +260,9 @@ exports.setCoordinates = async (req, res, next) => {
       ...rest,
     };
 
-    // console.log(newCheckInData);
+    //console.log(newCheckInData);
     // Insert tracking data into emp_tracking table
-    const result = await sqlModel.insert("emp_tracking", newCheckInData);
+//    const result = await sqlModel.insert("emp_tracking", newCheckInData);
 
     // Fetch the timer value for the employee
     const [employeeTimer] = await sqlModel.select("employees", ["timer"], {
@@ -277,6 +281,13 @@ exports.setCoordinates = async (req, res, next) => {
     const timerValue = employeeTimer.timer || 30000;
 
     // Send success response with the result and timer value
+console.log({
+      status: true,
+      message: "Data submitted successfully",
+      data: result,
+      row_id: row_id,
+      timer: timerValue,
+    });
     return res.status(200).json({
       status: true,
       message: "Data submitted successfully",
@@ -284,6 +295,7 @@ exports.setCoordinates = async (req, res, next) => {
       row_id: row_id,
       timer: timerValue,
     });
+
   } catch (error) {
     return res.status(200).json({
       status: false,
@@ -421,7 +433,7 @@ exports.setAllCoordinates = async (req, res, next) => {
       // };
 
       // Insert the tracking data into the database
-      await sqlModel.insert("emp_tracking", newCheckInData);
+///      await sqlModel.insert("emp_tracking", newCheckInData);
     }
 
     // Send the success response with the timer value
