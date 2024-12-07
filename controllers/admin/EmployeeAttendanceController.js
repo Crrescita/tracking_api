@@ -931,12 +931,12 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
           }
 
           // Handle total duration
-          if (day.totalDuration !== "00:00:00") {
-            const [hours, minutes, seconds] = day.totalDuration
-              .split(":")
-              .map(Number);
-            totalWorkSeconds += hours * 3600 + minutes * 60 + seconds;
-          }
+          // if (day.totalDuration !== "00:00:00") {
+          //   const [hours, minutes, seconds] = day.totalDuration
+          //     .split(":")
+          //     .map(Number);
+          //   totalWorkSeconds += hours * 3600 + minutes * 60 + seconds;
+          // }
 
           // dddd
 
@@ -947,7 +947,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
           const seconds = parseInt(timeParts[2]);
 
           // Convert to total seconds
-          totalSeconds += hours * 3600 + minutes * 60 + seconds;
+          totalWorkSeconds += hours * 3600 + minutes * 60 + seconds;
           // });
 
           // Format to HH:MM:SS
