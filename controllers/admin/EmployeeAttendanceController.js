@@ -969,9 +969,9 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
         : "-";
 
       // Convert the total seconds back into HH:MM:SS format
-      let totalHours = Math.floor(totalSeconds / 3600);
-      let totalMinutes = Math.floor((totalSeconds % 3600) / 60);
-      let totalSec = totalSeconds % 60;
+      let totalHours = Math.floor(totalWorkSeconds / 3600);
+      let totalMinutes = Math.floor((totalWorkSeconds % 3600) / 60);
+      let totalSec = totalWorkSeconds % 60;
       let totalDuration = `${String(totalHours).padStart(2, "0")}:${String(
         totalMinutes
       ).padStart(2, "0")}:${String(totalSec).padStart(2, "0")}`;
