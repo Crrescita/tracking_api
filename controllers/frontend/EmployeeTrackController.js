@@ -322,7 +322,7 @@ exports.setCoordinates = async (req, res) => {
 
     const [employee] = await sqlModel.select(
       "employees",
-      ["id", "company_id"],
+      ["id", "company_id", "name"],
       { api_token: token }
     );
     console.log("employee", employee);
@@ -365,6 +365,7 @@ exports.setCoordinates = async (req, res) => {
       checkInRecord.checkin_status !== "Check-in" ||
       checkInRecord.check_out_time
     ) {
+      console.log("no valid check-in for ", employee);
       return res.status(200).json({
         status: true,
         message: "Data submitted successfully, no valid check-in",
@@ -378,6 +379,7 @@ exports.setCoordinates = async (req, res) => {
     if (typeof company.check_out_time === "string") {
       const checkOutTime = new Date(`1970-01-01T${company.check_out_time}Z`);
       if (currentTime >= checkOutTime) {
+        console.log("check-out time for ", employee);
         return res.status(200).json({
           status: true,
           message: "Data submitted successfully within check-out time",
@@ -450,7 +452,7 @@ exports.setCoordinates = async (req, res) => {
     };
 
     const result = await sqlModel.insert("emp_tracking", trackingData);
-
+    console.log("final submit ", employee, trackingData);
     return res.status(200).json({
       status: true,
       message: "Data submitted successfully",
