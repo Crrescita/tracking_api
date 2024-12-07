@@ -937,6 +937,20 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
               .map(Number);
             totalWorkSeconds += hours * 3600 + minutes * 60 + seconds;
           }
+
+          // dddd
+
+          // attendance.forEach(record => {
+          const timeParts = day.totalDuration.split(":");
+          const hours = parseInt(timeParts[0]);
+          const minutes = parseInt(timeParts[1]);
+          const seconds = parseInt(timeParts[2]);
+
+          // Convert to total seconds
+          totalSeconds += hours * 3600 + minutes * 60 + seconds;
+          // });
+
+          // Format to HH:MM:SS
         }
       });
 
@@ -954,10 +968,18 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
             .substr(11, 8)
         : "-";
 
+      // Convert the total seconds back into HH:MM:SS format
+      let totalHours = Math.floor(totalSeconds / 3600);
+      let totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+      let totalSec = totalSeconds % 60;
+      let totalDuration = `${String(totalHours).padStart(2, "0")}:${String(
+        totalMinutes
+      ).padStart(2, "0")}:${String(totalSec).padStart(2, "0")}`;
+
       // Calculate total hours worked
-      const totalWorkHours = new Date(totalWorkSeconds * 1000)
-        .toISOString()
-        .substr(11, 8);
+      // const totalWorkHours = new Date(totalWorkSeconds * 1000)
+      //   .toISOString()
+      //   .substr(11, 8);
 
       const avgWorkHours = totalPresent
         ? new Date((totalWorkSeconds / totalPresent) * 1000)
