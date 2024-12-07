@@ -317,6 +317,351 @@ exports.getAttendance = async (req, res, next) => {
   }
 };
 
+// exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
+//   try {
+//     const company_id = req.query.company_id;
+
+//     if (!company_id) {
+//       return res.status(400).send({
+//         status: false,
+//         message: "Company ID is required",
+//       });
+//     }
+
+//     const query = `
+//         SELECT
+//           e.id,
+//           e.company_id,
+//           e.name,
+//           e.email,
+//           e.mobile,
+//           e.employee_id,
+//           b.name AS branch,
+//           d.name AS department,
+//           de.name AS designation,
+//           CASE
+//             WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+//             ELSE e.image
+//           END AS image
+//         FROM employees e
+//          LEFT JOIN branch b ON e.branch = b.id
+//         LEFT JOIN department d ON e.department = d.id
+//         LEFT JOIN designation de ON e.designation = de.id
+//         WHERE e.company_id = ?
+//       `;
+
+//     const values = [process.env.BASE_URL, company_id];
+//     const employees = await sqlModel.customQuery(query, values);
+//     if (!employees.length) {
+//       return res.status(404).send({
+//         status: false,
+//         message: "No employees found for the given company ID",
+//       });
+//     }
+
+//     const dateParam = req.query.date;
+//     const targetDate = dateParam ? new Date(dateParam) : new Date();
+//     const year = targetDate.getFullYear();
+//     const month = targetDate.getMonth() + 1;
+
+//     const daysInMonth = new Date(year, month, 0).getDate();
+//     const allDays = Array.from({ length: daysInMonth }, (_, i) => {
+//       const day = String(i + 1).padStart(2, "0");
+//       return `${year}-${String(month).padStart(2, "0")}-${day}`;
+//     });
+
+//     const dateDayInMonth = Array.from({ length: daysInMonth }, (_, i) => {
+//       const date = new Date(year, month - 1, i + 1);
+//       const dayOfWeek = date.toLocaleString("en-US", {
+//         weekday: "short",
+//       });
+//       return {
+//         date: String(i + 1).padStart(2, "0"),
+//         day: dayOfWeek,
+//       };
+//     });
+
+//     // Fetch holidays from the company_holidays table
+//     const holidayQuery = `
+//       SELECT date, name
+//       FROM company_holidays
+//       WHERE status = 'active' AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
+//     `;
+//     const holidayRecords = await sqlModel.customQuery(holidayQuery, [
+//       company_id,
+//       month,
+//       year,
+//     ]);
+
+//     const holidays = holidayRecords.reduce((acc, holiday) => {
+//       acc[holiday.date] = holiday.name;
+//       return acc;
+//     }, {});
+
+//     const employeeAttendanceData = [];
+
+//     for (const employee of employees) {
+//       const { id: emp_id } = employee;
+
+//       // Initialize groupedData with default values, mark Sundays as "Holiday"
+//       const groupedData = allDays.reduce((acc, date) => {
+//         const dayOfWeek = new Date(date).toLocaleString("en-US", {
+//           weekday: "long",
+//         });
+//         const day = new Date(date).getDay(); // 0 = Sunday
+//         acc[date] = {
+//           date,
+//           day: dayOfWeek,
+//           checkin_status: "Absent",
+//           attendance_status: day == 0 ? "Holiday" : "Absent", // Mark Sundays as "Holiday"
+//           timeDifference: "00:00:00",
+//           totalDuration: "00:00:00",
+//           last_check_in_time: "00:00:00",
+//           last_check_out_time: "00:00:00",
+//         };
+
+//         // Check if the date is a holiday
+//         if (holidays[date]) {
+//           acc[date].attendance_status = "Holiday";
+//           acc[date].holiday_name = holidays[date];
+//         }
+
+//         return acc;
+//       }, {});
+
+//       // Initialize counters for totals
+//       let totalPresent = 0;
+//       let totalAbsent = 0;
+//       let totalLeave = 0;
+//       let totalHolidays = 0;
+//       let totalOntime = 0;
+//       let totalEarly = 0;
+//       let totalLate = 0;
+
+//       let totalCheckInMinutes = 0;
+//       let totalCheckOutMinutes = 0;
+//       let totalWorkSeconds = 0;
+//       let checkInCount = 0;
+//       let checkOutCount = 0;
+
+//       // Query to get data from emp_attendance
+//       const empAttendanceQuery = `
+//         SELECT
+//           date,
+//           checkin_status,
+//           time_difference AS timeDifference,
+//           total_duration AS totalDuration
+//         FROM emp_attendance
+//         WHERE emp_id = ? AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
+//       `;
+//       const empAttendanceValues = [emp_id, company_id, month, year];
+//       const empAttendanceRecords = await sqlModel.customQuery(
+//         empAttendanceQuery,
+//         empAttendanceValues
+//       );
+
+//       // Update groupedData with emp_attendance data
+//       empAttendanceRecords.forEach((item) => {
+//         if (groupedData[item.date]) {
+//           if (item.checkin_status === "Leave") {
+//             groupedData[item.date].attendance_status = "Leave";
+//             totalLeave++;
+//           } else {
+//             groupedData[item.date].attendance_status = "Present";
+//             totalPresent++;
+//           }
+
+//           if (item.checkin_status === "On-Time") {
+//             totalOntime++;
+//           }
+
+//           if (item.checkin_status === "Early") {
+//             totalEarly++;
+//           }
+//           if (item.checkin_status === "Late") {
+//             totalLate++;
+//           }
+
+//           groupedData[item.date].checkin_status = item.checkin_status || "-";
+//           groupedData[item.date].timeDifference =
+//             item.timeDifference || "00:00:00";
+//           groupedData[item.date].totalDuration =
+//             item.totalDuration || "00:00:00";
+//         }
+//       });
+
+//       // Count holidays marked in groupedData
+//       totalHolidays = Object.values(groupedData).filter(
+//         (day) => day.attendance_status === "Holiday"
+//       ).length;
+
+//       // Count remaining absent days
+//       totalAbsent = daysInMonth - (totalPresent + totalLeave + totalHolidays);
+
+//       // Query to get data from check_in for dates with attendance data
+//       const checkInDates = Object.keys(groupedData).filter(
+//         (date) => groupedData[date].attendance_status === "Present"
+//       );
+
+//       if (checkInDates.length > 0) {
+//         const checkInQuery = `
+//           SELECT
+//             c.date,
+//             GROUP_CONCAT(c.check_in_time ORDER BY c.check_in_time) AS check_in_times,
+//             GROUP_CONCAT(c.check_out_time ORDER BY c.check_out_time) AS check_out_times
+//           FROM check_in c
+//           WHERE c.emp_id = ? AND c.company_id = ? AND MONTH(c.date) = ? AND YEAR(c.date) = ?
+//           GROUP BY c.date
+//           ORDER BY c.date
+//         `;
+//         const checkInValues = [emp_id, company_id, month, year];
+//         const checkInRecords = await sqlModel.customQuery(
+//           checkInQuery,
+//           checkInValues
+//         );
+
+//         checkInRecords.forEach((item) => {
+//           if (
+//             groupedData[item.date] &&
+//             groupedData[item.date].attendance_status == "Present"
+//           ) {
+//             const checkInTimes = item.check_in_times
+//               ? item.check_in_times.split(",")
+//               : [];
+//             const checkOutTimes = item.check_out_times
+//               ? item.check_out_times.split(",")
+//               : [];
+
+//             let timeline = [];
+//             const maxTimes = Math.max(
+//               checkInTimes.length,
+//               checkOutTimes.length
+//             );
+
+//             for (let i = 0; i < maxTimes; i++) {
+//               if (checkInTimes[i]) {
+//                 timeline.push({
+//                   action: "Check In",
+//                   time: checkInTimes[i],
+//                 });
+//               }
+//               if (checkOutTimes[i]) {
+//                 timeline.push({
+//                   action: "Check Out",
+//                   time: checkOutTimes[i],
+//                 });
+//               }
+//             }
+
+//             groupedData[item.date].last_check_in_time = checkInTimes[0] || "-";
+//             groupedData[item.date].last_check_out_time =
+//               checkOutTimes[checkOutTimes.length - 1] || "-";
+//             groupedData[item.date].timeline = timeline;
+//           }
+//         });
+//       }
+
+//       const checkInDatesArray = Object.values(groupedData);
+
+//       // Calculate averages and total hours
+//       Object.values(groupedData).forEach((day) => {
+//         if (day.attendance_status === "Present") {
+//           // Handle check-in times
+//           if (day.last_check_in_time !== "-") {
+//             const [hours, minutes, seconds] = day.last_check_in_time
+//               .split(":")
+//               .map(Number);
+//             totalCheckInMinutes += hours * 60 + minutes;
+//             checkInCount++;
+//           }
+
+//           // Handle check-out times
+//           if (day.last_check_out_time !== "-") {
+//             const [hours, minutes, seconds] = day.last_check_out_time
+//               .split(":")
+//               .map(Number);
+//             totalCheckOutMinutes += hours * 60 + minutes;
+//             checkOutCount++;
+//           }
+
+//           // Handle total duration
+//           if (day.totalDuration !== "00:00:00") {
+//             const [hours, minutes, seconds] = day.totalDuration
+//               .split(":")
+//               .map(Number);
+//             totalWorkSeconds += hours * 3600 + minutes * 60 + seconds;
+//           }
+//         }
+//       });
+
+//       // Calculate average check-in time
+//       const avgCheckInTime = checkInCount
+//         ? new Date((totalCheckInMinutes / checkInCount) * 60 * 1000)
+//             .toISOString()
+//             .substr(11, 8)
+//         : "-";
+
+//       // Calculate average check-out time
+//       const avgCheckOutTime = checkOutCount
+//         ? new Date((totalCheckOutMinutes / checkOutCount) * 60 * 1000)
+//             .toISOString()
+//             .substr(11, 8)
+//         : "-";
+
+//       // Calculate total hours worked
+//       const totalWorkHours = new Date(totalWorkSeconds * 1000)
+//         .toISOString()
+//         .substr(11, 8);
+
+//       const avgWorkHours = totalPresent
+//         ? new Date((totalWorkSeconds / totalPresent) * 1000)
+//             .toISOString()
+//             .substr(11, 8)
+//         : "00:00:00";
+
+//       const employeeData = {
+//         id: employee.id,
+//         name: employee.name,
+//         mobile: employee.mobile,
+//         email: employee.email,
+//         branch: employee.branch,
+//         designation: employee.designation,
+//         department: employee.department,
+//         employee_id: employee.employee_id,
+//         image: employee.image,
+//         attendance: checkInDatesArray,
+//         totals: {
+//           totalPresent,
+//           totalAbsent,
+//           totalLeave,
+//           totalHolidays,
+//           totalOntime,
+//           totalEarly,
+//           totalLate,
+//           avgCheckInTime,
+//           avgCheckOutTime,
+//           totalWorkHours,
+//           avgWorkHours,
+//         },
+//       };
+
+//       employeeAttendanceData.push(employeeData);
+//     }
+
+//     employeeAttendanceData.sort(
+//       (a, b) => b.totals.totalPresent - a.totals.totalPresent
+//     );
+
+//     res.status(200).send({
+//       status: true,
+//       data: employeeAttendanceData,
+//       daysInMonth: dateDayInMonth,
+//     });
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
   try {
     const company_id = req.query.company_id;
@@ -352,6 +697,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
 
     const values = [process.env.BASE_URL, company_id];
     const employees = await sqlModel.customQuery(query, values);
+
     if (!employees.length) {
       return res.status(404).send({
         status: false,
@@ -568,7 +914,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
         if (day.attendance_status === "Present") {
           // Handle check-in times
           if (day.last_check_in_time !== "-") {
-            const [hours, minutes, seconds] = day.last_check_in_time
+            const [hours, minutes] = day.last_check_in_time
               .split(":")
               .map(Number);
             totalCheckInMinutes += hours * 60 + minutes;
@@ -577,7 +923,7 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
 
           // Handle check-out times
           if (day.last_check_out_time !== "-") {
-            const [hours, minutes, seconds] = day.last_check_out_time
+            const [hours, minutes] = day.last_check_out_time
               .split(":")
               .map(Number);
             totalCheckOutMinutes += hours * 60 + minutes;
