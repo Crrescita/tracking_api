@@ -434,6 +434,15 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
       let totalAbsent = 0;
       let totalLeave = 0;
       let totalHolidays = 0;
+      let totalOntime = 0;
+      let totalEarly = 0;
+      let totalLate = 0;
+
+      let totalCheckInMinutes = 0;
+      let totalCheckOutMinutes = 0;
+      let totalWorkSeconds = 0;
+      let checkInCount = 0;
+      let checkOutCount = 0;
 
       // Query to get data from emp_attendance
       const empAttendanceQuery = `
@@ -460,6 +469,17 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
           } else {
             groupedData[item.date].attendance_status = "Present";
             totalPresent++;
+          }
+
+          if (item.checkin_status === "On-Time") {
+            totalOntime++;
+          }
+
+          if (item.checkin_status === "Early") {
+            totalEarly++;
+          }
+          if (item.checkin_status === "Late") {
+            totalLate++;
           }
 
           groupedData[item.date].checkin_status = item.checkin_status || "-";
@@ -543,6 +563,62 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
 
       const checkInDatesArray = Object.values(groupedData);
 
+      // Calculate averages and total hours
+      Object.values(groupedData).forEach((day) => {
+        if (day.attendance_status === "Present") {
+          // Handle check-in times
+          if (day.last_check_in_time !== "-") {
+            const [hours, minutes, seconds] = day.last_check_in_time
+              .split(":")
+              .map(Number);
+            totalCheckInMinutes += hours * 60 + minutes;
+            checkInCount++;
+          }
+
+          // Handle check-out times
+          if (day.last_check_out_time !== "-") {
+            const [hours, minutes, seconds] = day.last_check_out_time
+              .split(":")
+              .map(Number);
+            totalCheckOutMinutes += hours * 60 + minutes;
+            checkOutCount++;
+          }
+
+          // Handle total duration
+          if (day.totalDuration !== "00:00:00") {
+            const [hours, minutes, seconds] = day.totalDuration
+              .split(":")
+              .map(Number);
+            totalWorkSeconds += hours * 3600 + minutes * 60 + seconds;
+          }
+        }
+      });
+
+      // Calculate average check-in time
+      const avgCheckInTime = checkInCount
+        ? new Date((totalCheckInMinutes / checkInCount) * 60 * 1000)
+            .toISOString()
+            .substr(11, 8)
+        : "-";
+
+      // Calculate average check-out time
+      const avgCheckOutTime = checkOutCount
+        ? new Date((totalCheckOutMinutes / checkOutCount) * 60 * 1000)
+            .toISOString()
+            .substr(11, 8)
+        : "-";
+
+      // Calculate total hours worked
+      const totalWorkHours = new Date(totalWorkSeconds * 1000)
+        .toISOString()
+        .substr(11, 8);
+
+      const avgWorkHours = totalPresent
+        ? new Date((totalWorkSeconds / totalPresent) * 1000)
+            .toISOString()
+            .substr(11, 8)
+        : "00:00:00";
+
       const employeeData = {
         id: employee.id,
         name: employee.name,
@@ -559,6 +635,13 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
           totalAbsent,
           totalLeave,
           totalHolidays,
+          totalOntime,
+          totalEarly,
+          totalLate,
+          avgCheckInTime,
+          avgCheckOutTime,
+          totalWorkHours,
+          avgWorkHours,
         },
       };
 
