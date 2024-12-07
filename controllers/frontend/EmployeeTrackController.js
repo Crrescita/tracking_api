@@ -325,6 +325,7 @@ exports.setCoordinates = async (req, res) => {
       ["id", "company_id"],
       { api_token: token }
     );
+    console.log("employee", employee);
     if (!employee) {
       return res.status(404).json({
         status: false,
