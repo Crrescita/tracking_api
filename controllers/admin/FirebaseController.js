@@ -119,6 +119,7 @@ exports.sendCustomNotification = async (req, res) => {
     dataPayload.title = title;
     dataPayload.body = body;
     const message = {
+      topic: "global_info",
       token: fcm_token,
       // notification: { title, body },
       data: dataPayload,
@@ -267,3 +268,38 @@ exports.sendCustomNotification = async (req, res) => {
 
 //     await fcm.sendMulticast(notificationPayload);
 // };
+
+exports.sendGlobalInfoToTopic = async (req, res) => {
+  // Extract message details from the request body
+  const { message, type } = req.body;
+
+  if (!message || !type) {
+    return res.status(400).json({ error: "Message and type are required." });
+  }
+
+  const notificationMessage = {
+    topic: "global_info", // Ensure all users are subscribed to this topic
+    notification: {
+      title: "Reminder",
+      body: message,
+    },
+    data: {
+      infoType: type,
+      title: "Reminder",
+      body: message,
+    },
+  };
+
+  try {
+    const response = await admin.messaging().send(notificationMessage);
+    console.log("Notification sent to topic:", response);
+    return res
+      .status(200)
+      .json({ message: "Notification sent successfully.", response });
+  } catch (error) {
+    console.error("Error sending notification to topic:", error);
+    return res
+      .status(500)
+      .json({ error: "Failed to send notification.", details: error.message });
+  }
+};

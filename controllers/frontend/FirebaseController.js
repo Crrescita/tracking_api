@@ -165,8 +165,8 @@ exports.sendNotification = async (req, res) => {
     const message = {
       token: fcm_token,
       notification: {
-        title: "Hello!",
-        body: "This is a test notification.",
+        title: "Hello Upendra  !",
+        body: "This is a test notification for today.",
       },
       data: {
         title: "Hello!",

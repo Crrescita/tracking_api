@@ -79,29 +79,31 @@ const calculateDurationInSeconds = (checkInTime, checkOutTime) => {
   return durationInSeconds < 0 ? 0 : durationInSeconds;
 };
 
-// const haversineDistance = (coords1, coords2) => {
-//   const toRad = (value) => (value * Math.PI) / 180;
+const geocodeCoordinates = async (lng, lat) => {
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=pk.eyJ1IjoiZ3VyamVldHYyIiwiYSI6ImNseWxiN3o5cDEzd3UyaXM0cmU3cm0zNnMifQ._-UTYeqo8cq1cH8vYy9Www`;
 
-//   const lat1 = parseFloat(coords1.latitude);
-//   const lon1 = parseFloat(coords1.longitude);
-//   const lat2 = parseFloat(coords2.latitude);
-//   const lon2 = parseFloat(coords2.longitude);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Error fetching geocode data: ${response.statusText}`);
+    }
 
-//   const R = 6371; // Earth's radius in kilometers
+    const data = await response.json();
+    if (data.features && data.features.length > 0) {
+      return data.features[0].place_name;
+    } else {
+      console.warn("No valid address found for coordinates:", lng, lat);
+      return "";
+    }
+  } catch (error) {
+    console.error("Error fetching address:", error);
+    return "";
+  }
+};
 
-//   const dLat = toRad(lat2 - lat1);
-//   const dLon = toRad(lon2 - lon1);
-//   const a =
-//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-//     Math.cos(toRad(lat1)) *
-//       Math.cos(toRad(lat2)) *
-//       Math.sin(dLon / 2) *
-//       Math.sin(dLon / 2);
-//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-//   const distance = R * c;
-
-//   return distance;
-// };
+const isValidCoordinate = (coordinate) => {
+  return !isNaN(coordinate) && coordinate >= -90 && coordinate <= 90;
+};
 
 const haversineDistance = (coords1, coords2) => {
   const toRad = (value) => (value * Math.PI) / 180;
@@ -239,12 +241,42 @@ const getCheckInStatusAndTimeDiff = (checkInTime, startTime, endTime) => {
   return { checkin_status, timeDifferenceSeconds };
 };
 
+// const insertAnalyticsData = async (
+//   emp_id,
+//   company_id,
+//   date,
+//   checkin_status,
+//   timeDifferenceSeconds
+// ) => {
+//   const existingAnalytics = await sqlModel.select("emp_attendance", ["id"], {
+//     emp_id,
+//     company_id,
+//     date,
+//   });
+
+//   if (existingAnalytics.length === 0) {
+//     const empAnalyticsData = {
+//       emp_id,
+//       company_id,
+//       date,
+//       checkin_status,
+//       time_difference: formatDuration(timeDifferenceSeconds),
+//       created_at: getCurrentDateTime(),
+//     };
+
+//     await sqlModel.insert("emp_attendance", empAnalyticsData);
+//   }
+// };
+
 const insertAnalyticsData = async (
   emp_id,
   company_id,
   date,
   checkin_status,
-  timeDifferenceSeconds
+  timeDifferenceSeconds,
+  check_in_address,
+  lat_check_in,
+  long_check_in
 ) => {
   const existingAnalytics = await sqlModel.select("emp_attendance", ["id"], {
     emp_id,
@@ -259,6 +291,9 @@ const insertAnalyticsData = async (
       date,
       checkin_status,
       time_difference: formatDuration(timeDifferenceSeconds),
+      check_in_address,
+      lat_check_in,
+      long_check_in,
       created_at: getCurrentDateTime(),
     };
 
@@ -385,13 +420,27 @@ exports.checkIn = async (req, res, next) => {
     const { checkin_status, timeDifferenceSeconds } =
       getCheckInStatusAndTimeDiff(checkInDateTime, startDateTime, endDateTime);
 
+    let check_in_address = "";
+
+    if (lat_check_in !== 0 && long_check_in !== 0) {
+      if (isValidCoordinate(lat_check_in) && isValidCoordinate(long_check_in)) {
+        check_in_address = await geocodeCoordinates(
+          long_check_in,
+          lat_check_in
+        );
+      }
+    }
+    console.log(lat_check_in, long_check_in, check_in_address);
     // Check if analytics data for the employee on the same date already exists
     await insertAnalyticsData(
       emp_id,
       company_id,
       date,
       checkin_status,
-      timeDifferenceSeconds
+      timeDifferenceSeconds,
+      check_in_address,
+      lat_check_in,
+      long_check_in
     );
 
     // Handle check-in image if provided
@@ -540,6 +589,22 @@ exports.checkOut = async (req, res, next) => {
     const [totalDurationInSeconds, totalDistance] =
       await calculateTotalDurationAndDistance(emp_id, company_id, date);
 
+    let check_out_address = "";
+
+    // Only call geocodeCoordinates if lat_check_out and long_check_out are not 0
+    if (lat_check_out !== 0 && long_check_out !== 0) {
+      // Check if coordinates are valid (basic validation to ensure numbers)
+      if (
+        isValidCoordinate(lat_check_out) &&
+        isValidCoordinate(long_check_out)
+      ) {
+        check_out_address = await geocodeCoordinates(
+          long_check_out,
+          lat_check_out
+        );
+      }
+    }
+
     // Insert or update analytics data
     const existingAnalytics = await sqlModel.select("emp_attendance", ["*"], {
       emp_id,
@@ -549,6 +614,10 @@ exports.checkOut = async (req, res, next) => {
     const analyticsData = {
       total_duration: formatDuration(totalDurationInSeconds),
       total_distance: totalDistance,
+      check_out_address,
+      lat_check_out,
+      long_check_out,
+      last_lat_long_at: getCurrentDateTime(),
       updated_at: getCurrentDateTime(),
     };
 
@@ -723,6 +792,10 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
       total_duration: formatDuration(totalDurationInSeconds),
       total_distance: totalDistance,
       updated_at: getCurrentDateTime(),
+      check_out_address: req.body.check_out_address,
+      lat_check_out: req.body.lat_check_out,
+      long_check_out: req.body.long_check_out,
+      last_lat_long_at: req.body.datetime_mobile,
     };
 
     if (existingAnalytics.length > 0) {
@@ -763,6 +836,64 @@ exports.autoSchedulecheckOut = async (req, res, next) => {
 };
 
 // Fixing autoCheckOut function
+// async function autoCheckOut(companyId) {
+//   try {
+//     // console.log(`Running auto check-out for company ${companyId}`);
+//     const employees = await sqlModel.customQuery(
+//       `SELECT c.id AS checkin_id, c.emp_id, c.company_id
+//        FROM check_in c
+//        WHERE c.company_id = ? AND c.checkin_status = 'Check-in' AND c.check_out_time IS NULL`,
+//       [companyId]
+//     );
+//     const date = getCurrentDate();
+//     for (const employee of employees) {
+//       const { emp_id } = employee;
+
+//       let trackingData = await sqlModel.customQuery(
+//         `SELECT latitude, longitude
+//              FROM emp_tracking
+//              WHERE emp_id = ? AND date = ? AND latitude != 0.0 AND longitude != 0.0
+//              ORDER BY id DESC
+//              LIMIT 1`,
+//         [emp_id, date]
+//       );
+
+//       let lat_check_out = 0.0;
+//       let long_check_out = 0.0;
+
+//       if (trackingData.length > 0) {
+//         lat_check_out = trackingData[0].latitude;
+//         long_check_out = trackingData[0].longitude;
+//       }
+
+//       const res = {
+//         status: (statusCode) => ({
+//           json: (data) => {
+//             return data;
+//           },
+//         }),
+//       };
+
+//       const req = {
+//         body: {
+//           emp_id,
+//           company_id: employee.company_id,
+//           lat_check_out,
+//           long_check_out,
+//           battery_status_at_checkout: null,
+//         },
+//       };
+
+//       await exports.autoSchedulecheckOut(req, res, null); // Ensure this function exists and works
+//     }
+//   } catch (error) {
+//     console.error(
+//       `Error during auto check-out for company ${companyId}:`,
+//       error
+//     );
+//   }
+// }
+
 async function autoCheckOut(companyId) {
   try {
     // console.log(`Running auto check-out for company ${companyId}`);
@@ -773,26 +904,68 @@ async function autoCheckOut(companyId) {
       [companyId]
     );
 
+    const date = getCurrentDate();
+
     for (const employee of employees) {
-      const res = {
-        status: (statusCode) => ({
-          json: (data) => {
-            return data;
+      try {
+        const { emp_id } = employee;
+
+        const trackingData = await sqlModel.customQuery(
+          `SELECT latitude, longitude , datetime_mobile
+           FROM emp_tracking 
+           WHERE emp_id = ? AND date = ? AND latitude != 0.0 AND longitude != 0.0  AND gps_status = '1'
+           ORDER BY id DESC 
+           LIMIT 1`,
+          [emp_id, date]
+        );
+
+        let lat_check_out = 0.0;
+        let long_check_out = 0.0;
+        let datetime_mobile = "";
+        let check_out_address = "";
+        if (trackingData.length > 0) {
+          lat_check_out = trackingData[0].latitude;
+          long_check_out = trackingData[0].longitude;
+          datetime_mobile = trackingData[0].datetime_mobile;
+          if (
+            isValidCoordinate(lat_check_out) &&
+            isValidCoordinate(long_check_out)
+          ) {
+            check_out_address = await geocodeCoordinates(
+              long_check_out,
+              lat_check_out
+            );
+          }
+        }
+
+        const res = {
+          status: (statusCode) => ({
+            json: (data) => {
+              return data;
+            },
+          }),
+        };
+
+        const req = {
+          body: {
+            emp_id,
+            company_id: employee.company_id,
+            lat_check_out,
+            long_check_out,
+            battery_status_at_checkout: null, // Set to null if battery status is not applicable
+            check_out_address,
+            datetime_mobile,
           },
-        }),
-      };
+        };
 
-      const req = {
-        body: {
-          emp_id: employee.emp_id,
-          company_id: employee.company_id,
-          lat_check_out: null,
-          long_check_out: null,
-          battery_status_at_checkout: null,
-        },
-      };
-
-      await exports.autoSchedulecheckOut(req, res, null); // Ensure this function exists and works
+        // Call the auto-scheduled check-out function
+        await exports.autoSchedulecheckOut(req, res, null); // Ensure this function handles the logic properly
+      } catch (innerError) {
+        console.error(
+          `Error processing check-out for employee ${employee.emp_id}:`,
+          innerError
+        );
+      }
     }
   } catch (error) {
     console.error(

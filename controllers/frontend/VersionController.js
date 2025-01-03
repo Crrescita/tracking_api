@@ -1,5 +1,5 @@
 const sqlModel = require("../../config/db");
-
+// const { Client } = require("../../config/db");
 exports.manageVersionInsert = async (req, res, next) => {
   try {
     let { version, version_status, device } = req.body;

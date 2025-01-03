@@ -17,6 +17,9 @@ const NotificationController = require("../controllers/admin/NotificationControl
 const LogController = require("../controllers/admin/LogController");
 const AssignTaskController = require("../controllers/admin/AssignTaskController");
 const WhatsappController = require("../controllers/admin/WhatsappController");
+const BankController = require("../controllers/admin/BankController");
+const BackgroundVerificationController = require("../controllers/admin/BackgroundVerificationController");
+const SalaryController = require("../controllers/admin/SalaryController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -124,6 +127,29 @@ router.post(
   "/employees-delete-multiple",
   EmployeesController.deleteMultipleEmployees
 );
+
+// emp bank detail
+router
+  .route("/bankDetail/:id?")
+  .get(BankController.getBankDetail)
+  .post(BankController.insertBankDetail)
+  .put(BankController.insertBankDetail);
+
+// emp bank detail
+router
+  .route("/salaryDetail/:id?")
+  .get(SalaryController.getSalaryDetail)
+  .post(SalaryController.insertSalaryDetail)
+  .put(SalaryController.insertSalaryDetail);
+
+// emp background verification
+router
+  .route("/backgroundVerification")
+  .get(BackgroundVerificationController.getBackgroundVerification)
+  .post(
+    upload.fields([{ name: "documentFile", maxCount: 1 }]),
+    BackgroundVerificationController.insertBackgroundVerification
+  );
 
 // checkin
 router.get("/checkInDetail", CheckInController.getCheckIn);
@@ -272,6 +298,9 @@ router.post("/setFcmToken", FirebaseController.setFcmToken);
 //request live location
 router.post("/requestLiveLocation", FirebaseController.sendCustomNotification);
 
+//notifivation
+router.post("/sendGlobalInfoToTopic", FirebaseController.sendGlobalInfoToTopic);
+
 // get notification
 router.get("/getNotification/:id", NotificationController.getNotification);
 
@@ -300,6 +329,13 @@ router
 router.post(
   "/assignTask-delete-multiple",
   AssignTaskController.deleteMultipleAssignTask
+);
+
+// tempory api for set address
+router.post("/setCheckAddress", CheckInController.setCheckAddress);
+router.get(
+  "/getEmployeeReport",
+  EmployeeAttendanceController.getEmployeeReport
 );
 
 // logs

@@ -447,3 +447,116 @@ WHERE u.company_id = ?;
     });
   }
 };
+
+exports.setCheckAddress = async (req, res, next) => {
+  try {
+    const { employeeId, checkInAddress, checkOutAddress, date } = req.body;
+
+    if (!employeeId || !checkInAddress || !checkOutAddress || !date) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Missing required fields: employeeId, checkInAddress, checkOutAddress, or date.",
+      });
+    }
+
+    // const emp_tracking = await sqlModel.customQuery(
+    //   `
+    //   SELECT max(datetime_mobile) as last_long_lat FROM emp_tracking where date = ? and emp_id = ? and gps_status = '1';
+    //   `,
+    //   [date, employeeId]
+    // );
+
+    // console.log(emp_tracking);
+
+    // const emp_tracking = await sqlModel.select(
+    //   "emp_tracking",
+    //   {},
+    //   { emp_id: employeeId }
+    // );
+
+    // const result = await sqlModel.customQuery(
+    //   `
+    //   UPDATE emp_attendance
+    //   SET
+    //     check_in_address = ?,
+    //     check_out_address = ? ,
+    //     last_lat_long_at = ?
+    //   WHERE
+    //     emp_id = ? AND date = ?
+    //   `,
+    //   [
+    //     checkInAddress,
+    //     checkOutAddress,
+    //     emp_tracking.last_long_lat,
+    //     employeeId,
+    //     date,
+    //   ]
+    // );
+
+    // Query to get the last longitude and latitude
+    const query =
+      `SELECT MAX(datetime_mobile) AS last_long_lat FROM emp_tracking WHERE date = '` +
+      date +
+      `' AND emp_id = ` +
+      employeeId +
+      ` AND gps_status = '1'`;
+    const empTrackingData = await sqlModel.customQuery(query);
+
+    // Log the retrieved data
+
+    // Extract last_long_lat from the query result
+    const lastLongLat =
+      empTrackingData.length > 0 ? empTrackingData[0].last_long_lat : null;
+
+    // Validate if last_long_lat is retrieved
+    if (!lastLongLat) {
+      console.error("No GPS data found for the given date and employee ID.");
+      // return; // Exit early if no data is found
+    }
+
+    // // Fetch additional employee tracking data
+    // const empTrackingDetails = await sqlModel.select(
+    //   "emp_tracking",
+    //   { emp_id: employeeId }
+    // );
+
+    // // Log additional details (if needed)
+    // console.log(empTrackingDetails);
+
+    // Perform the update query with the retrieved data
+    const result = await sqlModel.customQuery(
+      `
+  UPDATE emp_attendance 
+  SET 
+    check_in_address = ?, 
+    check_out_address = ?, 
+    last_lat_long_at = ?
+  WHERE 
+    emp_id = ? AND date = ?
+  `,
+      [checkInAddress, checkOutAddress, lastLongLat, employeeId, date]
+    );
+
+    // Log the update result
+    console.log("Update Result:", result);
+
+    if (result.affectedRows > 0) {
+      return res.status(200).json({
+        status: true,
+        message: "Check-in and check-out addresses updated successfully.",
+      });
+    } else {
+      return res.status(404).json({
+        status: false,
+        message: "No record found to update.",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: "An error occurred while updating the addresses.",
+      error: error.message,
+    });
+  }
+};

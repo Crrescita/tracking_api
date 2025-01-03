@@ -38,12 +38,12 @@ const axios = require("axios");
 //     email: "ombhan@gmail.com",
 //     password: "Naraayan@1974",
 //   },
-//   {
-//     name: "Vishal Sharma",
-//     mobile: "9871308531",
-//     email: "vishal@abpal.com",
-//     password: "Vishal@321",
-//   },
+//   // {
+//   //   name: "Vishal Sharma",
+//   //   mobile: "9871308531",
+//   //   email: "vishal@abpal.com",
+//   //   password: "Vishal@321",
+//   // },
 //   {
 //     name: "Damodar Sutradhar",
 //     mobile: "9999931280",
@@ -859,12 +859,7 @@ const axios = require("axios");
 //     email: "ritika@abpal.com",
 //     password: "123456",
 //   },
-//   {
-//     name: "SUPERNA CHANDRA",
-//     mobile: "7001009427",
-//     email: "superna.sales@abpal.com",
-//     password: "123456",
-//   },
+
 //   {
 //     name: "Sharvan",
 //     mobile: "8860712896",
@@ -909,6 +904,389 @@ const axios = require("axios");
 //   },
 // ];
 
+// const users = [
+//   {
+//     name: "Damodar Sutradhar",
+//     mobile: "9999931280",
+//     email: "damodar@abpal.com",
+//     password: "Damodar@321",
+//   },
+//   {
+//     name: "Puneet Kumar",
+//     mobile: "8826721245",
+//     email: "sonupuneet.2009@gmail.com",
+//     password: "Puneet@321",
+//   },
+//   {
+//     name: "Satnam Singh",
+//     mobile: "8447037041",
+//     email: "satnam@abpal.com",
+//     password: "Satnam@321",
+//   },
+//   {
+//     name: "Heera Kumar",
+//     mobile: "9205334726",
+//     email: "vishalheera254@gmail.com",
+//     password: "Heera@123",
+//   },
+//   {
+//     name: "Hardeep Singh Sahni",
+//     mobile: "9958630001",
+//     email: "hardeep@abpal.com",
+//     password: "Hardeep@1983",
+//   },
+//   {
+//     name: "Yogender Kumar",
+//     mobile: "9971724055",
+//     email: "yogender@abpal.com",
+//     password: "Yogender@2024",
+//   },
+//   {
+//     name: "Rajan Arora",
+//     mobile: "9818773838",
+//     email: "rajanarora@abpal.com",
+//     password: "Rajan@1978",
+//   },
+//   {
+//     name: "Jatin Dhawan",
+//     mobile: "9136337778",
+//     email: "jatindhawan25@gmail.com",
+//     password: "Jatin@321",
+//   },
+//   {
+//     name: "Gopalkrishna Mishra",
+//     mobile: "8377887159",
+//     email: "gopalkrishanmishra189@gmail.com",
+//     password: "Gopal@321",
+//   },
+//   {
+//     name: "Satish Kumar",
+//     mobile: "9971636456",
+//     email: "satishkumar20050@gmail.com",
+//     password: "Satish@321",
+//   },
+
+//   {
+//     name: "Anil",
+//     mobile: "9205332746",
+//     email: "abpal.anil@gmail.com",
+//     password: "Anil@123",
+//   },
+//   {
+//     name: "Ravinder Kaur",
+//     mobile: "9911706963",
+//     email: "ravinderkaur@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "MANALI",
+//     mobile: "9999707608",
+//     email: "manali@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "BHUMESH KUMAR SHARMA",
+//     mobile: "9756157125",
+//     email: "bhumesh@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "DEEPIKA GUPTA",
+//     mobile: "9643472072",
+//     email: "cct@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "AJAY KUMAR",
+//     mobile: "8826473609",
+//     email: "ajay.sales@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SUNITA NEGI",
+//     mobile: "9873554143",
+//     email: "sunita@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "DEEPIKA TANWAR",
+//     mobile: "9582899271",
+//     email: "deepika@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "ANKUR TIWARI",
+//     mobile: "8929308885",
+//     email: "ankur@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "TUSHAR MISHRA",
+//     mobile: "9899999317",
+//     email: "tushar@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SUPERNA CHANDRA",
+//     mobile: "7001009427",
+//     email: "superna.sales@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SAKSHI",
+//     mobile: "9310226188",
+//     email: "sakshi@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "RUCHI",
+//     mobile: "8447215815",
+//     email: "ruchi@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "CHANCHAL",
+//     mobile: "9582805020",
+//     email: "payment@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "HARPREET KAUR",
+//     mobile: "7827130693",
+//     email: "harpeet.cct@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SHARWAN",
+//     mobile: "7838156329",
+//     email: "sharwan@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "CHANDRESH",
+//     mobile: "7838625937",
+//     email: "chandresh@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PUNEET KUMAR",
+//     mobile: "7983406641",
+//     email: "purchase@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PRABHAT SHARMA",
+//     mobile: "9536937103",
+//     email: "prabhat.docs@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "VIVEK DUBEY",
+//     mobile: "9811188367",
+//     email: "vivek@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "VIPIN SINGH",
+//     mobile: "9599785572",
+//     email: "vipin@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "JAMSED",
+//     mobile: "9810376024",
+//     email: "jamsed@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SUNEEL KUMAR MISHRA",
+//     mobile: "9871379336",
+//     email: "suneel@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PRADEEP KUMAR SINGH",
+//     mobile: "9818749100",
+//     email: "pradeep@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PANKAJ KUMAR",
+//     mobile: "9717071910",
+//     email: "pankaj.muz001@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "KAPIL",
+//     mobile: "8287575342",
+//     email: "kapil@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "VIVEKANAND SHARMA",
+//     mobile: "9654658678",
+//     email: "vivekanand@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PRIYANKA ARORA",
+//     mobile: "9910537954",
+//     email: "priyanka@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "MATADIN TIWARI",
+//     mobile: "9311325147",
+//     email: "matadin@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "RAMESH",
+//     mobile: "8601744166",
+//     email: "ramesh@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "KULDEEP",
+//     mobile: "9821109754",
+//     email: "kuldeep@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "MOHIT",
+//     mobile: "9315202740",
+//     email: "mohit@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "AMIT",
+//     mobile: "9667028183",
+//     email: "amit@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "PANKAJ",
+//     mobile: "7289071320",
+//     email: "pankaj@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "SUJATA",
+//     mobile: "8287607906",
+//     email: "sujata.cct@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "MANISHA",
+//     mobile: "9289110553",
+//     email: "manisha.cct@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "CHIRJEEV KAUR",
+//     mobile: "8860176064",
+//     email: "kaur.chirjeev10@gmail.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "RANJEET MISHRA",
+//     mobile: "9971747700",
+//     email: "ranjeet@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Pankaj",
+//     mobile: "9599785575",
+//     email: "pankaj.abpal@gmail.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Sharvan",
+//     mobile: "8860712896",
+//     email: "sharvan@abpal.com",
+//     password: "123456",
+//   },
+//   {
+//     name: "Parul Malik",
+//     mobile: "8750080839",
+//     email: "parulmalik1417@gmail.com",
+//     password: "123456",
+//   },
+// ];
+
+const users = [
+  // { name: "Vishal Sharma", mobile: "9871308531" },
+  // { name: "Satnam Singh", mobile: "8447037041" },
+  // { name: "Upendra Singh Bhati", mobile: "9479359753" },
+  // { name: "Heera Kumar", mobile: "9205334726" },
+  // { name: "Hardeep Singh Sahni", mobile: "9958630001" },
+  // { name: "Yogender Kumar", mobile: "9971724055" },
+  // { name: "Rajan Arora", mobile: "9818773838" },
+  // { name: "Amar Nath Tandon", mobile: "9873419011" },
+  // { name: "Prabodh Kumar Shivahare", mobile: "9580861825" },
+  // { name: "Nandan Gupta", mobile: "7376914523" },
+  // { name: "Amit Srivastava", mobile: "7408886887" },
+  // { name: "Ravi Prakash Srivastava", mobile: "9451462929" },
+  // { name: "Gaurav Bishnoi", mobile: "9910699836" },
+  // { name: "Manish Kumar Sharma", mobile: "8285750021" },
+  // { name: "Suraj Vij", mobile: "8383819145" },
+  // { name: "Gopalkrishna Mishra", mobile: "8377887159" },
+  // { name: "Munna Lal", mobile: "9315809090" },
+  // { name: "Anil", mobile: "9205332746" },
+  // { name: "M.P. Singh", mobile: "9582085860" },
+  // { name: "Ravinder Kaur", mobile: "9911706963" },
+  // { name: "Manali", mobile: "9999707608" },
+  // { name: "Bhumesh Kumar Sharma", mobile: "9756157125" },
+  // { name: "Deepika Gupta", mobile: "9643472072" },
+  // { name: "Sunita Negi", mobile: "9873554143" },
+  // { name: "Deepika Tanwar", mobile: "9582899271" },
+  // { name: "Ankur Tiwari", mobile: "8929308885" },
+  // { name: "Tushar Mishra", mobile: "9899999317" },
+  // { name: "Superna Chandra", mobile: "7001009427" },
+  // { name: "Sakshi", mobile: "9310226188" },
+  // { name: "Ruchi", mobile: "8447215815" },
+  // { name: "Pappu Kumar", mobile: "9871595308" },
+  // { name: "Chanchal", mobile: "9582805020" },
+  // { name: "Harpreet Kaur", mobile: "7827130693" },
+  // { name: "N.K. Sood", mobile: "9818519969" },
+  // { name: "Sharwan", mobile: "7838156329" },
+  // { name: "Chandresh", mobile: "7838625937" },
+  // { name: "Sanjeev Choudhary", mobile: "9013268587" },
+  // { name: "Puneet Kumar", mobile: "7983406641" },
+  // { name: "Prabhat Sharma", mobile: "9536937103" },
+  // { name: "Vivek Dubey", mobile: "9811188367" },
+  { name: "Vivek Dubey", mobile: "6265172538" },
+  { name: "Vipin Singh", mobile: "9599785572" },
+  { name: "Jamsed", mobile: "9810376024" },
+  { name: "Suneel Kumar Mishra", mobile: "9871379336" },
+  { name: "Lalit Sharma", mobile: "8376036874" },
+  { name: "Pradeep Kumar Singh", mobile: "9818749100" },
+  { name: "Pankaj Kumar", mobile: "9717071910" },
+  { name: "Kapil", mobile: "8287575342" },
+  { name: "Vivekanand Sharma", mobile: "9654658678" },
+  { name: "Priyanka Arora", mobile: "9910537954" },
+  { name: "Matadin Tiwari", mobile: "9311325147" },
+  { name: "Shyam Singh", mobile: "9811693707" },
+  { name: "Ramesh", mobile: "8601744166" },
+  { name: "Kuldeep", mobile: "9821109754" },
+  { name: "Amit", mobile: "9667028183" },
+  { name: "Sujata", mobile: "8287607906" },
+  { name: "Manisha", mobile: "9289110553" },
+  { name: "Chirjeev Kaur", mobile: "8860176064" },
+  { name: "Deepika", mobile: "9643472072" },
+  { name: "Ranjeet Mishra", mobile: "9971747700" },
+  { name: "Param S Pal", mobile: "9582211220" },
+  { name: "Shobha", mobile: "9821799707" },
+  { name: "Ritika Sen", mobile: "9971630212" },
+  { name: "Gurneet", mobile: "9821298537" },
+  { name: "Shyam Singh", mobile: "9537247158" },
+  { name: "Vansh Mishra", mobile: "9821868971" },
+  { name: "Ashutosh Kumar Pandey", mobile: "9971365353" },
+  { name: "Sharvan", mobile: "8860712896" },
+  { name: "Mohan Hira", mobile: "9540021439" },
+  { name: "Parul Malik", mobile: "8750080839" },
+];
+
 exports.whatsapp = async (req, res, next) => {
   const apiUrl = "https://api.interakt.ai/v1/public/message/";
   const headers = {
@@ -927,7 +1305,8 @@ exports.whatsapp = async (req, res, next) => {
 
   const imageurl =
     "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg";
-
+  const playstoreLink =
+    "https://play.google.com/store/apps/details?id=com.crrescita.telapp&pcampaignid=web_share";
   for (let user of users) {
     const body = {
       countryCode: "+91",
@@ -942,14 +1321,16 @@ exports.whatsapp = async (req, res, next) => {
         // abpal51year
         // checking issue = Check_In_update
         // app dist = new_app_distribute
-        name: "new_app_distribute",
+        // play store = playsotre_app_notification
+        //final_reminder = final_reminder
+        name: "checkinalert",
         languageCode: "en",
         headerValues: [
           "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg",
         ],
-        bodyValues: [user.name, inviteLink, user.email, user.password],
+        // bodyValues: [user.name, inviteLink, user.email, user.password],
         // bodyValues: [user.name],
-
+        // bodyValues: [user.name, playstoreLink, user.email, user.password],
         // bodyValues: [user.email, user.password],
       },
     };

@@ -1,65 +1,22 @@
 const mysql = require("mysql2");
 
-// const { Client } = require("pg");
-
-// const client = new Client({
-//   user: "postgres",
-//   host: "localhost",
-//   database: "demo",
-//   password: "Sudhanshu@123",
-//   port: 5432,
-// });
-
-// (async () => {
-//   try {
-//     await client.connect();
-//     console.log("Connected to PostgreSQL database");
-
-//     // Run a query
-//     const res = await client.query("SELECT NOW()");
-//     console.log("Current time:", res.rows[0]);
-//   } catch (err) {
-//     console.error("Error connecting to PostgreSQL:", err);
-//   } finally {
-//     await client.end();
-//   }
-// })();
-
 const pool = mysql.createPool({
   host: "database-1.c3okq4gsyw7e.ap-south-1.rds.amazonaws.com",
   user: "tel",
   password: "VmUi0oLbkn*9076",
   database: "tel_db",
-  // host: "localhost",
-  // user: "root",
+  //   host: "localhost",
+  //   user: "root",
   // password: "upendra#0309@",
   // database: "location_tracker",
-  // password: "niket@123",
-  // database: "tel_new",
+  //   password: "niket@123",
+  //   database: "tel_new",
   connectionLimit: 10,
 });
 
 const promisePool = pool.promise();
 
 const sqlModel = {
-  // execute: async (sql, values) => {
-  //   try {
-  //     const [rows, fields] = await promisePool.execute(sql, values);
-  //     return rows;
-  //   } catch (error) {
-  //     const errorResponse = {
-  //       status: false,
-  //       error: {
-  //         code: error.code || "INTERNAL_SERVER_ERROR",
-  //         message:
-  //           error.sqlMessage ||
-  //           "An error occurred while processing the request.",
-  //       },
-  //     };
-  //     throw new Error(errorResponse.error.message);
-  //   }
-  // },
-
   execute: async (sql, values) => {
     try {
       const [rows, fields] = await promisePool.execute(sql, values);
