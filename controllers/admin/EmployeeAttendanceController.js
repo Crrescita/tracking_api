@@ -708,84 +708,6 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
 };
 
 // dashboard
-// exports.getTotalAttendance = async (req, res, next) => {
-//   try {
-//     const { company_id } = req.query;
-
-//     // Validate the required parameters
-//     if (!company_id) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Company ID is required",
-//       });
-//     }
-
-//     const date = getCurrentDate();
-
-//     // Query to get employee attendance data for the given date
-//     const query = `
-//       SELECT
-//         e.id,
-//         e.name,
-//         a.checkin_status,
-//         c.check_in_time
-//       FROM employees e
-//       LEFT JOIN emp_attendance a ON e.id = a.emp_id AND a.date = ?
-//       LEFT JOIN check_in c ON e.id = c.emp_id AND c.date = ? AND e.company_id = c.company_id
-//       WHERE e.company_id = ?
-//     `;
-
-//     const values = [date, date, company_id];
-//     const data = await sqlModel.customQuery(query, values);
-
-//     // Process the data
-//     const processedData = data.reduce((acc, item) => {
-//       // Set attendance status based on checkin_status or absence of attendance data
-//       let attendance_status = "Absent";
-//       if (item.checkin_status === "Leave") {
-//         attendance_status = "Leave";
-//       } else if (item.check_in_time || item.checkin_status) {
-//         attendance_status = "Present";
-//       }
-
-//       // Check if employee already exists in the accumulator
-//       const existingEmployee = acc.find((emp) => emp.id === item.id);
-//       if (!existingEmployee) {
-//         acc.push({
-//           id: item.id,
-//           attendance_status: attendance_status,
-//         });
-//       }
-//       return acc;
-//     }, []);
-
-//     // Calculate total employees, present, absent, and on leave
-//     const totalEmployees = processedData.length;
-//     const totalPresent = processedData.filter(
-//       (emp) => emp.attendance_status === "Present"
-//     ).length;
-//     const totalAbsent = processedData.filter(
-//       (emp) => emp.attendance_status === "Absent"
-//     ).length;
-//     const totalLeave = processedData.filter(
-//       (emp) => emp.attendance_status === "Leave"
-//     ).length;
-
-//     // Respond with totals only
-//     res.status(200).send({
-//       status: true,
-//       attendanceCount: {
-//         totalEmployees,
-//         totalPresent,
-//         totalAbsent,
-//         totalLeave,
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
-//   }
-// };
-
 exports.getTotalAttendance = async (req, res, next) => {
   try {
     const { company_id } = req.query;
@@ -1020,228 +942,162 @@ exports.getWeeklyAttendance = async (req, res, next) => {
   }
 };
 
-// report
 
-// exports.getEmployeeReport = async (req, res, next) => {
+
+
+// exports.getEmployeePresentDay = async (req, res, next) => {
 //   try {
-//     const company_id = req.query.company_id;
+//     // Destructure `emp_id` and `date` from the request query
+//     const { emp_id, date } = req.query;
 
-//     if (!company_id) {
+//     // Validate the input
+//     if (!emp_id || !date) {
 //       return res.status(400).send({
 //         status: false,
-//         message: "Company ID is required",
+//         message: "Employee ID and date are required",
 //       });
 //     }
 
-//     const query = `
-//         SELECT
-//           e.id,
-//           e.company_id,
-//           e.name,
-//           e.email,
-//           e.mobile,
-//           e.employee_id,
-//           b.name AS branch,
-//           d.name AS department,
-//           de.name AS designation,
-//           CASE
-//             WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-//             ELSE e.image
-//           END AS image
-//         FROM employees e
-//         LEFT JOIN branch b ON e.branch = b.id
-//         LEFT JOIN department d ON e.department = d.id
-//         LEFT JOIN designation de ON e.designation = de.id
-//         WHERE e.company_id = ? and e.department = 17
-//       `;
-
-//     const values = [process.env.BASE_URL, company_id];
-//     const employees = await sqlModel.customQuery(query, values);
-
-//     if (!employees.length) {
-//       return res.status(404).send({
+//     // Parse the date and extract the month and year
+//     const targetDate = new Date(date);
+//     if (isNaN(targetDate)) {
+//       return res.status(400).send({
 //         status: false,
-//         message: "No employees found for the given company ID",
+//         message: "Invalid date format",
 //       });
 //     }
-
-//     const dateParam = req.query.date;
-//     const targetDate = dateParam ? new Date(dateParam) : new Date();
 //     const year = targetDate.getFullYear();
 //     const month = targetDate.getMonth() + 1;
-
 //     const daysInMonth = new Date(year, month, 0).getDate();
-//     const allDays = Array.from({ length: daysInMonth }, (_, i) => {
-//       const day = String(i + 1).padStart(2, "0");
-//       return `${year}-${String(month).padStart(2, "0")}-${day}`;
-//     });
 
-//     const dateDayInMonth = Array.from({ length: daysInMonth }, (_, i) => {
-//       const date = new Date(year, month - 1, i + 1);
-//       const dayOfWeek = date.toLocaleString("en-US", {
-//         weekday: "short",
-//       });
-//       return {
-//         date: String(i + 1).padStart(2, "0"),
-//         day: dayOfWeek,
-//       };
-//     });
-
-//     // Fetch holidays
-//     const holidayQuery = `
-//       SELECT date, name
-//       FROM company_holidays
-//       WHERE status = 'active' AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
-//     `;
-//     const holidayRecords = await sqlModel.customQuery(holidayQuery, [
-//       company_id,
-//       month,
-//       year,
-//     ]);
-
-//     const holidays = holidayRecords.reduce((acc, holiday) => {
-//       acc[holiday.date] = holiday.name;
-//       return acc;
-//     }, {});
-
-//     const employeeAttendanceData = [];
-
-//     for (const employee of employees) {
-//       const { id: emp_id } = employee;
-
-//       // Initialize groupedData
-//       const groupedData = allDays.reduce((acc, date) => {
-//         const dayOfWeek = new Date(date).toLocaleString("en-US", {
-//           weekday: "long",
-//         });
-//         const day = new Date(date).getDay(); // 0 = Sunday
-//         acc[date] = {
-//           date,
-//           day: dayOfWeek,
-//           checkin_status: "Absent",
-//           attendance_status: day === 0 ? "Holiday" : "Absent",
-//           timeDifference: "00:00:00",
-//           totalDuration: "00:00:00",
-//           totalDistance: "0",
-//           last_check_in_time: "00:00:00",
-//           last_check_out_time: "00:00:00",
-//           min_lat_check_in: "0",
-//           min_long_check_in: "0",
-//           max_lat_check_out: "0",
-//           max_long_check_out: "0",
-//         };
-
-//         // Check if the date is a holiday
-//         if (holidays[date]) {
-//           acc[date].attendance_status = "Holiday";
-//           acc[date].holiday_name = holidays[date];
-//         }
-
-//         return acc;
-//       }, {});
-
-//       let totalPresent = 0;
-//       let totalLeave = 0;
-
-//       // Attendance query
-//       const empAttendanceQuery = `
-//         SELECT
-//           date,
-//           checkin_status,
-//           time_difference AS timeDifference,
-//           total_duration AS totalDuration,
-//           total_distance AS totalDistance
-//         FROM emp_attendance
-//         WHERE emp_id = ? AND company_id = ? AND MONTH(date) = ? AND YEAR(date) = ?
-//       `;
-//       const empAttendanceValues = [emp_id, company_id, month, year];
-//       const empAttendanceRecords = await sqlModel.customQuery(
-//         empAttendanceQuery,
-//         empAttendanceValues
-//       );
-
-//       empAttendanceRecords.forEach((item) => {
-//         if (groupedData[item.date]) {
-//           if (item.checkin_status === "Leave") {
-//             groupedData[item.date].attendance_status = "Leave";
-//             totalLeave++;
-//           } else {
-//             groupedData[item.date].attendance_status = "Present";
-//             totalPresent++;
-//           }
-
-//           groupedData[item.date].checkin_status = item.checkin_status || "-";
-//           groupedData[item.date].timeDifference =
-//             item.timeDifference || "00:00:00";
-//           groupedData[item.date].totalDuration =
-//             item.totalDuration || "00:00:00";
-//           groupedData[item.date].totalDistance = item.totalDistance || "0";
-//         }
-//       });
-
-//       // Fetch average check-in/check-out addresses
-//       const avgAddressQuery = `
-//       SELECT
-//         COUNT(ea.check_in_address) AS check_in_times,
-//         ea.check_in_address,
-//         COUNT(ea.check_out_address) AS check_out_times,
-//         ea.check_out_address,
-//         SEC_TO_TIME(AVG(TIME_TO_SEC(ea.check_in_time))) AS avg_check_in_time,
-//         SEC_TO_TIME(AVG(TIME_TO_SEC(ea.check_out_time))) AS avg_check_out_time
-//       FROM emp_attendance ea
-//       WHERE ea.emp_id = ?
-//         AND ea.company_id = ?
-//         AND MONTH(ea.date) = ?
-//         AND YEAR(ea.date) = ?
-//       GROUP BY ea.check_in_address, ea.check_out_address, ea.emp_id;
+//     const query = `
+//       SELECT COUNT(*) AS presentDays 
+//       FROM emp_attendance 
+//       WHERE emp_id = ? 
+//       AND MONTH(date) = ? 
+//       AND YEAR(date) = ?;
 //     `;
 
-//       const avgAddressValues = [emp_id, company_id, month, year];
-//       const avgAddressRecords = await sqlModel.customQuery(
-//         avgAddressQuery,
-//         avgAddressValues
-//       );
+//     const [result] = await sqlModel.customQuery(query, [emp_id, month, year]);
 
-//       // Extract average values or set default values
-//       const avgCheckInAddress = avgAddressRecords[0]?.check_in_address || "N/A";
-//       const avgCheckOutAddress =
-//         avgAddressRecords[0]?.check_out_address || "N/A";
-//       const avgCheckInTime =
-//         avgAddressRecords[0]?.avg_check_in_time || "00:00:00";
-//       const avgCheckOutTime =
-//         avgAddressRecords[0]?.avg_check_out_time || "00:00:00";
-
-//       const employeeData = {
-//         id: employee.id,
-//         name: employee.name,
-//         mobile: employee.mobile,
-//         email: employee.email,
-//         branch: employee.branch,
-//         designation: employee.designation,
-//         department: employee.department,
-//         employee_id: employee.employee_id,
-//         image: employee.image,
-//         attendance: Object.values(groupedData),
-//         avgCheckInAddress,
-//         avgCheckOutAddress,
-//         avgCheckInTime,
-//         avgCheckOutTime,
-//       };
-
-//       employeeAttendanceData.push(employeeData);
-
-//       employeeAttendanceData.push(employeeData);
+//     if (result && result.presentDays !== undefined) {
+//       return res.status(200).send({
+//         status: true,
+//         presentDays: result.presentDays,
+//         daysInMonth
+//       });
+//     } else {
+//       return res.status(404).send({
+//         status: false,
+//         message: "No attendance data found for the specified employee and date",
+//       });
 //     }
-
-//     res.status(200).send({
-//       status: true,
-//       data: employeeAttendanceData,
-//       daysInMonth: dateDayInMonth,
-//     });
 //   } catch (error) {
-//     res.status(500).send({ status: false, error: error.message });
+//     console.error("Error fetching employee attendance:", error);
+//     res.status(500).send({
+//       status: false,
+//       error: error.message,
+//     });
 //   }
 // };
+
+
+
+exports.getEmployeePresentDay = async (req, res, next) => {
+  try {
+    const { emp_id, date } = req.query;
+
+    // Validate input
+    if (!emp_id || !date) {
+      return res.status(400).send({
+        status: false,
+        message: "Employee ID and date are required",
+      });
+    }
+
+    // Parse the date and extract the month and year
+    const targetDate = new Date(date);
+    if (isNaN(targetDate)) {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid date format",
+      });
+    }
+
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth() + 1;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // Get all Sundays in the given month
+    const sundays = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(year, month - 1, day);
+      if (currentDate.getDay() === 0) { // Sunday (0 = Sunday)
+        sundays.push(day);
+      }
+    }
+
+    // Query to get employee attendance days
+    const query = `
+      SELECT DATE(date) as attendance_date
+      FROM emp_attendance
+      WHERE emp_id = ? 
+      AND MONTH(date) = ? 
+      AND YEAR(date) = ?;
+    `;
+
+    // Ensure `attendanceRecords` is an array
+    const result = await sqlModel.customQuery(query, [emp_id, month, year]);
+    const attendanceRecords = Array.isArray(result) ? result : [];
+
+    // if (!attendanceRecords.length) {
+    //   return res.status(404).send({
+    //     status: false,
+    //     message: "No attendance data found for the specified employee and date",
+    //   });
+    // }
+
+    // Extract actual present days from the database
+    const presentDates = new Set(attendanceRecords.map(record => new Date(record.attendance_date).getDate()));
+
+    // Count actual present days (excluding Sundays initially)
+    let presentDays = [...presentDates].filter(day => !sundays.includes(day)).length;
+
+    // Count Sundays the employee has already checked in
+    const attendedSundays = sundays.filter(sunday => presentDates.has(sunday));
+
+    // Count missing Sundays (where the employee did not check in)
+    const missingSundays = sundays.filter(sunday => !presentDates.has(sunday));
+
+    // Only add Sundays if presentDays is greater than 1
+    if (presentDays > 1) {
+      // Add both attended and missing Sundays to presentDays
+      presentDays += attendedSundays.length + missingSundays.length;
+    }
+
+   
+    presentDays = Math.min(presentDays, daysInMonth);
+
+    return res.status(200).send({
+      status: true,
+      presentDays,
+      daysInMonth,
+      attendedSundays, 
+      missingSundays
+    });
+
+  } catch (error) {
+    console.error("Error fetching employee attendance:", error);
+    res.status(500).send({
+      status: false,
+      error: error.message,
+    });
+  }
+};
+
+
+
+// report
 
 exports.getEmployeeReport = async (req, res, next) => {
   try {

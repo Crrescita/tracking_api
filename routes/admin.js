@@ -20,6 +20,9 @@ const WhatsappController = require("../controllers/admin/WhatsappController");
 const BankController = require("../controllers/admin/BankController");
 const BackgroundVerificationController = require("../controllers/admin/BackgroundVerificationController");
 const SalaryController = require("../controllers/admin/SalaryController");
+const AdvanceController = require("../controllers/admin/AdvanceController");
+const PayrollController = require("../controllers/admin/PayrollController")
+const SupportController = require("../controllers/admin/SupportController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -135,12 +138,37 @@ router
   .post(BankController.insertBankDetail)
   .put(BankController.insertBankDetail);
 
-// emp bank detail
+// salary setting
+router
+   .route("/salarySettings/:id?")
+   .get(SalaryController.getSalarySettings)
+   .post(SalaryController.insertSalarySettings)
+   .put(SalaryController.insertSalarySettings)
+   .delete(SalaryController.deleteSalarySettings)
+  
+router.post(
+    "/salarySetting-delete-multiple",
+    SalaryController.deleteMultipleSalarySettings
+  );
+
+// emp salary detail
 router
   .route("/salaryDetail/:id?")
   .get(SalaryController.getSalaryDetail)
   .post(SalaryController.insertSalaryDetail)
   .put(SalaryController.insertSalaryDetail);
+  
+
+// emp salary payslip 
+router
+  .route("/salaryPayslip/:id?")
+  .get(SalaryController.getSalaryPayslip)
+  .post(SalaryController.insertSalaryPayslip)
+  .put(SalaryController.insertSalaryPayslip);
+
+// emp payroll 
+router.route("/payroll")
+.get(PayrollController.getPayroll);
 
 // emp background verification
 router
@@ -189,6 +217,9 @@ router.get(
   "/getTotalAttendance",
   EmployeeAttendanceController.getTotalAttendance
 );
+
+// emp attendace of preset day for salary
+router.get('/getEmployeePresentDay',EmployeeAttendanceController.getEmployeePresentDay)
 
 // weekly attendance data
 router.get(
@@ -330,6 +361,23 @@ router.post(
   "/assignTask-delete-multiple",
   AssignTaskController.deleteMultipleAssignTask
 );
+
+// advance
+router.get("/advance/:emp_id?" , AdvanceController.getAdvance)
+router.post("/addAdvance" , AdvanceController.addAdvance)
+router.put("/updateAdvance/:id?" , AdvanceController.updateAdvance)
+router.delete("/deleteAdvance/:id?" , AdvanceController.deleteAdvance)
+
+// open advance
+router.get("/getOpenAdvances/:emp_id?" , AdvanceController.getOpenAdvances )
+
+// applyAdjustment
+router.get("/getAdjustment/:emp_id?" , AdvanceController.getAdjustment)
+router.post("/applyAdjustment" , AdvanceController.applyAdjustment)
+router.put("/editAdjustment/:id?" ,  AdvanceController.editAdjustment)
+
+// admin support 
+router.post("/createSupport" ,SupportController.createSupport )
 
 // tempory api for set address
 router.post("/setCheckAddress", CheckInController.setCheckAddress);
