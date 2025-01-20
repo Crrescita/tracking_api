@@ -707,6 +707,158 @@ exports.getEmployeeMonthlyAttendance = async (req, res, next) => {
   }
 };
 
+
+exports.getEmployeeAttendance = async (req, res, next) => {
+  try {
+    const emp_id = req.query.emp_id || '';
+    const company_id = req.user.id;
+
+    if (!emp_id) {
+      return res.status(200).send({
+        status: false,
+        message: "Employee ID is required",
+      });
+    }
+
+    const dateParam = req.query.date;
+    const dateRegexYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/;
+    const dateRegexYYYYMM = /^\d{4}-\d{2}$/;
+
+    if (!dateParam || (!dateRegexYYYYMMDD.test(dateParam) && !dateRegexYYYYMM.test(dateParam))) {
+      return res.status(200).send({
+        status: false,
+        message: "Invalid date format. Use YYYY-MM-DD or YYYY-MM.",
+      });
+    }
+
+    const targetDate = new Date(dateParam);
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth() + 1;
+    let daysInMonth, allDays;
+
+    if (dateParam.length === 7) {
+      daysInMonth = new Date(year, month, 0).getDate();
+      allDays = Array.from({ length: daysInMonth }, (_, i) => `${year}-${String(month).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`);
+    }
+
+    // **STEP 1: Fetch emp_attendance data**
+    const empAttendanceQuery = `
+      SELECT date, checkin_status, time_difference, total_duration, updated_by
+      FROM emp_attendance
+      WHERE emp_id = ? AND company_id = ?
+      ${dateParam.length === 10 ? "AND date = ?" : "AND MONTH(date) = ? AND YEAR(date) = ?"}
+    `;
+    const empAttendanceValues = dateParam.length === 10
+      ? [emp_id, company_id, dateParam]
+      : [emp_id, company_id, month, year];
+
+    const empAttendanceData = await sqlModel.customQuery(empAttendanceQuery, empAttendanceValues);
+    if (empAttendanceData.error) {
+      return res.status(200).send(empAttendanceData);
+    }
+
+    // **STEP 2: Fetch company holidays**
+    const holidaysQuery = `SELECT date FROM company_holidays WHERE company_id = ? AND (MONTH(date) = ? AND YEAR(date) = ?)`;
+    const holidaysData = await sqlModel.customQuery(holidaysQuery, [company_id, month, year]);
+    const holidays = holidaysData.map((holiday) => holiday.date);
+
+    // **STEP 3: Initialize response structure**
+    const groupedData = dateParam.length === 10
+      ? { [dateParam]: { date: dateParam, checkIns: [], checkin_status: "Absent", attendance_status: "Absent", timeDifference: "00:00:00", totalDuration: "00:00:00", updated_by: null, isHoliday: holidays.includes(dateParam) } }
+      : allDays.reduce((acc, date) => {
+          acc[date] = { date, checkIns: [], checkin_status: "Absent", attendance_status: holidays.includes(date) || new Date(date).getDay() === 0 ? "Holiday" : "Absent", timeDifference: "00:00:00", totalDuration: "00:00:00", updated_by: null, isHoliday: holidays.includes(date) || new Date(date).getDay() === 0 };
+          return acc;
+        }, {});
+
+    // **STEP 4: Update groupedData with emp_attendance data**
+    empAttendanceData.forEach((attendance) => {
+      const attendanceDate = attendance.date || dateParam;
+      if (groupedData[attendanceDate]) {
+        groupedData[attendanceDate].checkin_status = attendance.checkin_status;
+        groupedData[attendanceDate].timeDifference = attendance.time_difference || "00:00:00";
+        groupedData[attendanceDate].totalDuration = attendance.total_duration || "00:00:00";
+        groupedData[attendanceDate].updated_by = attendance.updated_by || null;
+        groupedData[attendanceDate].attendance_status = "Present";
+      }
+    });
+
+    // **STEP 5: Fetch check_in data if employee is present**
+    let checkInData = [];
+    const presentDates = Object.keys(groupedData).filter(date => groupedData[date].attendance_status === "Present");
+
+    if (presentDates.length > 0) {
+      const checkInQuery = `
+        SELECT
+          e.id, e.name, e.mobile, e.email, e.designation, e.employee_id,
+          CASE WHEN e.image IS NOT NULL THEN CONCAT(?, e.image) ELSE e.image END AS image,
+          c.date, c.check_in_time, c.check_out_time, c.duration
+        FROM employees e
+        LEFT JOIN check_in c ON e.id = c.emp_id AND e.company_id = c.company_id
+        WHERE e.id = ? AND e.company_id = ?
+        ${dateParam.length === 10 ? "AND c.date = ?" : "AND MONTH(c.date) = ? AND YEAR(c.date) = ?"}
+        ORDER BY c.date, c.check_in_time
+      `;
+      const checkInValues = dateParam.length === 10
+        ? [process.env.BASE_URL, emp_id, company_id, dateParam]
+        : [process.env.BASE_URL, emp_id, company_id, month, year];
+
+      checkInData = await sqlModel.customQuery(checkInQuery, checkInValues);
+      if (checkInData.error) {
+        return res.status(200).send(checkInData);
+      }
+    }
+
+    // **STEP 6: Merge check_in data**
+    checkInData.forEach((item) => {
+      const itemDate = item.date || dateParam;
+      if (groupedData[itemDate]) {
+        groupedData[itemDate].checkIns.push({
+          check_in_time: item.check_in_time || "00:00:00",
+          check_out_time: item.check_out_time || "00:00:00",
+          duration: item.duration || "00:00:00",
+        });
+
+        if (item.check_in_time) {
+          groupedData[itemDate].attendance_status = "Present";
+          if (!groupedData[itemDate].earliestCheckInTime || item.check_in_time < groupedData[itemDate].earliestCheckInTime) {
+            groupedData[itemDate].earliestCheckInTime = item.check_in_time;
+          }
+        }
+
+        if (item.check_out_time !== null) {
+          if (!groupedData[itemDate].latestCheckOutTime || item.check_out_time > groupedData[itemDate].latestCheckOutTime) {
+            groupedData[itemDate].latestCheckOutTime = item.check_out_time;
+          }
+        } else {
+          groupedData[itemDate].latestCheckOutTime = "00:00:00";
+        }
+      }
+    });
+
+    // **STEP 7: Prepare final response**
+    const checkInDates = Object.values(groupedData).map(dateData => ({
+      ...dateData,
+      earliestCheckInTime: dateData.earliestCheckInTime || "00:00:00",
+      latestCheckOutTime: dateData.latestCheckOutTime || "00:00:00",
+    }));
+
+    const employeeData = {
+      id: checkInData.length > 0 ? checkInData[0].id : emp_id,
+      name: checkInData.length > 0 ? checkInData[0].name : "",
+      mobile: checkInData.length > 0 ? checkInData[0].mobile : "",
+      email: checkInData.length > 0 ? checkInData[0].email : "",
+      designation: checkInData.length > 0 ? checkInData[0].designation : "",
+      employee_id: checkInData.length > 0 ? checkInData[0].employee_id : "",
+      image: checkInData.length > 0 ? checkInData[0].image : "",
+      checkInsByDate: checkInDates,
+    };
+
+    res.status(200).send({ status: true, data: employeeData });
+  } catch (error) {
+    res.status(200).send({ status: false, error: error.message });
+  }
+};
+
 // dashboard
 exports.getTotalAttendance = async (req, res, next) => {
   try {
@@ -813,7 +965,7 @@ exports.getTotalAttendance = async (req, res, next) => {
   }
 };
 
-// Helper function to get the current week's dates (Monday to Sunday)
+
 const getWeekDates = (currentDate, weekOffset = 0) => {
   const current = new Date(currentDate);
 
@@ -942,67 +1094,6 @@ exports.getWeeklyAttendance = async (req, res, next) => {
   }
 };
 
-
-
-
-// exports.getEmployeePresentDay = async (req, res, next) => {
-//   try {
-//     // Destructure `emp_id` and `date` from the request query
-//     const { emp_id, date } = req.query;
-
-//     // Validate the input
-//     if (!emp_id || !date) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Employee ID and date are required",
-//       });
-//     }
-
-//     // Parse the date and extract the month and year
-//     const targetDate = new Date(date);
-//     if (isNaN(targetDate)) {
-//       return res.status(400).send({
-//         status: false,
-//         message: "Invalid date format",
-//       });
-//     }
-//     const year = targetDate.getFullYear();
-//     const month = targetDate.getMonth() + 1;
-//     const daysInMonth = new Date(year, month, 0).getDate();
-
-//     const query = `
-//       SELECT COUNT(*) AS presentDays 
-//       FROM emp_attendance 
-//       WHERE emp_id = ? 
-//       AND MONTH(date) = ? 
-//       AND YEAR(date) = ?;
-//     `;
-
-//     const [result] = await sqlModel.customQuery(query, [emp_id, month, year]);
-
-//     if (result && result.presentDays !== undefined) {
-//       return res.status(200).send({
-//         status: true,
-//         presentDays: result.presentDays,
-//         daysInMonth
-//       });
-//     } else {
-//       return res.status(404).send({
-//         status: false,
-//         message: "No attendance data found for the specified employee and date",
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error fetching employee attendance:", error);
-//     res.status(500).send({
-//       status: false,
-//       error: error.message,
-//     });
-//   }
-// };
-
-
-
 exports.getEmployeePresentDay = async (req, res, next) => {
   try {
     const { emp_id, date } = req.query;
@@ -1069,8 +1160,8 @@ exports.getEmployeePresentDay = async (req, res, next) => {
     // Count missing Sundays (where the employee did not check in)
     const missingSundays = sundays.filter(sunday => !presentDates.has(sunday));
 
-    // Only add Sundays if presentDays is greater than 1
-    if (presentDays > 1) {
+    // Only add Sundays if presentDays is greater than 0
+    if (presentDays > 0) {
       // Add both attended and missing Sundays to presentDays
       presentDays += attendedSundays.length + missingSundays.length;
     }
@@ -1088,6 +1179,116 @@ exports.getEmployeePresentDay = async (req, res, next) => {
 
   } catch (error) {
     console.error("Error fetching employee attendance:", error);
+    res.status(500).send({
+      status: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.markAsPresent = async (req, res, next) => {
+  try {
+    const { status, ...insert } = req.body; // Exclude `status` from the insert object
+
+
+    // Ensure required fields exist
+    if (!insert.emp_id || !insert.date || !status) {
+      return res.status(400).send({
+        status: false,
+        message: "Missing required fields: emp_id, date, or status",
+      });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); 
+    const targetDate = new Date(insert.date);
+    targetDate.setHours(0, 0, 0, 0);
+
+    if (targetDate > today) {
+      return res.status(400).send({
+        status: false,
+        message: "You cannot mark attendance for future dates.",
+      });
+    }
+
+    // Check if a record already exists for the given emp_id and date
+    const records = await sqlModel.select("emp_attendance", ["id"], {
+      emp_id: insert.emp_id,
+      date: insert.date,
+    });
+
+    if (records.error) {
+      return res.status(500).send({ status: false, message: "Database error" });
+    }
+
+    if (status === "Present") {
+      // If status is "Present", either insert or update the record
+      if (records.length > 0) {
+        // Update existing record
+        const attendanceId = records[0].id;
+        insert.updated_at = getCurrentDateTime();
+        insert.updated_by = "admin"; // Replace with logged-in user's ID if needed
+
+        const saveData = await sqlModel.update(
+          "emp_attendance",
+          insert,
+          { id: attendanceId }
+        );
+
+        if (saveData.error) {
+          return res.status(500).send(saveData);
+        } else {
+          return res.status(200).send({
+            status: true,
+            message: "Attendance updated successfully",
+          });
+        }
+      } else {
+        // Insert a new attendance record if no existing entry is found
+        insert.created_at = getCurrentDateTime();
+        // insert.emp_id = emp_id;
+        insert.company_id = req.user.id;
+        insert.updated_by = "admin"; // Replace with logged-in user's ID if needed
+
+        const saveData = await sqlModel.insert("emp_attendance", insert);
+
+        if (saveData.error) {
+          return res.status(500).send(saveData);
+        } else {
+          return res.status(201).send({
+            status: true,
+            message: "Attendance recorded successfully",
+            data: saveData,
+          });
+        }
+      }
+    } else if (status === "Absent") {
+      // If status is "Absent", delete the record if it exists
+      if (records.length > 0) {
+        const attendanceId = records[0].id;
+        const deleteData = await sqlModel.delete("emp_attendance", { id: attendanceId });
+
+        if (deleteData.error) {
+          return res.status(500).send(deleteData);
+        } else {
+          return res.status(200).send({
+            status: true,
+            message: "Attendance record deleted successfully",
+          });
+        }
+      } else {
+        return res.status(404).send({
+          status: false,
+          message: "No attendance record found for this date",
+        });
+      }
+    } else {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid status value. It must be 'Present' or 'Absent'.",
+      });
+    }
+  } catch (error) {
     res.status(500).send({
       status: false,
       error: error.message,

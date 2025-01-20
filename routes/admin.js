@@ -192,6 +192,10 @@ router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
 router.get("/getCoordinatesv2", EmployeeTrackController.getCoordinatesv2);
 
 // attendance
+router.get("/getEmployeeAttendance", EmployeeAttendanceController.getEmployeeAttendance);
+
+router.route("/markAsPresent").post( EmployeeAttendanceController.markAsPresent);
+
 // get login employee details
 router.get(
   "/getEmpLoginDetail/:emp_id?",
