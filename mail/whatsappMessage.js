@@ -58,7 +58,7 @@ async function taskAssigned(data) {
     "Content-Type": "application/json",
   };
 
-  const inviteLink = `http://localhost:4200/pages/task/${data.emp_id}/${data.task_id}`;
+  const inviteLink = `${process.env.WEBSITE_BASE_URL}pages/task/${data.emp_id}/${data.task_id}`;
 
 
   const body = {
@@ -141,7 +141,7 @@ async function taskReminderUpdate(data) {
     "Content-Type": "application/json",
   };
 
-  const inviteLink = `http://localhost:4200/pages/task/${data.emp_id}/${data.task_id}`;
+  const inviteLink = `${process.env.WEBSITE_BASE_URL}pages/task/${data.emp_id}/${data.task_id}`;
 
   const body = {
     countryCode: "+91",
