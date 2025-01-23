@@ -220,7 +220,7 @@ exports.employeesInsert = async (req, res, next) => {
         const existingemployeesWithMobile = await sqlModel.select(
           "employees",
           ["id"],
-          { mobile: req.body.mobile }
+          { mobile: req.body.mobile,company_id: companyId }
         );
         if (
           existingemployeesWithMobile.length > 0 &&
@@ -311,7 +311,7 @@ exports.employeesInsert = async (req, res, next) => {
       const existingemployeesWithMobile = await sqlModel.select(
         "employees",
         ["id"],
-        { mobile: req.body.mobile }
+        { mobile: req.body.mobile ,company_id: companyId}
       );
       if (existingemployeesWithMobile.length > 0) {
         return res

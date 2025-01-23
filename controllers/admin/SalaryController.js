@@ -305,7 +305,6 @@ exports.insertSalarySettings = async (req, res, next)=>{
     const validation = validateFields({
       name,
       type,
-      formula,
       status,
     });
 

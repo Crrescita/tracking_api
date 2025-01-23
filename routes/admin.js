@@ -98,6 +98,16 @@ router.post("/webhooks", UserController.postWebhook);
 
 router.get("/sendMessage", WhatsappController.whatsapp);
 
+// update task status by emp
+router.post("/updateTaskStatus" , AssignTaskController.updateTaskStatus);
+router.get("/empTaskStatus" , AssignTaskController.empTaskStatus)
+router
+  .get("/empAssignTask/:id?", AssignTaskController.getAssignTask)
+
+router
+  .get("/employeesDetails/:id?",EmployeesController.employeesGet)
+ 
+
 router.use(verifyToken);
 
 router
@@ -366,6 +376,8 @@ router.post(
   AssignTaskController.deleteMultipleAssignTask
 );
 
+router.post("/sendReminder" ,AssignTaskController.sendReminder);
+
 // advance
 router.get("/advance/:emp_id?" , AdvanceController.getAdvance)
 router.post("/addAdvance" , AdvanceController.addAdvance)
@@ -389,6 +401,8 @@ router.get(
   "/getEmployeeReport",
   EmployeeAttendanceController.getEmployeeReport
 );
+
+
 
 // logs
 router.get("/logs", LogController.getLogs);
