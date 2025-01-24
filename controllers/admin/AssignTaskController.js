@@ -417,7 +417,7 @@ function getStatusMessage(status, data, isOverdue) {
     case "In-Progress":
       return `🛠 Task *${data.task_title}* is now In-Progress. Keep up the good work!`;
     case "Pending-Review":
-      return `🔍 Task *${data.task_title}* is now Pending Review. Please wait for further updates.`;
+      return `✅ You have completed your task *${task.task_title}*. It is now under review by the admin. No further action is needed from you at this moment.`;
     case "Completed":
       return `✅ Congratulations! Task *${data.task_title}* has been marked as Completed. 🎉`;
     case "On-Hold":
@@ -483,6 +483,8 @@ exports.deleteMultipleAssignTask = async (req, res, next) => {
 
 // update task status by emp
 
+
+
 // exports.updateTaskStatus = async (req, res, next) => {
 //   try {
 //     let { task_id, emp_ids, status, comment } = req.body;
@@ -495,112 +497,145 @@ exports.deleteMultipleAssignTask = async (req, res, next) => {
 //       emp_ids = [emp_ids]; // Convert single emp_id to array
 //     }
 
-//     const taskRecord = await sqlModel.select("assign_task", ["id", "status", "emp_id"], { id: task_id });
-//     if (taskRecord.error || taskRecord.length === 0) {
+//     if (emp_ids.length === 0) {
+//       return res.status(400).send({ status: false, message: "No employees selected for the update" });
+//     }
+
+//     const taskRecord = await sqlModel.select("assign_task", ["id", "status", "emp_id", "company_id", "task_title"], { id: task_id });
+//     if (!taskRecord.length) {
 //       return res.status(404).send({ status: false, message: "Task not found" });
 //     }
 
 //     const assignedEmployees = taskRecord[0].emp_id.split(",").map(id => Number(id.trim()));
 //     for (let emp_id of emp_ids) {
 //       if (!assignedEmployees.includes(Number(emp_id))) {
-//         return res.status(500).send({
+//         return res.status(403).send({
 //           status: false,
-//           message: `You are not assigned to this task. Please contact your supervisor or manager to be assigned before updating the status.`
+//           message: `You are not assigned to this task. Please contact your supervisor.`,
 //         });
 //       }
 //     }
 
 //     const allowedStatuses = ["In-Progress", "Completed"];
 //     if (!allowedStatuses.includes(status)) {
-//       return res.status(400).send({ status: false, message: `Invalid status. Allowed statuses are: ${allowedStatuses.join(", ")}` });
+//       return res.status(400).send({ status: false, message: `Invalid status. Allowed statuses: ${allowedStatuses.join(", ")}` });
 //     }
 
-//     // If comment exists, ensure it's a valid JSON string, if it's an object, stringify it.
-//     let stringifiedComment = null;
-//     if (comment) {
-//       if (typeof comment === 'object') {
-//         stringifiedComment = JSON.stringify(comment); // stringify if it's an object
-//       } else {
-//         stringifiedComment = comment; // already a string, use as is
-//       }
-//     }
-
-//     // Update status and comments for each employee
+//     let commentUpdated = false;
 //     const updatePromises = emp_ids.map(async (emp_id) => {
-//       let existingComments = [];  // Initialize an empty array
-    
-//       // Fetch existing comments if any
+//       let existingComments = [];
+
+//       // Fetch existing comments
 //       const existingRecord = await sqlModel.select("assign_task_status", ["comment"], { task_id, emp_id });
-    
+
 //       if (existingRecord.length > 0 && existingRecord[0].comment) {
-//         // If the comment is a string, parse it. Otherwise, assume it's already an object/array.
-//         if (typeof existingRecord[0].comment === 'string') {
+//         try {
 //           existingComments = JSON.parse(existingRecord[0].comment);
-//         } else if (Array.isArray(existingRecord[0].comment)) {
-//           existingComments = existingRecord[0].comment;  // It's already an array
-//         } else {
-//           existingComments = [existingRecord[0].comment];  // Wrap in an array if it's an object
+//         } catch (error) {
+//           existingComments = [];
 //         }
 //       }
-    
-//       // Add the new comment if available
-//       let commentUpdated = false;
+
 //       if (comment) {
 //         existingComments.push({
 //           text: comment.text,
-//           timestamp: comment.timestamp || new Date().toISOString()
+//           timestamp: comment.timestamp || new Date().toISOString(),
 //         });
-//         commentUpdated = true; // Flag that comment has been updated
+//         commentUpdated = true;
 //       }
-    
+
 //       const updateData = {
 //         status,
 //         updated_at: getCurrentDateTime(),
-//         comment: existingComments.length > 0 ? JSON.stringify(existingComments) : null, // Make sure it's stringified
+//         comment: existingComments.length > 0 ? JSON.stringify(existingComments) : null,
 //       };
-    
-//       const updateResult = await sqlModel.update("assign_task_status", updateData, { task_id, emp_id });
-    
-//       if (updateResult.error) {
-//         return {
-//           emp_id,
-//           status: false,
-//           message: `Error updating status for employee ${emp_id}`
-//         };
-//       }
-    
-//       // Insert status history with the latest comment (stringified)
-//       const statusHistory = {
+
+//       await sqlModel.update("assign_task_status", updateData, { task_id, emp_id });
+
+//       await sqlModel.insert("assign_task_status_history", {
 //         task_id,
 //         emp_id,
 //         status,
-//         comment: JSON.stringify(existingComments), // Make sure it's stringified
+//         comment: JSON.stringify(existingComments),
 //         created_at: getCurrentDateTime(),
-//       };
-//       await sqlModel.insert("assign_task_status_history", statusHistory);
-    
-//       return {
-//         emp_id,
-//         status: true,
-//         commentUpdated,  // Return if the comment was updated
-//         message: `Status updated successfully for employee ${emp_id}`
-//       };
+//       });
+
+//       return { emp_id, status: true, commentUpdated };
 //     });
 
 //     const updateResults = await Promise.all(updatePromises);
 
+   
 
-//     // Fetch the current status of all assigned employees
+
+// const query = `SELECT id, name, company_id FROM employees WHERE id IN (${emp_ids.map(() => "?").join(",")})`;
+// const employees = await sqlModel.customQuery(query, emp_ids);
+
+
+//     if (!employees.length) {
+//       return res.status(404).send({ status: false, message: "Employees not found" });
+//     }
+
+//     // Fetch admin FCM tokens
+//     const adminTokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: taskRecord[0].company_id });
+
+//     if (!adminTokens.length) {
+//       return res.status(200).send({ status: false, message: "No FCM tokens found for the admin" });
+//     }
+
+//     // Prepare notification message
+//     const employeeNames = employees.map(emp => emp.name).join(", ");
+//     let notificationMessage = `🚀 Task *${taskRecord[0].task_title}* updated by ${employeeNames}.`;
+
+//     if (commentUpdated) {
+//       // New comment: "${comment.text.substring(0, 50)}...
+//       notificationMessage += `\n💬 New comment added: "${comment.text}"`;
+//     }
+
+//     switch (status) {
+//       case "In-Progress":
+//         notificationMessage += `\n🛠 Task is now In-Progress.`;
+//         break;
+//       case "Completed":
+//         notificationMessage += `\n✅ Task is marked as Completed.`;
+//         break;
+//     }
+
+//     // Send FCM Notifications
+//     const notificationPromises = adminTokens.map(({ fcm_token }) =>
+//       admin.messaging().send({
+//         notification: {
+//           title: "Task Status Update",
+//           body: notificationMessage,
+//         },
+//         token: fcm_token,
+//       })
+//     );
+
+//     await Promise.all(notificationPromises);
+
+//     // Save notification in database
+//     await sqlModel.insert("notification", {
+//       company_id: taskRecord[0].company_id,
+//       title: "Task Update",
+//       body: notificationMessage,
+//       link:`/task-deatil/${taskRecord[0].id}`,
+//       status: "unread",
+//       timestamp: getCurrentDateTime(),
+//     });
+
+//     // Fetch current status of all assigned employees
 //     const allEmployeeStatuses = await sqlModel.select("assign_task_status", ["emp_id", "status"], { task_id });
 //     const allEmployeesCompleted = allEmployeeStatuses.every(record => record.status === "Completed");
 
-//     // If all employees have marked the task as Completed, update the main task status to "Pending-Review"
 //     if (allEmployeesCompleted) {
 //       await sqlModel.update("assign_task", { status: "Pending-Review" }, { id: task_id });
 //       return res.status(200).send({ status: true, message: "All employees completed the task. Task status updated to Pending Review" });
 //     }
 
-//     // If any employee has marked the status as "In-Progress", update the task status to "In-Progress"
+//     if(commentUpdated){
+//       return res.status(200).send({ status: true, message: "Message sent successfully" });
+//     }
 //     const anyInProgress = updateResults.some(result => result.status === true && status === "In-Progress");
 
 //     if (anyInProgress) {
@@ -608,13 +643,13 @@ exports.deleteMultipleAssignTask = async (req, res, next) => {
 //       return res.status(200).send({ status: true, message: "Task status updated to In-Progress." });
 //     }
 
-//     // Default response when status is updated without a comment change
 //     return res.status(200).send({ status: true, message: "Task status updated successfully" });
-    
+
 //   } catch (error) {
 //     return res.status(500).send({ status: false, error: error.message });
 //   }
 // };
+
 
 exports.updateTaskStatus = async (req, res, next) => {
   try {
@@ -632,6 +667,7 @@ exports.updateTaskStatus = async (req, res, next) => {
       return res.status(400).send({ status: false, message: "No employees selected for the update" });
     }
 
+    // Fetch task details
     const taskRecord = await sqlModel.select("assign_task", ["id", "status", "emp_id", "company_id", "task_title"], { id: task_id });
     if (!taskRecord.length) {
       return res.status(404).send({ status: false, message: "Task not found" });
@@ -696,12 +732,9 @@ exports.updateTaskStatus = async (req, res, next) => {
 
     const updateResults = await Promise.all(updatePromises);
 
-   
-
-
-const query = `SELECT id, name, company_id FROM employees WHERE id IN (${emp_ids.map(() => "?").join(",")})`;
-const employees = await sqlModel.customQuery(query, emp_ids);
-
+    // Fetch employee details
+    const query = `SELECT id, name, company_id FROM employees WHERE id IN (${emp_ids.map(() => "?").join(",")})`;
+    const employees = await sqlModel.customQuery(query, emp_ids);
 
     if (!employees.length) {
       return res.status(404).send({ status: false, message: "Employees not found" });
@@ -716,27 +749,38 @@ const employees = await sqlModel.customQuery(query, emp_ids);
 
     // Prepare notification message
     const employeeNames = employees.map(emp => emp.name).join(", ");
-    let notificationMessage = `🚀 Task *${taskRecord[0].task_title}* updated by ${employeeNames}.`;
+    let notificationMessage = "";
 
-    if (commentUpdated) {
-      // New comment: "${comment.text.substring(0, 50)}...
-      notificationMessage += `\n💬 New comment added: "${comment.text}"`;
+    // Truncate comment if too long
+    const MAX_COMMENT_LENGTH = 100;
+    let truncatedComment = comment?.text ? comment.text.substring(0, MAX_COMMENT_LENGTH) : "";
+    if (comment?.text.length > MAX_COMMENT_LENGTH) {
+      truncatedComment += "..."; // Indicate comment is longer
     }
 
-    switch (status) {
-      case "In-Progress":
-        notificationMessage += `\n🛠 Task is now In-Progress.`;
-        break;
-      case "Completed":
-        notificationMessage += `\n✅ Task is marked as Completed.`;
-        break;
+    if (commentUpdated && !status) {
+      // Only comment update
+      notificationMessage = `💬 *New Comment* on *${taskRecord[0].task_title}* by ${employeeNames}: "${truncatedComment}"`;
+    } else if (!commentUpdated && status) {
+      // Only status update
+      switch (status) {
+        case "In-Progress":
+          notificationMessage = `🔔 *Task Update:* ${employeeNames} changed *${taskRecord[0].task_title}* to *In-Progress*.`;
+          break;
+        case "Completed":
+          notificationMessage = `✅ *Task Completed:* ${employeeNames} marked *${taskRecord[0].task_title}* as *Completed*.`;
+          break;
+      }
+    } else if (commentUpdated && status) {
+      // Both comment and status update
+      notificationMessage = `🔔 *Task Update:* ${employeeNames} updated *${taskRecord[0].task_title}*.\n💬 *Comment:* "${truncatedComment}"\n🚀 *Status:* ${status}`;
     }
 
     // Send FCM Notifications
     const notificationPromises = adminTokens.map(({ fcm_token }) =>
       admin.messaging().send({
         notification: {
-          title: "Task Status Update",
+          title: "Task Update",
           body: notificationMessage,
         },
         token: fcm_token,
@@ -750,7 +794,7 @@ const employees = await sqlModel.customQuery(query, emp_ids);
       company_id: taskRecord[0].company_id,
       title: "Task Update",
       body: notificationMessage,
-      link:`/task-deatil/${taskRecord[0].id}`,
+      link: `/task-detail/${taskRecord[0].id}`,
       status: "unread",
       timestamp: getCurrentDateTime(),
     });
@@ -761,12 +805,13 @@ const employees = await sqlModel.customQuery(query, emp_ids);
 
     if (allEmployeesCompleted) {
       await sqlModel.update("assign_task", { status: "Pending-Review" }, { id: task_id });
-      return res.status(200).send({ status: true, message: "All employees completed the task. Task status updated to Pending Review" });
+      return res.status(200).send({ status: true, message: "All employees completed the task. Task status updated to Pending Review." });
     }
 
-    if(commentUpdated){
-      return res.status(200).send({ status: true, message: "Message sent successfully" });
+    if (commentUpdated) {
+      return res.status(200).send({ status: true, message: "Comment added successfully." });
     }
+
     const anyInProgress = updateResults.some(result => result.status === true && status === "In-Progress");
 
     if (anyInProgress) {
@@ -774,12 +819,14 @@ const employees = await sqlModel.customQuery(query, emp_ids);
       return res.status(200).send({ status: true, message: "Task status updated to In-Progress." });
     }
 
-    return res.status(200).send({ status: true, message: "Task status updated successfully" });
+    return res.status(200).send({ status: true, message: "Task status updated successfully." });
 
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
   }
 };
+
+
 
 
 
@@ -813,6 +860,69 @@ exports.empTaskStatus = async (req, res, next) => {
 };
 
 // remeinder whats'app
+// exports.sendReminder = async (req, res, next) => {
+//   try {
+//     const { emp_ids, task_id } = req.body;
+
+//     if (!emp_ids || !task_id) {
+//       return res.status(400).send({ status: false, message: "Missing required parameters" });
+//     }
+
+//     // Fetch the task details
+//     const taskQuery = `SELECT id, task_title,task_id, status, start_date, end_date FROM assign_task WHERE id = ${task_id}`;
+//     const taskDetails = await sqlModel.customQuery(taskQuery);
+
+//     if (!taskDetails || taskDetails.length === 0) {
+//       return res.status(404).send({ status: false, message: "Task not found" });
+//     }
+
+//     const task = taskDetails[0];
+
+//     // Check if the task is overdue
+//     // const isOverdue = new Date(task.end_date) < new Date();
+//     let isOverdue = false
+//     if (!["Pending-Review", "Completed", "Cancelled", "On-Hold"].includes(task.status)) {
+//        isOverdue = new Date(task.end_date) < new Date();
+//     } else {
+//        isOverdue = false;
+//     }
+
+//     // Fetch employee details
+//     const employeeQuery = `SELECT id, name, mobile FROM employees WHERE id IN (${emp_ids.join(",")})`;
+//     const employeeDetails = await sqlModel.customQuery(employeeQuery);
+
+//     if (!employeeDetails || employeeDetails.error) {
+//       return res.status(500).send({ status: false, message: "Error fetching employee details" });
+//     }
+
+  
+//     for (const emp of employeeDetails) {
+//       const message = isOverdue
+//         ? `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`
+//         : `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
+
+//       // Send WhatsApp reminder
+//       await sendWhatsapp.taskReminderUpdate({
+//         emp_id: emp.id,
+//         name: emp.name,
+//         status:task.status,
+//         task_id: task.task_id,
+//         task_title: task.task_title,
+//         start_date: formatDate(task.start_date),
+//         end_date: formatDate(task.end_date),
+//         message: message,
+//         mobile: emp.mobile,
+//       });
+//     }
+
+//     res.status(200).send({ status: true, message: "Reminders sent successfully" });
+
+//   } catch (error) {
+//     return res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
+
 exports.sendReminder = async (req, res, next) => {
   try {
     const { emp_ids, task_id } = req.body;
@@ -822,7 +932,7 @@ exports.sendReminder = async (req, res, next) => {
     }
 
     // Fetch the task details
-    const taskQuery = `SELECT id, task_title,task_id, status, start_date, end_date FROM assign_task WHERE id = ${task_id}`;
+    const taskQuery = `SELECT id, task_title, task_id, status, start_date, end_date FROM assign_task WHERE id = ${task_id}`;
     const taskDetails = await sqlModel.customQuery(taskQuery);
 
     if (!taskDetails || taskDetails.length === 0) {
@@ -831,13 +941,10 @@ exports.sendReminder = async (req, res, next) => {
 
     const task = taskDetails[0];
 
-    // Check if the task is overdue
-    // const isOverdue = new Date(task.end_date) < new Date();
-let isOverdue = false
+    // Determine if the task is overdue
+    let isOverdue = false;
     if (!["Pending-Review", "Completed", "Cancelled", "On-Hold"].includes(task.status)) {
-       isOverdue = new Date(task.end_date) < new Date();
-    } else {
-       isOverdue = false;
+      isOverdue = new Date(task.end_date) < new Date();
     }
 
     // Fetch employee details
@@ -848,17 +955,27 @@ let isOverdue = false
       return res.status(500).send({ status: false, message: "Error fetching employee details" });
     }
 
-  
+    // Define messages based on task status
+    const statusMessages = {
+      "In-Progress": `⏳ Your task *${task.task_title}* is in progress. Keep up the good work and ensure timely completion.`,
+      "Pending-Review": `✅ You have completed your task *${task.task_title}*. It is now under review by the admin. No further action is needed from you at this moment.`,
+      "Completed": `✅ Your task *${task.task_title}* has been marked as completed. Well done!`,
+      "On-Hold": `⏸️ Your task *${task.task_title}* is currently on hold. Please wait for further updates.`,
+      "Cancelled": `❌ Your task *${task.task_title}* has been cancelled. No further action is required.`,
+    };
+
     for (const emp of employeeDetails) {
-      const message = isOverdue
-        ? `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`
-        : `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
+      let message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
+
+      if (isOverdue) {
+        message = `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`;
+      }
 
       // Send WhatsApp reminder
       await sendWhatsapp.taskReminderUpdate({
         emp_id: emp.id,
         name: emp.name,
-        status:task.status,
+        status: task.status,
         task_id: task.task_id,
         task_title: task.task_title,
         start_date: formatDate(task.start_date),
@@ -874,6 +991,7 @@ let isOverdue = false
     return res.status(500).send({ status: false, error: error.message });
   }
 };
+
 
 
 
