@@ -119,7 +119,7 @@ exports.sendCustomNotification = async (req, res) => {
     dataPayload.title = title;
     dataPayload.body = body;
     const message = {
-      topic: "global_info",
+      // topic: "global_info",
       token: fcm_token,
       // notification: { title, body },
       data: dataPayload,

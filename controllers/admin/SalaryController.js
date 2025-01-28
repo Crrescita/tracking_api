@@ -116,9 +116,165 @@ exports.getSalaryPayslip = async (req, res, next) => {
   }
 };
 
+// exports.insertSalaryPayslip = async (req, res, next) => {
+//   try {
+//     const { emp_id, payslip_for_month,net_pay, paid_days, salary, earning,earning_amount,deduction_amount, deduction,employeer_ctc } = req.body;
+
+//     // Validate fields
+//     const validation = validateFields({
+//       payslip_for_month,
+//       net_pay,
+//       paid_days,
+//       emp_id,
+//       salary,
+//       earning_amount,
+//       earning,
+//     });
+
+//     if (!validation.valid) {
+//       return res.status(400).send({
+//         status: false,
+//         message: validation.message,
+//         statusCode: 1,
+//       });
+//     }
+
+//     const insert = {
+//       company_id: req.user.id,
+//       emp_id,
+//       net_pay,
+//       paid_days,
+//       payslip_for_month,
+//       salary,
+//       earning,
+//       earning_amount,
+//       deduction_amount,
+//       deduction,
+//       employeer_ctc
+//     };
+
+  
+//     const existingRecord = await sqlModel.select(
+//       "emp_payslip",
+//       {}, 
+//       {
+//         emp_id,
+//         payslip_for_month,
+//       }
+//     );
+
+   
+//     const advanceDeduction = deduction.find((item) => item.name === "Advance");
+//     if (advanceDeduction && advanceDeduction.amount > 0) {
+//       const adjustmentAmount = advanceDeduction.amount;
+
+     
+//       const advances = await sqlModel.customQuery(`
+//         SELECT * 
+//         FROM emp_advances_detail 
+//         WHERE emp_id = ? 
+//           AND status = 'active' 
+//           AND CAST(remaining_balance AS DECIMAL(10, 2)) > 0
+//       `, [emp_id]);
+
+//       if (advances.error) {
+//         return res.status(500).send({ status: false, error: advances.error });
+//       }
+
+//       if (advances.length > 0) {
+//         let remainingAdjustment = adjustmentAmount;
+//         const adjustmentDate = getCurrentDateTime();
+
+       
+//         for (const advance of advances) {
+//           if (remainingAdjustment <= 0) break;
+
+//           const adjustment = Math.min(remainingAdjustment, advance.remaining_balance);
+//           const newBalance = advance.remaining_balance - adjustment;
+
+          
+//           const updateResult = await sqlModel.update(
+//             "emp_advances_detail",
+//             { remaining_balance: newBalance },
+//             { id: advance.id }
+//           );
+
+//           if (updateResult.error) {
+//             return res.status(500).send(updateResult);
+//           }
+
+        
+//           const adjustmentData = {
+//             emp_id,
+//             company_id: req.user.id,
+//             advance_id: advance.id,
+//             adjustment_amount: adjustment.toFixed(2),
+//             adjustment_date: adjustmentDate,
+//             notes: `Adjusted during payslip generation for ${payslip_for_month}`,
+//             created_at: adjustmentDate,
+//             updated_at: adjustmentDate,
+//           };
+
+//           const insertAdjustmentResult = await sqlModel.insert("advance_adjustments", adjustmentData);
+
+//           if (insertAdjustmentResult.error) {
+//             return res.status(500).send(insertAdjustmentResult);
+//           }
+
+//           remainingAdjustment -= adjustment;
+//         }
+
+//         // Check if any adjustment amount remains unallocated
+//         if (remainingAdjustment > 0) {
+//           return res.status(400).send({
+//             status: false,
+//             message: `Advance adjustment amount (${adjustmentAmount}) exceeds total remaining balance.`,
+//           });
+//         }
+//       } else {
+//         return res.status(404).send({
+//           status: false,
+//           message: "No open advances found for this employee.",
+//         });
+//       }
+//     }
+
+//     // Insert or update payslip record
+//     if (existingRecord.length > 0) {
+//       insert.updated_at = getCurrentDateTime();
+//       const updateData = await sqlModel.update(
+//         "emp_payslip",
+//         insert,
+//         {
+//           emp_id,
+//           payslip_for_month,
+//         }
+//       );
+
+//       if (updateData.error) {
+//         return res.status(500).send(updateData);
+//       } else {
+//         return res.status(200).send({ status: true, message: "Data Updated" });
+//       }
+//     } else {
+//       insert.created_at = getCurrentDateTime();
+//       const saveData = await sqlModel.insert("emp_payslip", insert);
+
+//       if (saveData.error) {
+//         return res.status(500).send(saveData);
+//       } else {
+//         return res.status(200).send({ status: true, message: "Data Saved" });
+//       }
+//     }
+//   } catch (error) {
+//     res.status(500).send({ status: false, error: error.message });
+//   }
+// };
+
+
 exports.insertSalaryPayslip = async (req, res, next) => {
   try {
-    const { emp_id, payslip_for_month,net_pay, paid_days, salary, earning,earning_amount,deduction_amount, deduction,employeer_ctc } = req.body;
+    const { emp_id, payslip_for_month, net_pay, paid_days, salary, earning, earning_amount, deduction_amount, deduction, employeer_ctc } = req.body;
 
     // Validate fields
     const validation = validateFields({
@@ -139,6 +295,14 @@ exports.insertSalaryPayslip = async (req, res, next) => {
       });
     }
 
+  
+    let parsedDeduction;
+    try {
+      parsedDeduction = typeof deduction === "string" ? JSON.parse(deduction) : deduction;
+    } catch (error) {
+      return res.status(400).send({ status: false, message: "Invalid JSON format for deduction", statusCode: 1 });
+    }
+
     const insert = {
       company_id: req.user.id,
       emp_id,
@@ -146,35 +310,24 @@ exports.insertSalaryPayslip = async (req, res, next) => {
       paid_days,
       payslip_for_month,
       salary,
-      earning,
+      earning: earning,
       earning_amount,
       deduction_amount,
-      deduction,
-      employeer_ctc
+      deduction: JSON.stringify(parsedDeduction),
+      employeer_ctc: employeer_ctc,
     };
 
-  
-    const existingRecord = await sqlModel.select(
-      "emp_payslip",
-      {}, 
-      {
-        emp_id,
-        payslip_for_month,
-      }
-    );
+    const existingRecord = await sqlModel.select("emp_payslip", {}, { emp_id, payslip_for_month });
 
-   
-    const advanceDeduction = deduction.find((item) => item.name === "Advance");
+
+    const advanceDeduction = parsedDeduction.find((item) => item.name === "Advance");
     if (advanceDeduction && advanceDeduction.amount > 0) {
       const adjustmentAmount = advanceDeduction.amount;
 
-     
+      // Fetch active advances
       const advances = await sqlModel.customQuery(`
-        SELECT * 
-        FROM emp_advances_detail 
-        WHERE emp_id = ? 
-          AND status = 'active' 
-          AND CAST(remaining_balance AS DECIMAL(10, 2)) > 0
+        SELECT * FROM emp_advances_detail 
+        WHERE emp_id = ? AND status = 'active' AND CAST(remaining_balance AS DECIMAL(10, 2)) > 0
       `, [emp_id]);
 
       if (advances.error) {
@@ -185,25 +338,19 @@ exports.insertSalaryPayslip = async (req, res, next) => {
         let remainingAdjustment = adjustmentAmount;
         const adjustmentDate = getCurrentDateTime();
 
-       
         for (const advance of advances) {
           if (remainingAdjustment <= 0) break;
 
           const adjustment = Math.min(remainingAdjustment, advance.remaining_balance);
           const newBalance = advance.remaining_balance - adjustment;
 
-          
-          const updateResult = await sqlModel.update(
-            "emp_advances_detail",
-            { remaining_balance: newBalance },
-            { id: advance.id }
-          );
+
+          const updateResult = await sqlModel.update("emp_advances_detail", { remaining_balance: newBalance }, { id: advance.id });
 
           if (updateResult.error) {
             return res.status(500).send(updateResult);
           }
 
-        
           const adjustmentData = {
             emp_id,
             company_id: req.user.id,
@@ -216,7 +363,6 @@ exports.insertSalaryPayslip = async (req, res, next) => {
           };
 
           const insertAdjustmentResult = await sqlModel.insert("advance_adjustments", adjustmentData);
-
           if (insertAdjustmentResult.error) {
             return res.status(500).send(insertAdjustmentResult);
           }
@@ -224,7 +370,7 @@ exports.insertSalaryPayslip = async (req, res, next) => {
           remainingAdjustment -= adjustment;
         }
 
-        // Check if any adjustment amount remains unallocated
+     
         if (remainingAdjustment > 0) {
           return res.status(400).send({
             status: false,
@@ -239,37 +385,39 @@ exports.insertSalaryPayslip = async (req, res, next) => {
       }
     }
 
-    // Insert or update payslip record
-    if (existingRecord.length > 0) {
-      insert.updated_at = getCurrentDateTime();
-      const updateData = await sqlModel.update(
-        "emp_payslip",
-        insert,
-        {
-          emp_id,
-          payslip_for_month,
-        }
-      );
+  
+    insert.updated_at = getCurrentDateTime();
+    insert.created_at = insert.created_at || getCurrentDateTime();
 
-      if (updateData.error) {
-        return res.status(500).send(updateData);
-      } else {
-        return res.status(200).send({ status: true, message: "Data Updated" });
-      }
+    const saveData = await sqlModel.customQuery(`
+      INSERT INTO emp_payslip (company_id, emp_id, net_pay, paid_days, payslip_for_month, salary, earning, earning_amount, deduction_amount, deduction, employeer_ctc, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE 
+        net_pay = VALUES(net_pay), 
+        paid_days = VALUES(paid_days), 
+        salary = VALUES(salary), 
+        earning = VALUES(earning), 
+        earning_amount = VALUES(earning_amount), 
+        deduction_amount = VALUES(deduction_amount), 
+        deduction = VALUES(deduction), 
+        employeer_ctc = VALUES(employeer_ctc), 
+        updated_at = VALUES(updated_at)
+    `, [
+      insert.company_id, insert.emp_id, insert.net_pay, insert.paid_days, insert.payslip_for_month,
+      insert.salary, insert.earning, insert.earning_amount, insert.deduction_amount,
+      insert.deduction, insert.employeer_ctc, insert.created_at, insert.updated_at
+    ]);
+
+    if (saveData.error) {
+      return res.status(500).send(saveData);
     } else {
-      insert.created_at = getCurrentDateTime();
-      const saveData = await sqlModel.insert("emp_payslip", insert);
-
-      if (saveData.error) {
-        return res.status(500).send(saveData);
-      } else {
-        return res.status(200).send({ status: true, message: "Data Saved" });
-      }
+      return res.status(200).send({ status: true, message: "Data Saved or Updated" });
     }
   } catch (error) {
     res.status(500).send({ status: false, error: error.message });
   }
 };
+
 
 
 exports.getSalarySettings = async (req, res, next) => {
