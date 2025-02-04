@@ -193,16 +193,16 @@ exports.getAttendance = async (req, res, next) => {
           existingEmployee.latestCheckInStatus = null;
         }
 
-        if (item.checkInlogitude) {
-          existingEmployee.checkInlogitude = item.checkInlogitude;
+        if (item.lat_check_in) {
+          existingEmployee.lat_check_in = item.lat_check_in;
         } else if (existingEmployee.checkIns.length > 0) {
-          existingEmployee.checkInlogitude = null;
+          existingEmployee.lat_check_in = null;
         }
 
-        if (item.checkInlatitude) {
-          existingEmployee.checkInlatitude = item.checkInlatitude;
+        if (item.long_check_in) {
+          existingEmployee.long_check_in = item.long_check_in;
         } else if (existingEmployee.checkIns.length > 0) {
-          existingEmployee.checkInlatitude = null;
+          existingEmployee.long_check_in = null;
         }
 
         existingEmployee.checkin_status = item.checkin_status || "Absent";
@@ -233,8 +233,8 @@ exports.getAttendance = async (req, res, next) => {
           latestCheckInTime: item.check_in_time || null,
           latestCheckOutTime: item.check_out_time || null,
           latestCheckInStatus: item.latestCheckInStatus || null,
-          checkInlogitude: item.checkInlogitude || null,
-          checkInlatitude: item.checkInlatitude || null,
+          checkInlogitude: item.lat_check_in || null,
+          checkInlatitude: item.long_check_in || null,
           totalDuration: item.total_duration || "0h 0m 0s",
           totalDistance: item.total_distance || 0,
           checkin_status: item.checkin_status || "Absent",
