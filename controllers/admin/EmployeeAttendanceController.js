@@ -140,6 +140,8 @@ exports.getAttendance = async (req, res, next) => {
       c.date,
       c.check_in_time,
       c.checkin_status AS latestCheckInStatus,
+      c.lat_check_in,
+      c.long_check_in,
       c.check_out_time,
       c.duration   
     FROM employees e
