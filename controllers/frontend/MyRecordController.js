@@ -256,7 +256,7 @@ exports.getRecord = async (req, res, next) => {
       company_id,
       queryDates,
     ]);
-    console.log(checkdata);
+    // console.log(checkdata);
     // Determine check-in status
     const checkin_status =
       checkdata.length > 0
@@ -275,24 +275,24 @@ exports.getRecord = async (req, res, next) => {
         icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/User.png",
         detail: attendancePercentage,
       },
-      // {
-      //   title: "Distance Covered",
-      //   icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
-      //   detail:
-      //     (!isNaN(Number(data.total_distance))
-      //       ? Number(data.total_distance).toFixed(2)
-      //       : "0") + " Km",
-      // },
+      {
+        title: "Distance Covered",
+        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
+        detail:
+          (!isNaN(Number(data.total_distance))
+            ? Number(data.total_distance).toFixed(2)
+            : "0") + " Km",
+      },
       {
         title: "Check-in Status",
         icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
         detail: checkin_status,
       },
-      {
-        title: "Remaining Leaves",
-        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Date.png",
-        detail: totalRemainingLeave || "0",
-      },
+      // {
+      //   title: "Remaining Leaves",
+      //   icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/Date.png",
+      //   detail: totalRemainingLeave || "0",
+      // },
     ];
 
     if (response.length === 0) {
