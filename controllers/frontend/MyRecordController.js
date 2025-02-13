@@ -285,7 +285,7 @@ exports.getRecord = async (req, res, next) => {
       },
       {
         title: "Check-in Status",
-        icon: "https://telindia.s3.ap-south-1.amazonaws.com/icons/location.png",
+        icon: "https://trackingapi.crrescita.com/images/support/image2025-02-13T07-19-22.830Z-compressed_image_main.jpg",
         detail: checkin_status,
       },
       // {
