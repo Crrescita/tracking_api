@@ -348,3 +348,83 @@ exports.setAllCoordinates = async (req, res) => {
     });
   }
 };
+
+
+exports.getCoordinates = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(400).json({
+        status: false,
+        message: "Token is required",
+      });
+    }
+
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id", "timer"],
+      { api_token: token }
+    );
+
+    if (!employee) {
+      return res.status(404).json({
+        status: false,
+        message: "Employee not found",
+      });
+    }
+
+    const { date, time } = req.body;
+
+    if (!date) {
+      return res.status(400).json({
+        status: false,
+        message: "Date is required",
+      });
+    }
+
+    const trackingData = await sqlModel.customQuery(
+      `SELECT latitude, longitude, datetime_mobile 
+       FROM emp_tracking 
+       WHERE emp_id = ? AND date = ? 
+       ORDER BY datetime_mobile ASC`,
+      [employee.id, date]
+    );
+
+    
+    if (trackingData.length == 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No tracking data found for the given date",
+      });
+    }
+
+    let filteredData = [];
+    let lastTimestamp = null;
+
+    for (const entry of trackingData) {
+      const currentTimestamp = new Date(entry.datetime_mobile);
+
+      if (!lastTimestamp || (currentTimestamp - lastTimestamp) >= 15 * 60 * 1000) {
+        filteredData.push(entry);
+        lastTimestamp = currentTimestamp;
+      }
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Coordinates retrieved successfully",
+      data: filteredData,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: "An error occurred while fetching coordinates",
+      error: error.message,
+    });
+  }
+};
+
+
+

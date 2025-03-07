@@ -149,4 +149,6 @@ router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
 });
 
+// return coordinates
+router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
 module.exports = router;
