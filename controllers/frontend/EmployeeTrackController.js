@@ -35,7 +35,7 @@ const getCurrentTime = () => {
   return formattedTime;
 };
 
-exports.getCoordinates = async (req, res, next) => {
+exports.getCoordinatesWithDistance = async (req, res, next) => {
   try {
     let query =
       "SELECT * FROM emp_tracking WHERE latitude != 0.0 AND longitude != 0.0";
@@ -393,7 +393,7 @@ exports.getCoordinates = async (req, res) => {
 
     
     if (trackingData.length == 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         status: false,
         message: "No tracking data found for the given date",
       });

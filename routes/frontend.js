@@ -89,7 +89,7 @@ router.post("/checkOut", CheckInController.checkOut);
 router.post("/setCoordinates", EmployeeTrackController.setCoordinates);
 router.post("/setAllCoordinates", EmployeeTrackController.setAllCoordinates);
 
-router.get("/getCoordinates", EmployeeTrackController.getCoordinates);
+router.get("/getCoordinates", EmployeeTrackController.getCoordinatesWithDistance);
 
 // employee edit
 router.get("/getEmployee", EmployeeController.employeesGet);
