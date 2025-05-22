@@ -107,6 +107,7 @@ router
 router
   .get("/employeesDetails/:id?",EmployeesController.employeesGet)
  
+router.get("/task-list/:emp_id", AssignTaskController.getEmployeeTask)
 
 router.use(verifyToken);
 
@@ -375,9 +376,11 @@ router.post(
   "/assignTask-delete-multiple",
   AssignTaskController.deleteMultipleAssignTask
 );
+// emp task
+
 
 router.post("/sendReminder" ,AssignTaskController.sendReminder);
-
+router.post("/sendTaskmessage" ,AssignTaskController.sendTaskChatMessage);
 // advance
 router.get("/advance/:emp_id?" , AdvanceController.getAdvance)
 router.post("/addAdvance" , AdvanceController.addAdvance)
