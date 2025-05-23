@@ -101,6 +101,8 @@ router.get("/sendMessage", WhatsappController.whatsapp);
 // update task status by emp
 router.post("/updateTaskStatus" , AssignTaskController.updateTaskStatus);
 router.get("/empTaskStatus" , AssignTaskController.empTaskStatus)
+router.post("/sendTaskmessage" ,AssignTaskController.sendTaskChatMessage);
+
 router
   .get("/empAssignTask/:id?", AssignTaskController.getAssignTask)
 
@@ -380,7 +382,6 @@ router.post(
 
 
 router.post("/sendReminder" ,AssignTaskController.sendReminder);
-router.post("/sendTaskmessage" ,AssignTaskController.sendTaskChatMessage);
 // advance
 router.get("/advance/:emp_id?" , AdvanceController.getAdvance)
 router.post("/addAdvance" , AdvanceController.addAdvance)
