@@ -419,6 +419,7 @@ exports.assignTask = async (req, res, next) => {
 
         // Send WhatsApp notification to each employee
         await sendWhatsapp.taskAssigned({
+          taskId:taskId,
           task_id: insert.task_id,
           emp_id: emp.id,
           name: emp.name,

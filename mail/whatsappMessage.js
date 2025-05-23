@@ -51,6 +51,7 @@ async function inviteLinkToEmp(data) {
 }
 
 async function taskAssigned(data) {
+  console.log(data)
   const apiUrl = "https://api.interakt.ai/v1/public/message/";
   const headers = {
     Authorization:
