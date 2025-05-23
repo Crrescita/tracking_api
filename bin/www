@@ -88,3 +88,37 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+const { Server } = require('socket.io');
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:4200",
+      "http://localhost:4900",
+      "http://localhost:3000",
+      "http://localhost:6000",
+      "http://localhost:60912",
+      "https://emptracking.crrescita.com"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("🟢 Socket connected:", socket.id);
+
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room: ${roomId}`);
+  });
+
+  socket.on("sendMessage", (data) => {
+    const { roomId, message } = data;
+    io.to(roomId).emit("newMessage", message);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔴 Socket disconnected:", socket.id);
+  });
+});

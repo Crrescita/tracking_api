@@ -58,7 +58,7 @@ async function taskAssigned(data) {
     "Content-Type": "application/json",
   };
 
-  const inviteLink = `${process.env.WEBSITE_BASE_URL}pages/task/${data.emp_id}/${data.task_id}`;
+  const inviteLink = `${process.env.WEBSITE_BASE_URL}pages/task/${data.emp_id}/${data.task_id}/${data.taskId}`;
 
 
   const body = {

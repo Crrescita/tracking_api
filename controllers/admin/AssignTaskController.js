@@ -400,7 +400,6 @@ exports.assignTask = async (req, res, next) => {
         return res.status(500).send({ status: false, message: "No employees found" });
       }
 
-      // Insert task into the database
       const saveData = await sqlModel.insert("assign_task", insert);
 
       if (saveData.error) {
@@ -849,7 +848,10 @@ exports.sendTaskChatMessage = async (req, res) => {
     // Insert into DB and return inserted row
   const inserted = await sqlModel.insert("task_messages", newMsg);
 
-  //  await db('task_messages').insert(newMsg).returning('*');
+
+
+   const io = req.app.get('io');
+    io.to(`task-${task_id}`).emit('newTaskMessage', inserted);
 
     return res.status(201).json({ success: true, data: inserted });
   } catch (err) {
