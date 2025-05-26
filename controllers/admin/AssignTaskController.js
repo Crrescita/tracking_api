@@ -1,6 +1,8 @@
 const sqlModel = require("../../config/db");
 const sendWhatsapp = require("../../mail/whatsappMessage");
 const admin = require("../../firebase");
+const cron = require("node-cron");
+// const {  getCurrentDateTime } = require("../../config/until");
 
 const generateTaskID = () => {
   const prefix = "TMS";
@@ -438,9 +440,6 @@ exports.assignTask = async (req, res, next) => {
       });
 
        
-        
- 
-
       // Create group chat
       await sqlModel.insert("task_chats", {
         task_id: taskId,
@@ -795,6 +794,7 @@ exports.sendReminder = async (req, res, next) => {
         name: emp.name,
         status: task.status,
         task_id: task.task_id,
+        task_no :task.id,
         task_title: task.task_title,
         start_date: formatDate(task.start_date),
         end_date: formatDate(task.end_date),
@@ -944,6 +944,79 @@ exports.getEmployeeTask = async (req, res, next) => {
 
 
 
+
+async function runFrequencyNotifier() {
+  try {
+    const tasks = await sqlModel.customQuery(`
+      SELECT * FROM assign_task
+      WHERE frequency IS NOT NULL 
+      AND status NOT IN ('Completed', 'Cancelled') 
+      AND notify_start_time IS NOT NULL
+    `);
+
+    const now = new Date();
+
+    for (const task of tasks) {
+      const [value, unit] = task.frequency.split(" ");
+      const freqValue = parseInt(value);
+      const freqUnit = unit.toLowerCase();
+
+      const baseTime = new Date(task.last_notified_at || task.notify_start_time);
+
+      let nextNotify = new Date(baseTime);
+      if (freqUnit.includes("day")) {
+        nextNotify.setDate(nextNotify.getDate() + freqValue);
+      } else if (freqUnit.includes("month")) {
+        nextNotify.setMonth(nextNotify.getMonth() + freqValue);
+      } else if (freqUnit.includes("hour")) {
+        nextNotify.setHours(nextNotify.getHours() + freqValue);
+      }
+
+      // First-time run check
+      const firstNotify = new Date(task.notify_start_time);
+      if (!task.last_notified_at && now >= firstNotify && now < nextNotify) {
+        nextNotify = firstNotify;
+      }
+
+      if (now >= nextNotify) {
+        const empIds = task.emp_id.split(",").map(id => Number(id.trim()));
+        const employees = await sqlModel.customQuery(
+          `SELECT id, name, mobile FROM employees WHERE id IN (${empIds.map(() => "?").join(",")})`,
+          empIds
+        );
+
+        for (const emp of employees) {
+          await sendWhatsapp.taskReminderUpdate({
+            emp_id: emp.id,
+            name: emp.name,
+            status: task.status,
+            task_id: task.task_id,
+            task_title: task.task_title,
+            start_date: formatDate(task.start_date),
+            end_date: formatDate(task.end_date),
+            message: `🔁 Recurring Task Reminder: ${task.task_title}`,
+            mobile: emp.mobile,
+            task_no:task.id,
+          });
+        }
+
+        await sqlModel.update("assign_task", {
+          last_notified_at: getCurrentDateTime()
+        }, { id: task.id });
+      }
+    }
+
+    console.log(`[${getCurrentDateTime()}] ✅ Recurring task notifications checked.`);
+  } catch (error) {
+    console.error(`[${getCurrentDateTime()}] ❌ Error in frequency notifier:`, error.message);
+  }
+}
+
+cron.schedule("*/15 * * * *", () => {
+  runFrequencyNotifier();
+});
+
+// console.log("🔁 Recurring Task Notification Scheduler Started...");
 
 
 

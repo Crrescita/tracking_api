@@ -142,7 +142,7 @@ async function taskReminderUpdate(data) {
     "Content-Type": "application/json",
   };
 
-  const inviteLink = `${process.env.WEBSITE_BASE_URL}pages/task/${data.emp_id}/${data.task_id}`;
+  const inviteLink = `${process.env.WEBSITE_BASE_URL}pages/task/${data.emp_id}/${data.task_id}/${data.task_no}`;
 
   const body = {
     countryCode: "+91",
