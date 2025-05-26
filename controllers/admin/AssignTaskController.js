@@ -170,7 +170,23 @@ exports.getAssignTask = async (req, res, next) => {
 
     allEmpIds = [...new Set(allEmpIds)];
 
-    const employeeQuery = `SELECT id, name, image FROM employees WHERE id IN (${allEmpIds.join(",")})`;
+    // const employeeQuery = `SELECT id, name, image FROM employees WHERE id IN (${allEmpIds.join(",")})`;
+
+    const employeeQuery = `
+  SELECT 
+    e.id, 
+    e.name, 
+    e.image,
+    d.name AS designation,
+    b.name AS branch,
+    dept.name AS department
+  FROM employees e
+  LEFT JOIN designation d ON e.designation = d.id
+  LEFT JOIN branch b ON e.branch = b.id
+  LEFT JOIN department dept ON e.department = dept.id
+  WHERE e.id IN (${allEmpIds.join(",")})
+`;
+
     const employeeDetails = await sqlModel.customQuery(employeeQuery);
 
     const taskStatusQuery = `SELECT task_id, emp_id, status, comment FROM assign_task_status WHERE task_id IN (${allTaskIds.join(",")})`;
@@ -183,6 +199,9 @@ exports.getAssignTask = async (req, res, next) => {
           id: emp.id,
           name: emp.name,
           image: `${process.env.BASE_URL}${emp.image}`,
+          designation: emp.designation,
+      branch: emp.branch,
+      department: emp.department,
         };
       }
     });
@@ -742,7 +761,7 @@ exports.empTaskStatus = async (req, res, next) => {
 
 exports.sendReminder = async (req, res, next) => {
   try {
-    const { emp_ids, task_id } = req.body;
+    const { emp_ids, task_id, message: customMessage } = req.body;
 
     if (!emp_ids || !task_id) {
       return res.status(400).send({ status: false, message: "Missing required parameters" });
@@ -782,11 +801,23 @@ exports.sendReminder = async (req, res, next) => {
     };
 
     for (const emp of employeeDetails) {
-      let message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
 
-      if (isOverdue) {
-        message = `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`;
-      }
+       let message;
+
+  if (customMessage) {
+    message = customMessage;
+  } else if (isOverdue) {
+    message = `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`;
+  } else {
+    message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
+  }
+
+
+      // let message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
+
+      // if (isOverdue) {
+      //   message = `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`;
+      // }
 
       // Send WhatsApp reminder
       await sendWhatsapp.taskReminderUpdate({
@@ -875,7 +906,7 @@ exports.getEmployeeTask = async (req, res, next) => {
           emp_id LIKE '%,${empId}' OR
           emp_id = '${empId}'
         
-      ORDER BY start_date ASC
+      ORDER BY end_date ASC
     `;
 
     const tasks = await sqlModel.customQuery(taskQuery);
