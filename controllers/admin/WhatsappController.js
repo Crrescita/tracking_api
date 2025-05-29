@@ -907,147 +907,281 @@ const axios = require("axios");
 
 // 22 may 2025
 const users = [
-  // { name: "Vishal Sharma", mobile: "9871308531" },
-  // { name: "Damodar Sutradhar", mobile: "9999931280" },
-  // { name: "Puneet Kumar", mobile: "8826721245" },
-  // { name: "Satnam Singh", mobile: "8447037041" },
-  // { name: "Upendra Singh Bhati", mobile: "9479359759" },
-  // { name: "Heera Kumar", mobile: "9205334726" },
-  // { name: "Sanjay Sharma", mobile: "9953357198" },
-  // { name: "Gautam Kumar", mobile: "9540093566" },
-  // { name: "Hardeep Singh Sahni", mobile: "9958630001" },
-  // { name: "Yogender Kumar", mobile: "9971724055" },
-  // { name: "Dinesh Kumar Dedha", mobile: "9310422958" },
-  // { name: "Eshant Kumar", mobile: "9761055099" },
-  // { name: "Jitender Kumar", mobile: "8800019108" },
-  // { name: "Rajan Arora", mobile: "9818773838" },
-  // { name: "Anil Kumar", mobile: "9896544813" },
-  // { name: "Manpreet Singh", mobile: "9810398003" },
-  // { name: "Ankit Kumar Gupta", mobile: "7011887215" },
-  // { name: "Joginder Kumar", mobile: "8950356263" },
-  // { name: "Amar Nath Tandon", mobile: "9873419011" },
-  // { name: "Prabodh Kumar Shivahare", mobile: "9580861825" },
-  // { name: "Nandan Gupta", mobile: "7376914523" },
-  // { name: "Amit Srivastava", mobile: "7408886887" },
-  // { name: "Ravi Prakash Srivastava", mobile: "9451462929" },
-  // { name: "Gaurav Bishnoi", mobile: "9910699836" },
-  // { name: "Narender Kumar Singh", mobile: "9312706692" },
-  // { name: "Manish Kumar Sharma", mobile: "8285750021" },
-  // { name: "Viipin Kumar Alag", mobile: "9971135727" },
-  // { name: "Sanjeev Kumar Bhola", mobile: "9718772929" },
-  // { name: "Suraj Vij", mobile: "8383819145" },
-  // { name: "Jatin Dhawan", mobile: "9136337778" },
-  // { name: "Mohit Gupta", mobile: "9990581157" },
-  // { name: "Jasbir Singh", mobile: "9871832086" },
-  // { name: "Gopalkrishna Mishra", mobile: "8377887159" },
-  // { name: "Pankaj Kumar Mishra", mobile: "9958879868" },
-  // { name: "Abhishek Sharma", mobile: "9654198585" },
-  // { name: "Bhagwat", mobile: "9540445431" },
-  // { name: "Dinesh Kumar Sah", mobile: "9871303589" },
-  // { name: "Parveen", mobile: "9810516646" },
-  // { name: "Chandan Kumar", mobile: "8384068557" },
-  // { name: "Munna Lal", mobile: "9315809090" },
-  // { name: "Vijay Kumar", mobile: "9899999791" },
-  // { name: "Satish Kumar", mobile: "9971636456" },
-  // { name: "Anil", mobile: "9205332746" },
-  // { name: "Shobhna Khanna", mobile: "9971423376" },
-  // { name: "M.P. Singh", mobile: "9582085860" },
-  // { name: "Arun Khanna", mobile: "9211072983" },
-  // { name: "Ravinder Kaur", mobile: "9911706963" },
-  // { name: "Kamal Kumar Arora", mobile: "9990491492" },
-  // { name: "Manali", mobile: "9999707608" },
-  // { name: "Bhumesh Kumar Sharma", mobile: "9756157125" },
-  // { name: "Deepika Gupta", mobile: "9643472072" },
-  // { name: "Chirag Bali", mobile: "8595735698" },
-  // { name: "Ajay Kumar", mobile: "8826473609" },
-  // { name: "Sunita Negi", mobile: "9873554143" },
-  // { name: "Deepika Tanwar", mobile: "9582899271" },
-  // { name: "Ankur Tiwari", mobile: "8929308885" },
-  // { name: "Dhanraj Singh", mobile: "9654495008" },
-  // { name: "Tushar Mishra", mobile: "9899999317" },
-  // { name: "Shefali", mobile: "9891476718" },
-  // { name: "Superna Chandra", mobile: "7001009427" },
-  // { name: "Sakshi", mobile: "9310226188" },
-  // { name: "Ruchi", mobile: "8447215815" },
-  // { name: "Pappu Kumar", mobile: "9871595308" },
-  // { name: "Sonali Bisht", mobile: "9205487358" },
-  // { name: "Chanchal", mobile: "9582805020" },
-  // { name: "Swati Chawla", mobile: "8700591920" },
-  // { name: "Harpreet Kaur", mobile: "7827130693" },
-  // { name: "N.K. Sood", mobile: "9818519969" },
-  // { name: "Sharwan", mobile: "7838156329" },
-  // { name: "Praveen Kumar", mobile: "9211093259" },
-  // { name: "Chandresh", mobile: "7838625937" },
-  // { name: "Sanjeev Choudhary", mobile: "9013268587" },
-  // { name: "Mahipal Singh", mobile: "9718253684" },
-  // { name: "Vimal Kumar", mobile: "8383853879" },
-  { name: "Puneet Kumar", mobile: "7983406641" },
-  { name: "Satish Kumar Yadav", mobile: "7683070301" },
-  { name: "Prabhat Sharma", mobile: "9536937103" },
-  { name: "Vivek Dubey", mobile: "9811188367" },
-  { name: "Vipin Singh", mobile: "9599785572" },
-  { name: "Shashi Shekhar Jha", mobile: "8851470204" },
-  { name: "Jamsed", mobile: "9810376024" },
-  { name: "Suneel Kumar Mishra", mobile: "9871379336" },
-  { name: "Narendra Singh Rana", mobile: "9560669148" },
-  { name: "Lalit Sharma", mobile: "8376036874" },
-  { name: "Pradeep Kumar Singh", mobile: "9818749100" },
-  { name: "Ajit Bhatnagar", mobile: "9212111603" },
-  { name: "Narender Kumar", mobile: "9266530844" },
-  { name: "Pankaj Kumar", mobile: "9717071910" },
-  { name: "Jitender Saini", mobile: "9811691742" },
-  { name: "Kapil", mobile: "8287575342" },
-  { name: "Vivekanand Sharma", mobile: "9654658678" },
-  { name: "Yogesh Rastogi", mobile: "9891928489" },
-  { name: "Priyanka Arora", mobile: "9910537954" },
-  { name: "Budh Ram", mobile: "8010719978" },
-  { name: "Matadin Tiwari", mobile: "9311325147" },
-  { name: "Shyam Singh", mobile: "9811693707" },
-  { name: "Ramesh", mobile: "8601744166" },
-  { name: "Upender Kumar", mobile: "9971764735" },
-  { name: "Bhagwan Dass", mobile: "8700783362" },
-  { name: "Kuldeep", mobile: "9821109754" },
-  { name: "Lal Mohd", mobile: "9971166598" },
-  { name: "Mohit", mobile: "9315202740" },
-  { name: "Amit", mobile: "9667028183" },
-  { name: "Pankaj", mobile: "7289071320" },
-  { name: "Sujata", mobile: "8287607906" },
-  { name: "Manisha", mobile: "9289110553" },
-  { name: "Nilesh Kumar", mobile: "8595294903" },
-  { name: "Mamta", mobile: "9310531278" },
-  { name: "Chirjeev Kaur", mobile: "8860176064" },
-  { name: "Priyanshi", mobile: "9509515329" },
-  { name: "Deepika", mobile: "9643472072" },
-  { name: "Sunil Singh", mobile: "9811934874" },
-  { name: "Ranjeet Mishra", mobile: "9971747700" },
-  { name: "Param S Pal", mobile: "9582211220" },
-  { name: "Rajesh Maurya", mobile: "9718838808" },
-  { name: "Neha Daga", mobile: "8800664533" },
-  { name: "Yogesh Kumar", mobile: "9818015762" },
-  { name: "Reeta Shukla", mobile: "9810400466" },
-  { name: "Shobha", mobile: "9821799707" },
-  { name: "Akansha", mobile: "9654843796" },
-  { name: "Ritika Sen", mobile: "9971630212" },
-  { name: "Poonam", mobile: "7018630132" },
-  { name: "Pankaj", mobile: "9599785575" },
-  { name: "Gurneet", mobile: "9821298537" },
-  { name: "Shyam Singh", mobile: "9537247158" },
-  { name: "Vansh Mishra", mobile: "9821868971" },
-  { name: "Jyoti", mobile: "8595324825" },
-  { name: "Manoj Bhan", mobile: "9818836723" },
-  { name: "Ashutosh Kumar Pandey", mobile: "9971365353" },
-  { name: "Gurleen kaur Sidhu", mobile: "8595413389" },
-  { name: "Sharvan", mobile: "8860712896" },
-  { name: "Vipin Singh", mobile: "9810376083" },
-  { name: "Bhumesh Sharma", mobile: "9540573483" },
-  { name: "Mohan Hira", mobile: "9540021439" },
-  { name: "Abhishek Pandey", mobile: "8858191922" },
-  { name: "Parul Malik", mobile: "8750080839" },
-  { name: "Aman", mobile: "7210603112" },
-  { name: "Sandeep singh", mobile: "8010399397" },
-  { name: "Satyam", mobile: "7905979588" },
-  { name: "Vikas Raghuwanshi", mobile: "9953856986" }
+  // {
+  //   name: "Vishal Sharma",
+  //   mobile: "9871308531"
+  // },
+  // {
+  //   name: "Damodar Sutradhar",
+  //   mobile: "9999931280"
+  // },
+  // {
+  //   name: "Puneet Kumar",
+  //   mobile: "8826721245"
+  // },
+  // {
+  //   name: "Upendra Singh Bhati",
+  //   mobile: "9479359759"
+  // },
+  // {
+  //   name: "Heera Kumar",
+  //   mobile: "9205334726"
+  // },
+  // {
+  //   name: "Sanjay Sharma",
+  //   mobile: "9953357198"
+  // },
+  // {
+  //   name: "Hardeep Singh Sahni",
+  //   mobile: "9958630001"
+  // },
+  // {
+  //   name: "Yogender Kumar",
+  //   mobile: "9971724055"
+  // },
+  // {
+  //   name: "Dinesh Kumar Dedha",
+  //   mobile: "9310422958"
+  // },
+  // {
+  //   name: "Jitender Kumar",
+  //   mobile: "8800019108"
+  // },
+  // {
+  //   name: "Rajan Arora",
+  //   mobile: "9818773838"
+  // },
+  // {
+  //   name: "Anil Kumar",
+  //   mobile: "9896544813"
+  // },
+  // {
+  //   name: "Manpreet Singh",
+  //   mobile: "9810398003"
+  // },
+  // {
+  //   name: "Amar Nath Tandon",
+  //   mobile: "9873419011"
+  // },
+  // {
+  //   name: "Prabodh Kumar Shivahare",
+  //   mobile: "9580861825"
+  // },
+  // {
+  //   name: "Nandan Gupta",
+  //   mobile: "7376914523"
+  // },
+  // {
+  //   name: "Amit Srivastava",
+  //   mobile: "7408886887"
+  // },
+  // {
+  //   name: "Ravi Prakash Srivastava",
+  //   mobile: "9451462929"
+  // },
+  // {
+  //   name: "Gaurav Bishnoi",
+  //   mobile: "9910699836"
+  // },
+  // {
+  //   name: "Narender Kumar Singh",
+  //   mobile: "9312706692"
+  // },
+  // {
+  //   name: "Manish Kumar Sharma",
+  //   mobile: "8285750021"
+  // },
+  // {
+  //   name: "Viipin Kumar Alag",
+  //   mobile: "9971135727"
+  // },
+  // {
+  //   name: "Sanjeev Kumar Bhola",
+  //   mobile: "9718772929"
+  // },
+  // {
+  //   name: "Suraj Vij",
+  //   mobile: "8383819145"
+  // },
+  // {
+  //   name: "Jatin Dhawan",
+  //   mobile: "9136337778"
+  // },
+  // {
+  //   name: "Mohit Gupta",
+  //   mobile: "9990581157"
+  // },
+  // {
+  //   name: "Jasbir Singh",
+  //   mobile: "9871832086"
+  // },
+  // {
+  //   name: "Gopalkrishna Mishra",
+  //   mobile: "8377887159"
+  // },
+  // {
+  //   name: "Pankaj Kumar Mishra",
+  //   mobile: "9958879868"
+  // },
+  // {
+  //   name: "Abhishek Sharma",
+  //   mobile: "9654198585"
+  // },
+  // {
+  //   name: "Bhagwat",
+  //   mobile: "9540445431"
+  // },
+  // {
+  //   name: "Dinesh Kumar Sah",
+  //   mobile: "9871303589"
+  // },
+  // {
+  //   name: "Parveen",
+  //   mobile: "9810516646"
+  // },
+  // {
+  //   name: "Munna Lal",
+  //   mobile: "9315809090"
+  // },
+  // {
+  //   name: "Satish Kumar",
+  //   mobile: "9971636456"
+  // },
+  // {
+  //   name: "Anil",
+  //   mobile: "9205332746"
+  // },
+  // {
+  //   name: "Shobhna Khanna",
+  //   mobile: "9971423376"
+  // },
+  // {
+  //   name: "M.P. Singh",
+  //   mobile: "9582085860"
+  // },
+  // {
+  //   name: "Arun Khanna",
+  //   mobile: "9211072983"
+  // },
+  // {
+  //   name: "Ravinder Kaur",
+  //   mobile: "9911706963"
+  // },
+  {
+    name: "Kamal Kumar Arora",
+    mobile: "9990491492"
+  },
+  {
+    name: "Manali",
+    mobile: "9999707608"
+  },
+  {
+    name: "Bhumesh Kumar Sharma",
+    mobile: "9756157125"
+  },
+  {
+    name: "Deepika Gupta",
+    mobile: "9643472072"
+  },
+  {
+    name: "Chirag Bali",
+    mobile: "8595735698"
+  },
+  {
+    name: "Ajay Kumar",
+    mobile: "8826473609"
+  },
+  {
+    name: "Sunita Negi",
+    mobile: "9873554143"
+  },
+  {
+    name: "Deepika Tanwar",
+    mobile: "9582899271"
+  },
+  {
+    name: "Ankur Tiwari",
+    mobile: "8929308885"
+  },
+  {
+    name: "Dhanraj Singh",
+    mobile: "9654495008"
+  },
+  {
+    name: "Tushar Mishra",
+    mobile: "9899999317"
+  },
+  {
+    name: "Shefali",
+    mobile: "9891476718"
+  },
+  {
+    name: "Superna Chandra",
+    mobile: "7001009427"
+  },
+  {
+    name: "Sakshi",
+    mobile: "9310226188"
+  },
+  {
+    name: "Ruchi",
+    mobile: "8447215815"
+  },
+  {
+    name: "Pappu Kumar",
+    mobile: "9871595308"
+  },
+  {
+    name: "Sonali Bisht",
+    mobile: "9205487358"
+  },
+  {
+    name: "Chanchal",
+    mobile: "9582805020"
+  },
+  {
+    name: "Swati Chawla",
+    mobile: "8700591920"
+  },
+  {
+    name: "N.K. Sood",
+    mobile: "9818519969"
+  },
+  {
+    name: "Sharwan",
+    mobile: "7838156329"
+  },
+  {
+    name: "Praveen Kumar",
+    mobile: "9211093259"
+  },
+  {
+    name: "Chandresh",
+    mobile: "7838625937"
+  },
+  {
+    name: "Mahipal Singh",
+    mobile: "9718253684"
+  },
+  {
+    name: "Vimal Kumar",
+    mobile: "8383853879"
+  },
+  {
+    name: "Puneet Kumar",
+    mobile: "7983406641"
+  },
+  {
+    name: "Satish Kumar Yadav",
+    mobile: "7683070301"
+  },
+  {
+    name: "Prabhat Sharma",
+    mobile: "9536937103"
+  }
 ];
+
+
 
 
 exports.whatsapp = async (req, res, next) => {

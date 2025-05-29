@@ -364,6 +364,7 @@ exports.assignTask = async (req, res, next) => {
                 emp_id: empId,
                 name: empDetail[0].name,
                 status: insert.status,
+                task_no:id,
                 task_id: oldTask.task_id,
                 task_title: insert.task_title,
                 start_date: formatDate(insert.start_date),
