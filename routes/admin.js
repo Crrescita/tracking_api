@@ -23,6 +23,7 @@ const SalaryController = require("../controllers/admin/SalaryController");
 const AdvanceController = require("../controllers/admin/AdvanceController");
 const PayrollController = require("../controllers/admin/PayrollController")
 const SupportController = require("../controllers/admin/SupportController");
+// const WhatsappController = require("../controllers/admin/WhatsappController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -406,7 +407,7 @@ router.get(
   EmployeeAttendanceController.getEmployeeReport
 );
 
-
+router.post("/send-whatsapp-bulk" , WhatsappController.whatsappBulk);
 
 // logs
 router.get("/logs", LogController.getLogs);

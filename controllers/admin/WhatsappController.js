@@ -1183,8 +1183,10 @@ const users = [
 
 
 
-
 exports.whatsapp = async (req, res, next) => {
+
+  const { users } = req.body;
+  console.log(users);
   const apiUrl = "https://api.interakt.ai/v1/public/message/";
   const headers = {
     Authorization:
@@ -1247,4 +1249,92 @@ exports.whatsapp = async (req, res, next) => {
     //
   }
   res.json({ message: "sent" });
+};
+
+
+
+// const axios = require("axios");
+
+exports.whatsappBulk = async (req, res, next) => {
+  const { users } = req.body;
+  const apiUrl = "https://api.interakt.ai/v1/public/message/";
+  const headers = {
+    Authorization: "Basic ZjlnbVJyTzkzRzAxc2MzTEdxcjVDV3pvMmtDS0pHUzhleVZOVEhQMGlPQTo=",
+    "Content-Type": "application/json",
+  };
+
+  const inviteLink = "https://drive.google.com/file/d/1pbIHQ0o_WXFPdZ_vdpXiPD0gDiMnhGah/view";
+  const imageurl = "https://telindia.s3.ap-south-1.amazonaws.com/abpal51year/WhatsApp+Image+2024-11-15+at+5.10.19+PM.jpeg";
+  const playstoreLink = "https://play.google.com/store/apps/details?id=com.crrescita.telapp&pcampaignid=web_share";
+
+  const failedUsers = [];
+
+  const sendMessage = async (user) => {
+    const body = {
+      countryCode: "+91",
+      phoneNumber: "",
+      fullPhoneNumber: "+91" + user.mobile,
+      campaignId: "",
+      callbackData: "First Message",
+      type: "Template",
+      template: {
+        name: "checkinalert",
+        languageCode: "en",
+        headerValues: [imageurl],
+        bodyValues: [user.name],
+      },
+    };
+
+    try {
+      const response = await axios.post(apiUrl, body, { headers });
+      console.log(`✅ Message sent to ${user.name} ${user.mobile}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to send to ${user.name} (${user.mobile}):`, error?.response?.data || error.message);
+      return false;
+    }
+  };
+
+  // Process in batches of 15 to stay within limits
+  const batchSize = 15;
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const processUsersInBatches = async (userList, attempt = 1) => {
+    console.log(`📦 Starting attempt ${attempt} with ${userList.length} users`);
+    for (let i = 0; i < userList.length; i += batchSize) {
+      const batch = userList.slice(i, i + batchSize);
+      const failedBatch = [];
+
+      for (const user of batch) {
+        const success = await sendMessage(user);
+        if (!success) failedBatch.push(user);
+        await delay(300); // delay between users to avoid rate limits
+      }
+
+      // delay between batches
+      await delay(3000);
+
+      // Add to failed list to retry later
+      failedUsers.push(...failedBatch);
+    }
+  };
+
+  await processUsersInBatches(users);
+
+  // Retry failed users after waiting 15 seconds
+  if (failedUsers.length > 0) {
+    console.log(`🔁 Retrying ${failedUsers.length} failed messages after delay...`);
+    await delay(15000);
+    const retryFailedUsers = [...failedUsers];
+    failedUsers.length = 0; // reset
+    await processUsersInBatches(retryFailedUsers, 2);
+  }
+
+  if (failedUsers.length > 0) {
+    console.log(`⚠️ Final failed users (${failedUsers.length}):`);
+    failedUsers.forEach((u) => console.log(`${u.name} - ${u.mobile}`));
+    return res.json({ message: "Some messages failed", failedUsers });
+  }
+
+  res.json({ message: "All messages sent successfully!" });
 };
