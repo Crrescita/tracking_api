@@ -360,6 +360,7 @@ exports.insertBackgroundVerification = async (req, res, next) => {
         .send({ status: true, message: "Record inserted successfully." });
     }
   } catch (error) {
+    console.log(error.message)
     return res.status(500).send({
       status: false,
       message: "An error occurred.",
