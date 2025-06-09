@@ -112,6 +112,41 @@ router
  
 router.get("/task-list/:emp_id", AssignTaskController.getEmployeeTask)
 
+router
+  .route("/department/:id?")
+  .get(TeamController.getDepartment)
+
+router
+  .route("/designation/:id?")
+  .get(TeamController.getDesignation)
+
+router
+  .route("/branch/:id?")
+  .get(TeamController.getBranch)
+
+router.get("/employeesBy-mobile", EmployeesController.employeesGetByMobile);
+
+router
+  .route("/employees/:id?")
+  .get(EmployeesController.employeesGet)
+  .post(
+    upload.fields([{ name: "image", maxCount: 1 }]),
+    EmployeesController.employeesInsert
+  )
+  .put(
+    upload.fields([{ name: "image", maxCount: 1 }]),
+    EmployeesController.employeesInsert
+  )
+
+  // emp background verification
+router
+  .route("/backgroundVerification")
+  .get(BackgroundVerificationController.getBackgroundVerification)
+  .post(
+    upload.fields([{ name: "documentFile", maxCount: 1 }]),
+    BackgroundVerificationController.insertBackgroundVerification
+  );
+
 router.use(verifyToken);
 
 router
@@ -140,7 +175,7 @@ router
   )
   .delete(EmployeesController.deleteemployee);
 
-router.get("/employeesBy-mobile", EmployeesController.employeesGetByMobile);
+
 
 router.post(
   "/employees-delete-multiple",
@@ -186,14 +221,7 @@ router
 router.route("/payroll")
 .get(PayrollController.getPayroll);
 
-// emp background verification
-router
-  .route("/backgroundVerification")
-  .get(BackgroundVerificationController.getBackgroundVerification)
-  .post(
-    upload.fields([{ name: "documentFile", maxCount: 1 }]),
-    BackgroundVerificationController.insertBackgroundVerification
-  );
+
 
 // checkin
 router.get("/checkInDetail", CheckInController.getCheckIn);
