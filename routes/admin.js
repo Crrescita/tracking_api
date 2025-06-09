@@ -140,6 +140,8 @@ router
   )
   .delete(EmployeesController.deleteemployee);
 
+router.get("/employeesBy-mobile", EmployeesController.employeesGetByMobile);
+
 router.post(
   "/employees-delete-multiple",
   EmployeesController.deleteMultipleEmployees

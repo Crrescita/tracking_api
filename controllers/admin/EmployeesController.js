@@ -275,7 +275,20 @@ exports.employeesInsert = async (req, res, next) => {
       if (saveData.error) {
         return res.status(200).send(saveData);
       } else {
-        res.status(200).send({ status: true, message: msg });
+          // const insertId = saveData.insertId || saveData.id || null;
+         return res.status(200).send({
+    status: true,
+    message: "Data Saved",
+    id: id,
+    data: {
+      name: req.body.name,
+      email: req.body.email,
+      mobile: req.body.mobile,
+      employee_id: req.body.employee_id,
+    },
+  });
+
+        // res.status(200).send({ status: true, message: msg });
       }
 
       // Check if email or password has changed and send email
@@ -348,7 +361,18 @@ exports.employeesInsert = async (req, res, next) => {
       if (saveData.error) {
         return res.status(200).send(saveData);
       } else {
-        return res.status(200).send({ status: true, message: msg });
+        const insertId = saveData.insertId || saveData.id || null;
+         return res.status(200).send({
+    status: true,
+    message: "Data Saved",
+    id: insertId,
+    data: {
+      name: req.body.name,
+      email: req.body.email,
+      mobile: req.body.mobile,
+      employee_id: req.body.employee_id,
+    },
+  });
       }
     }
   } catch (error) {
@@ -533,5 +557,87 @@ exports.deleteMultipleEmployees = async (req, res, next) => {
     }
   } catch (error) {
     return res.status(500).send({ status: false, error: error.message });
+  }
+};
+
+
+exports.employeesGetByMobile = async (req, res, next) => {
+  try {
+    const mobile = req.query?.mobile;
+    const companyId = req.query?.company_id;
+
+    if (!mobile || !companyId) {
+      return res.status(200).send({
+        status: false,
+        message: "Mobile number and company_id are required",
+      });
+    }
+
+    const date = getCurrentDate();
+
+    const checkInSubquery = `
+      SELECT 
+        emp_id,
+        checkin_status,
+        ROW_NUMBER() OVER (PARTITION BY emp_id ORDER BY id DESC) AS row_num
+      FROM check_in
+      WHERE company_id = ? AND date = ?
+    `;
+
+    const query = `
+      SELECT
+        e.id,
+        e.company_id,
+        e.name,
+        e.mobile,
+        e.email,
+        e.status,
+        e.address,
+        e.dob,
+        e.employee_id,
+        e.joining_date,
+        e.gender,
+        e.branch,
+        e.designation,
+        e.department,
+        e.state,
+        e.city,
+        e.zip_code,
+        e.timer,
+        b.name AS branch_name,
+        d.name AS department_name,
+        de.name AS designation_name,
+        CASE
+          WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+          ELSE e.image
+        END AS image,
+        latest_checkin.checkin_status
+      FROM employees e
+      LEFT JOIN branch b ON e.branch = b.id
+      LEFT JOIN department d ON e.department = d.id
+      LEFT JOIN designation de ON e.designation = de.id
+      LEFT JOIN (
+        SELECT emp_id, checkin_status 
+        FROM (${checkInSubquery}) AS ranked_checkins 
+        WHERE row_num = 1
+      ) AS latest_checkin ON e.id = latest_checkin.emp_id
+      WHERE e.mobile = ? AND e.company_id = ?
+    `;
+
+    const data = await sqlModel.customQuery(query, [
+      process.env.BASE_URL,
+      companyId,
+      date,
+      mobile,
+      companyId,
+    ]);
+
+    if (data.error) {
+      return res.status(200).send(data);
+    }
+
+    res.status(200).send({ status: true, data: data });
+  } catch (error) {
+    res.status(200).send({ status: false, error: error.message });
   }
 };
