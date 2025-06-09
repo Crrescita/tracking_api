@@ -267,7 +267,7 @@ exports.insertBackgroundVerification = async (req, res, next) => {
   try {
     const id = req.params.id || "";
     const { documentNo, documentType, emp_id, company_id } = req.body;
-
+console.log(req.body)
     if (!documentType || !documentNo) {
       return res.status(400).send({
         status: false,
@@ -309,6 +309,7 @@ exports.insertBackgroundVerification = async (req, res, next) => {
         path.includes("documentFile")
       );
     }
+console.log(req.body)
 
     // Data to insert or update
     const insert = {
@@ -316,6 +317,7 @@ exports.insertBackgroundVerification = async (req, res, next) => {
       company_id : req.user.id,
       [sanitizedDocumentName]: documentNo,
     };
+console.log(insert)
 
     // Check if the record already exists
     const existingRecord = await sqlModel.select(
