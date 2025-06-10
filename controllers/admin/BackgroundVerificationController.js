@@ -312,7 +312,8 @@ exports.insertBackgroundVerification = async (req, res, next) => {
     // Data to insert or update
     const insert = {
       emp_id,
-      company_id : req.user.id,
+      company_id, 
+      // req.user.id,
       [sanitizedDocumentName]: documentNo,
     };
 
