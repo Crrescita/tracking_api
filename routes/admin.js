@@ -147,6 +147,14 @@ router
     BackgroundVerificationController.insertBackgroundVerification
   );
 
+router
+  .route("/backgroundVerificationEmp")
+  .get(BackgroundVerificationController.getBackgroundVerification)
+  .post(
+    upload.fields([{ name: "documentFile", maxCount: 1 }]),
+    BackgroundVerificationController.insertBackgroundVerificationByEmp
+  );
+
 router.use(verifyToken);
 
 router

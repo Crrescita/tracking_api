@@ -72,85 +72,47 @@ app.use(function (req, res, next) {
 });
 
 // Error handler
-// app.use(function (err, req, res, next) {
-//   // Log the error with the appropriate logger based on the route
-//   if (req.originalUrl.startsWith("/admin")) {
-//     adminErrorLogger.winstonInstance.error(err.message, {
-//       request: {
-//         method: req.method,
-//         url: req.originalUrl,
-//         headers: req.headers,
-//         body: req.body,
-//       },
-//       response: {
-//         statusCode: res.statusCode || 500,
-//         responseTime: res.responseTime || "N/A",
-//         headers: res.getHeaders ? res.getHeaders() : {},
-//         body: res.body || {},
-//       },
-//     });
-//   } else if (req.originalUrl.startsWith("/frontend")) {
-//     frontendErrorLogger.winstonInstance.error(err.message, {
-//       request: {
-//         method: req.method,
-//         url: req.originalUrl,
-//         headers: req.headers,
-//         body: req.body,
-//       },
-//       response: {
-//         statusCode: res.statusCode || 500,
-//         responseTime: res.responseTime || "N/A",
-//         headers: res.getHeaders ? res.getHeaders() : {},
-//         body: res.body || {},
-//       },
-//     });
-//   }
-
-//   // Send JSON error response
-//   res.status(err.status || 500).json({
-//     status: false,
-//     message: err.message,
-//     error: req.app.get("env") == "development" ? err : {},
-//   });
-// });
-
 app.use(function (err, req, res, next) {
-  const errorMessage =
-    typeof err === "object" && err !== null && err.message
-      ? err.message
-      : "Unexpected error occurred";
-
-  const safeError =
-    typeof err === "object" && err !== null ? err : { message: errorMessage };
-
-  const logPayload = {
-    request: {
-      method: req.method,
-      url: req.originalUrl,
-      headers: req.headers,
-      body: req.body,
-    },
-    response: {
-      statusCode: res.statusCode || 500,
-      responseTime: res.responseTime || "N/A",
-      headers: res.getHeaders ? res.getHeaders() : {},
-      body: res.body || {},
-    },
-  };
-
+  // Log the error with the appropriate logger based on the route
   if (req.originalUrl.startsWith("/admin")) {
-    adminErrorLogger.winstonInstance.error(errorMessage, logPayload);
+    adminErrorLogger.winstonInstance.error(err.message, {
+      request: {
+        method: req.method,
+        url: req.originalUrl,
+        headers: req.headers,
+        body: req.body,
+      },
+      response: {
+        statusCode: res.statusCode || 500,
+        responseTime: res.responseTime || "N/A",
+        headers: res.getHeaders ? res.getHeaders() : {},
+        body: res.body || {},
+      },
+    });
   } else if (req.originalUrl.startsWith("/frontend")) {
-    frontendErrorLogger.winstonInstance.error(errorMessage, logPayload);
+    frontendErrorLogger.winstonInstance.error(err.message, {
+      request: {
+        method: req.method,
+        url: req.originalUrl,
+        headers: req.headers,
+        body: req.body,
+      },
+      response: {
+        statusCode: res.statusCode || 500,
+        responseTime: res.responseTime || "N/A",
+        headers: res.getHeaders ? res.getHeaders() : {},
+        body: res.body || {},
+      },
+    });
   }
 
-  res.status(err?.status || 500).json({
+  // Send JSON error response
+  res.status(err.status || 500).json({
     status: false,
-    message: errorMessage,
-    error: req.app.get("env") === "development" ? safeError : {},
+    message: err.message,
+    error: req.app.get("env") == "development" ? err : {},
   });
 });
-
 
 // Handle uncaught exceptions
 process.on("uncaughtException", function (err) {
