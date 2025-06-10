@@ -139,13 +139,6 @@ router
   )
 
   // emp background verification
-router
-  .route("/backgroundVerification")
-  .get(BackgroundVerificationController.getBackgroundVerification)
-  .post(
-    upload.fields([{ name: "documentFile", maxCount: 1 }]),
-    BackgroundVerificationController.insertBackgroundVerification
-  );
 
 router
   .route("/backgroundVerificationEmp")
@@ -183,6 +176,14 @@ router
   )
   .delete(EmployeesController.deleteemployee);
 
+
+  router
+  .route("/backgroundVerification")
+  .get(BackgroundVerificationController.getBackgroundVerification)
+  .post(
+    upload.fields([{ name: "documentFile", maxCount: 1 }]),
+    BackgroundVerificationController.insertBackgroundVerification
+  );
 
 
 router.post(
