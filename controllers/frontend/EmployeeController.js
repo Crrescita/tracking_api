@@ -59,6 +59,7 @@ exports.employeesGet = async (req, res, next) => {
         "joining_date",
         "employee_id",
         "image",
+        "created_at",
       ],
       { api_token: token }
     );
