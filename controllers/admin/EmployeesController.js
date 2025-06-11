@@ -73,6 +73,7 @@ exports.employeesGet = async (req, res, next) => {
         e.city,
         e.zip_code,
         e.timer,
+        e.created_at,
         b.name AS branch_name,
         d.name AS department_name,
         de.name AS designation_name,
