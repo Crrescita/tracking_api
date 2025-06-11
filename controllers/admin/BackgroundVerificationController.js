@@ -450,12 +450,12 @@ exports.insertBackgroundVerificationByEmp = async (req, res, next) => {
         .send({ status: true, message: "Record updated successfully." });
     } else {
       // Insert logic
-      if (!documentFilePath) {
-        return res.status(400).send({
-          status: false,
-          message: "Document file is required for a new record.",
-        });
-      }
+      // if (!documentFilePath) {
+      //   return res.status(400).send({
+      //     status: false,
+      //     message: "Document file is required for a new record.",
+      //   });
+      // }
 
       insert[sanitizedDocumentType] = documentFilePath;
       insert.created_at = getCurrentDateTime();
