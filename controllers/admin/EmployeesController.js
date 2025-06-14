@@ -74,6 +74,7 @@ exports.employeesGet = async (req, res, next) => {
         e.zip_code,
         e.timer,
         e.created_at,
+        e.updated_at,
         b.name AS branch_name,
         d.name AS department_name,
         de.name AS designation_name,
