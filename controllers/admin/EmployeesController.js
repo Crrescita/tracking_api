@@ -93,7 +93,7 @@ exports.employeesGet = async (req, res, next) => {
         FROM (${checkInSubquery}) AS ranked_checkins 
         WHERE row_num = 1
       ) AS latest_checkin ON e.id = latest_checkin.emp_id
-      WHERE 1=1 ${whereClause}
+      WHERE 1=1 ${whereClause} ORDER BY  e.updated_at DESC;
     `;
 
     const data = await sqlModel.customQuery(query, [
