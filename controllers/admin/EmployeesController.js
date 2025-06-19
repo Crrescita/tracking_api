@@ -73,6 +73,10 @@ exports.employeesGet = async (req, res, next) => {
         e.city,
         e.zip_code,
         e.timer,
+        e.emergency_contact_name,
+        e.emergency_contact_number,
+        e.pf_no,
+        e.esi_no,
         e.created_at,
         e.updated_at,
         b.name AS branch_name,
@@ -561,7 +565,6 @@ exports.deleteMultipleEmployees = async (req, res, next) => {
     return res.status(500).send({ status: false, error: error.message });
   }
 };
-
 
 exports.employeesGetByMobile = async (req, res, next) => {
   try {
