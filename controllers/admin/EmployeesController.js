@@ -83,12 +83,18 @@ exports.employeesGet = async (req, res, next) => {
         d.name AS department_name,
         de.name AS designation_name,
         e.employee_id,
+        evd.aadhaar,
+        evd.pan,
+        evd.driving_license,
+        evd.voter,
+        evd.uan,
         CASE
           WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
           ELSE e.image
         END AS image,
         latest_checkin.checkin_status
       FROM employees e
+      LEFT JOIN emp_verification_document evd ON e.id = evd.emp_id
       LEFT JOIN branch b ON e.branch = b.id
       LEFT JOIN department d ON e.department = d.id
       LEFT JOIN designation de ON e.designation = de.id
