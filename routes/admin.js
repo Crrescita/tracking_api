@@ -448,6 +448,8 @@ router.get(
 
 router.post("/send-whatsapp-bulk" , WhatsappController.whatsappBulk);
 
+router.post("/upload-bank-details" , BankController.importBankDetail);
+
 // logs
 router.get("/logs", LogController.getLogs);
 /* GET users listing. */

@@ -100,3 +100,92 @@ exports.insertBankDetail = async (req, res, next) => {
     res.status(500).send({ status: false, error: error.message });
   }
 };
+
+
+exports.importBankDetail = async (req, res, next) => {
+  try {
+    const rows = req.body;
+    const results = [];
+
+    for (const row of rows) {
+      const mobile = row['Mobile'];
+
+      try {
+        const empRows = await sqlModel.select(
+          "employees",
+          {},
+          { mobile: mobile }
+        );
+
+        if (empRows.length > 0) {
+          const emp = empRows[0];
+
+          const bankData = {
+            emp_id: emp.id,
+            company_id: emp.company_id,
+            acc_holder_name: row['Acc Holder Name'] || '',
+            acc_number: row['Account Number'] || '',
+            bank_name: row['Bank Name'] || '',
+            ifsc_code: row['IFSC Code'] || '',
+          };
+
+          const existingBank = await sqlModel.select(
+            "emp_bank_detail",
+            {},
+            { emp_id: emp.id }
+          );
+
+          let saveResult;
+          if (existingBank.length > 0) {
+
+            bankData.updated_at = getCurrentDateTime();
+            saveResult = await sqlModel.update(
+              "emp_bank_detail",
+              bankData,
+              { emp_id: emp.id }
+            );
+          } else {
+
+            bankData.created_at = getCurrentDateTime();
+            saveResult = await sqlModel.insert("emp_bank_detail", bankData);
+          }
+
+          if (saveResult.error) {
+            results.push({
+              mobile,
+              status: existingBank.length > 0 ? 'Update Failed' : 'Insert Failed',
+              message: saveResult.error,
+            });
+          } else {
+            results.push({
+              mobile,
+              status: existingBank.length > 0 ? 'Updated' : 'Inserted',
+            });
+          }
+        } else {
+          results.push({ mobile, status: 'Employee Not Found' });
+        }
+      } catch (rowError) {
+        results.push({
+          mobile,
+          status: 'Error',
+          message: rowError.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: 'Import completed',
+      results,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: 'Something went wrong during import',
+      error: error.message,
+    });
+  }
+};
+
