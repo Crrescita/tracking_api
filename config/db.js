@@ -34,7 +34,7 @@ const pool = mysql.createPool({
   user: "root",
   password: "upendra#0309@",
   database: "location_tracker",
-  // password: "niket@123",
+  // password: "mysql",
   // database: "tel_new",
   connectionLimit: 10,
 });
