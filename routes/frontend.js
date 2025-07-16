@@ -12,6 +12,7 @@ const MyRecordController = require("../controllers/frontend/MyRecordController")
 const SupportController = require("../controllers/frontend/SupportController");
 const VersionController = require("../controllers/frontend/VersionController");
 const FirebaseController = require("../controllers/frontend/FirebaseController");
+const PayrollController = require("../controllers/frontend/PayrollController")
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -111,6 +112,9 @@ router.get(
 
 //get  employee company data
 router.get("/getEmployeeCompany", EmployeeController.getEmployeeCompany);
+
+//payroll
+router.get("/getPayroll", PayrollController.getPayroll);
 
 //leave api
 router
