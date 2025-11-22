@@ -12,7 +12,8 @@ const MyRecordController = require("../controllers/frontend/MyRecordController")
 const SupportController = require("../controllers/frontend/SupportController");
 const VersionController = require("../controllers/frontend/VersionController");
 const FirebaseController = require("../controllers/frontend/FirebaseController");
-const PayrollController = require("../controllers/frontend/PayrollController")
+const PayrollController = require("../controllers/frontend/PayrollController");
+const RequestsController = require("../controllers/frontend/RequestController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -155,4 +156,13 @@ router.get("/", function (req, res, next) {
 
 // return coordinates
 router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
+
+//RequestsController
+router.post("/request", upload.array("files"), RequestsController.createRequest);
+router.put("/request/:id", upload.array("files"), RequestsController.modifyRequest);
+router.delete("/request/:id", RequestsController.deleteRequest);
+router.get("/request", RequestsController.getRequestsByEmployee); // token-based list
+router.get("/request/:id", RequestsController.getRequestDetail);
+
+
 module.exports = router;

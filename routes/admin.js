@@ -24,6 +24,9 @@ const AdvanceController = require("../controllers/admin/AdvanceController");
 const PayrollController = require("../controllers/admin/PayrollController")
 const SupportController = require("../controllers/admin/SupportController");
 // const WhatsappController = require("../controllers/admin/WhatsappController");
+const AdminRequestController = require("../controllers/admin/AdminRequestController");
+
+
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -457,4 +460,11 @@ router.get("/", function (req, res, next) {
   res.send("respond with a resource");
 });
 
+
+Request
+router.get("/admin/requests", AdminRequestController.getAllRequests);
+router.post("/admin/request/:id/respond", upload.array("files"), AdminRequestController.respondToRequest);
+router.put("/admin/request/:id/status", AdminRequestController.updateStatus);
+router.get("/admin/request/:id/history", AdminRequestController.getHistory);
+router.get("/request/:id", AdminRequestController.getSingleRequest);
 module.exports = router;
