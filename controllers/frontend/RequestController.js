@@ -1,0 +1,342 @@
+// controllers/frontend/RequestsController.js
+const path = require("path");
+const fs = require("fs");
+const sqlModel = require("../../config/db");
+const { uploadLocalFileToS3 } = require("../../config/s3");
+const adminMessaging = require("../../firebase"); // your firebase setup (same as leave controller)
+const { getCurrentDateTime } = require("../../config/datetime"); // assume you have or create similar helper
+
+function fixMulterRelativePath(relPath) {
+  if (relPath.startsWith("public/")) return relPath;
+  if (relPath.startsWith("images/")) return "public/" + relPath;
+  return relPath;
+}
+
+function buildLocalAbsolutePath(relPath) {
+  return path.join(process.cwd(), "public", relPath);
+}
+
+async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message) {
+  await sqlModel.insert("request_history", {
+    request_id,
+    action_by,
+    action_type,
+    from_status,
+    to_status,
+    version,
+    message,
+    created_at: getCurrentDateTime(),
+  });
+}
+
+/**
+ * Create request (user)
+ * - expects token header (same flow as leave controller)
+ * - accepts multipart files through existing multerConfig (req.fileFullPath populated)
+ */
+exports.createRequest = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id", "company_id", "name", "image"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const insert = {
+      emp_id: user.id,
+      type: req.body.type, // expected: 'quotation'|'invoice'|...
+      title: req.body.title || null,
+      description: req.body.description || null,
+      priority: req.body.priority || "medium",
+      status: "pending",
+      current_version: 0,
+      created_at: getCurrentDateTime(),
+      updated_at: getCurrentDateTime(),
+    };
+
+    const saveData = await sqlModel.insert("requests", insert);
+    if (saveData.error) return res.status(200).send(saveData);
+
+    const request_id = saveData.insertId;
+
+    // If multer saved files locally, multerConfig pushes paths to req.fileFullPath (array of 'images/<folder>/<file>')
+    if (
+          req.fileFullPath &&
+          Array.isArray(req.fileFullPath) &&
+          req.fileFullPath.length > 0
+        ) {
+          const uploadedRecords = [];
+
+          for (const relPath of req.fileFullPath) {
+            // 🔥 Fix multer path (add `public/` prefix)
+            const fixed = fixMulterRelativePath(relPath);
+
+            // 🔥 Convert to absolute local path
+            const localAbsolute = buildLocalAbsolutePath(fixed);
+
+            try {
+              const keyPrefix = `${insert.type}/${request_id}/v0`;
+
+              const { key, url } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
+
+              await sqlModel.insert("request_attachments", {
+                request_id,
+                file_path: key, // store S3 key (best practice)
+                file_type: path.extname(localAbsolute).replace(".", ""),
+                created_at: getCurrentDateTime(),
+              });
+
+              // delete local file
+              fs.unlinkSync(localAbsolute);
+
+              uploadedRecords.push({ key, url });
+            } catch (e) {
+              console.error("S3 upload failed for", relPath, e.message);
+            }
+          }
+        }
+
+
+    // history
+    await addHistory(request_id, user.id, "request_created", null, "pending", 0, "User created request");
+
+    // notify company admins (FCM) similar to leave flow
+    const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
+    if (tokens.length > 0) {
+      const messageContent = `New ${insert.type} request from ${user.name}`;
+      const notificationPromises = tokens.map(({ fcm_token }) => {
+        return adminMessaging.messaging().send({
+          notification: {
+            title: `New ${insert.type} Request`,
+            body: messageContent,
+            image: user.image ? `${process.env.BASE_URL}${user.image}` : "",
+          },
+          token: fcm_token,
+        });
+      });
+      try {
+        await Promise.all(notificationPromises);
+        await sqlModel.insert("notification", {
+          company_id: user.company_id,
+          title: "New Request",
+          body: messageContent,
+          image: user.image,
+          status: "unread",
+          timestamp: getCurrentDateTime(),
+        });
+      } catch (e) {
+        console.error("FCM error", e.message);
+      }
+    }
+
+    return res.status(200).send({ status: true, message: "Request created", request_id });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+/**
+ * Get all requests for the authenticated employee (list)
+ */
+exports.getRequestsByEmployee = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id", "company_id", "name", "image"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const requests = await sqlModel.customQuery(
+      `SELECT r.* , u.name as employee_name
+       FROM requests r
+       LEFT JOIN employees u ON u.id = r.emp_id
+       WHERE r.emp_id = ?
+       ORDER BY r.id DESC`,
+      [user.id]
+    );
+
+    // enrich with attachments and latest admin response
+    for (const r of requests) {
+      const attachments = await sqlModel.select("request_attachments", ["id", "file_path", "file_type", "created_at"], {
+        request_id: r.id,
+      });
+
+      // convert stored S3 key to full url
+      const attachmentsWithUrl = attachments.map((a) => ({
+        ...a,
+        file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
+      }));
+      r.attachments = attachmentsWithUrl;
+      console.log("admin response");
+      console.log(r);
+      // latest admin response (highest version)
+      const [latestResp] = await sqlModel.customQuery(
+        `SELECT rr.* , u.username as admin_name FROM request_responses rr
+         LEFT JOIN users u ON u.id = rr.responded_by
+         WHERE rr.request_id = ?  
+         ORDER BY rr.version DESC LIMIT 1`,
+        [r.id]
+      );
+
+      if (latestResp) {
+        latestResp.file_url = latestResp.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${latestResp.file_path}` : null;
+      }
+      r.admin_response = latestResp || null;
+    }
+
+    return res.status(200).send({ status: true, data: requests });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+/**
+ * Get single request detail (attachments, responses, history)
+ */
+exports.getRequestDetail = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const requestId = req.params.id;
+    const [request] = await sqlModel.select("requests", ["*"], { id: requestId, emp_id: user.id });
+    if (!request || request.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
+
+    const r = request[0];
+
+    const attachments = await sqlModel.select("request_attachments", "*", { request_id: requestId });
+    r.attachments = attachments.map((a) => ({
+      ...a,
+      file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
+    }));
+
+    const responses = await sqlModel.select("request_responses", "*", { request_id: requestId });
+    r.responses = responses.map((rr) => ({
+      ...rr,
+      file_url: rr.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}` : null,
+    }));
+
+    const history = await sqlModel.select("request_history", "*", { request_id: requestId });
+    r.history = history;
+
+    return res.status(200).send({ status: true, data: r });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+/**
+ * Update (modify) request by user
+ * Allowed only when status in ('pending','in_review') — this check is enforced below
+ */
+exports.modifyRequest = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const requestId = req.params.id;
+    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version"], { id: requestId, emp_id: user.id });
+    if (!existing || existing.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
+    console.dir("requests requests");
+    console.log(existing);
+    const reqRow = existing;
+    if (!["pending", "in_review"].includes(reqRow.status)) {
+      return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
+    }
+
+    const updateData = {
+      title: req.body.title,
+      description: req.body.description,
+      priority: req.body.priority || reqRow.priority,
+      updated_at: getCurrentDateTime(),
+    };
+
+    await sqlModel.update("requests", updateData, { id: requestId });
+    console.log("FILES:", req.files);
+    console.log("FILEFULLPATH:", req.fileFullPath);
+
+    if (!req.files || req.files.length === 0) {
+      console.log("❌ No files uploaded in this request");
+    } else {
+      console.log("✅ Uploaded files:", req.files.map(f => f.filename));
+    }
+    // If files uploaded, upload them to S3 under same version (v0 user uploads or create new user-modification folder)
+    console.log("req.fileFullPath");
+    console.log(req.fileFullPath);
+    if (req.fileFullPath && req.fileFullPath.length > 0) {
+      for (const relPath of req.fileFullPath) {
+
+        const fixed = fixMulterRelativePath(relPath);
+        const localAbsolute = buildLocalAbsolutePath(fixed);
+
+        try {
+          const keyPrefix = `${reqRow.type}/${requestId}/v0`;
+
+          const { key, url } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
+
+          await sqlModel.insert("request_attachments", {
+            request_id: requestId,
+            file_path: key,
+            file_type: path.extname(localAbsolute).replace(".", ""),
+            created_at: getCurrentDateTime(),
+          });
+
+          fs.unlinkSync(localAbsolute);
+
+        } catch (err) {
+          console.error("S3 upload failed →", err.message);
+        }
+      }
+    }else{
+      console.dir("Image not found")
+    }
+
+    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, reqRow.current_version, "User modified request");
+
+    return res.status(200).send({ status: true, message: "Request updated" });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+/**
+ * Delete request by user (allowed only if pending)
+ */
+exports.deleteRequest = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const requestId = req.params.id;
+    const [existing] = await sqlModel.select("requests", ["status"], { id: requestId, emp_id: user.id });
+    if (!existing || existing.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
+
+    const status = existing[0].status;
+    if (status !== "pending") return res.status(200).send({ status: false, message: "Only pending requests can be deleted" });
+
+    await sqlModel.delete("requests", { id: requestId });
+    await sqlModel.delete("request_attachments", { request_id: requestId });
+    await sqlModel.delete("request_responses", { request_id: requestId });
+    await sqlModel.delete("request_history", { request_id: requestId });
+
+    await addHistory(requestId, user.id, "request_deleted", status, null, null, "User deleted request");
+
+    return res.status(200).send({ status: true, message: "Request deleted" });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
