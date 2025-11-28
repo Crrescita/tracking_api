@@ -210,15 +210,15 @@ exports.getRequestDetail = async (req, res) => {
     const r = request[0];
 
     const attachments = await sqlModel.select("request_attachments", "*", { request_id: requestId });
-    r.attachments = attachments.map((a) => ({
-      ...a,
-      file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
-    }));
-
+    // r.attachments = attachments.map((a) => ({
+    //   ...a,
+    //   file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
+    // }));
+// file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
     const responses = await sqlModel.select("request_responses", "*", { request_id: requestId });
     r.responses = responses.map((rr) => ({
-      ...rr,
-      file_url: rr.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}` : null,
+      ...rr
+     
     }));
 
     const history = await sqlModel.select("request_history", "*", { request_id: requestId });
