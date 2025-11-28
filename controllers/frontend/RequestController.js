@@ -48,7 +48,7 @@ exports.createRequest = async (req, res) => {
       title: req.body.title || null,
       description: req.body.description || null,
       priority: req.body.priority || "medium",
-      status: "pending",
+      status: "requested",
       current_version: 0,
       created_at: getCurrentDateTime(),
       updated_at: getCurrentDateTime(),
@@ -98,7 +98,7 @@ exports.createRequest = async (req, res) => {
 
 
     // history
-    await addHistory(request_id, user.id, "request_created", null, "pending", 0, "User created request");
+    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "User created request");
 
     // notify company admins (FCM) similar to leave flow
     const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
@@ -249,7 +249,7 @@ exports.modifyRequest = async (req, res) => {
     console.dir("requests requests");
     console.log(existing);
     const reqRow = existing;
-    if (!["pending", "in_review"].includes(reqRow.status)) {
+    if (!["requested"].includes(reqRow.status)) {
       return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
     }
 
@@ -325,7 +325,7 @@ exports.deleteRequest = async (req, res) => {
     if (!existing || existing.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
 
     const status = existing[0].status;
-    if (status !== "pending") return res.status(200).send({ status: false, message: "Only pending requests can be deleted" });
+    if (status !== "requested") return res.status(200).send({ status: false, message: "Only pending requests can be deleted" });
 
     await sqlModel.delete("requests", { id: requestId });
     await sqlModel.delete("request_attachments", { request_id: requestId });
