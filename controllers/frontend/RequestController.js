@@ -216,10 +216,7 @@ exports.getRequestDetail = async (req, res) => {
     // }));
 // file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
     const responses = await sqlModel.select("request_responses", "*", { request_id: requestId });
-    r.responses = responses.map((rr) => ({
-      ...rr
-     
-    }));
+    r.responses = responses;
 
     const history = await sqlModel.select("request_history", "*", { request_id: requestId });
     r.history = history;
