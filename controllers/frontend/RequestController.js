@@ -13,10 +13,14 @@ function fixMulterRelativePath(relPath) {
 }
 
 function buildLocalAbsolutePath(relPath) {
+    if (relPath.startsWith("public/")) {
+    return path.join(process.cwd(), relPath);
+  }
+
   return path.join(process.cwd(), "public", relPath);
 }
 
-async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message) {
+async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message,title, description) {
   await sqlModel.insert("request_history", {
     request_id,
     action_by,
@@ -25,6 +29,8 @@ async function addHistory(request_id, action_by, action_type, from_status, to_st
     to_status,
     version,
     message,
+    title,
+    description,
     created_at: getCurrentDateTime(),
   });
 }
@@ -98,7 +104,7 @@ exports.createRequest = async (req, res) => {
 
 
     // history
-    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "User created request");
+    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "User created request", req.body.title, req.body.description);
 
     // notify company admins (FCM) similar to leave flow
     const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
@@ -204,22 +210,54 @@ exports.getRequestDetail = async (req, res) => {
     if (!user) return res.status(200).send({ status: false, message: "User not found" });
 
     const requestId = req.params.id;
-    const [request] = await sqlModel.select("requests", ["*"], { id: requestId, emp_id: user.id });
-    if (!request || request.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
 
-    const r = request[0];
+    const requestRows = await sqlModel.select("requests", ["*"], {
+      id: requestId,
+      emp_id: user.id
+    });
 
-    const attachments = await sqlModel.select("request_attachments", "*", { request_id: requestId });
-    // r.attachments = attachments.map((a) => ({
-    //   ...a,
-    //   file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
-    // }));
-// file_url: a.file_path ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}` : null,
-    const responses = await sqlModel.select("request_responses", "*", { request_id: requestId });
-    r.responses = responses;
+    if (!requestRows || requestRows.length === 0) {
+      return res.status(200).send({ status: false, message: "Request not found" });
+    }
 
-    const history = await sqlModel.select("request_history", "*", { request_id: requestId });
-    r.history = history;
+    const r = requestRows[0]; // FIXED
+
+    // Attachments
+    const attachments = await sqlModel.select("request_attachments", "*", {
+      request_id: requestId
+    });
+
+    r.attachments = attachments.map((a) => ({
+      ...a,
+      file_url: a.file_path
+        ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}`
+        : null
+    }));
+
+    // Responses
+    const responses = await sqlModel.select("request_responses", "*", {
+      request_id: requestId
+    });
+
+    r.admin_response = responses.map((rr) => ({
+      ...rr,
+      file_url: rr.file_path
+        ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}`
+        : null
+    }));
+
+    // History
+    const history = await sqlModel.select("request_history", "*", {
+      request_id: requestId
+    });
+ 
+    r.history = history.map((a) => ({
+      ...a,
+      type:r.type,
+      priority:r.priority,
+      status:r.status,
+    }));
+
 
     return res.status(200).send({ status: true, data: r });
   } catch (error) {
@@ -227,6 +265,7 @@ exports.getRequestDetail = async (req, res) => {
     return res.status(200).send({ status: false, error: error.message });
   }
 };
+
 
 /**
  * Update (modify) request by user
@@ -241,7 +280,7 @@ exports.modifyRequest = async (req, res) => {
     if (!user) return res.status(200).send({ status: false, message: "User not found" });
 
     const requestId = req.params.id;
-    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version"], { id: requestId, emp_id: user.id });
+    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
     if (!existing || existing.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
     console.dir("requests requests");
     console.log(existing);
@@ -254,6 +293,7 @@ exports.modifyRequest = async (req, res) => {
       title: req.body.title,
       description: req.body.description,
       priority: req.body.priority || reqRow.priority,
+      current_version:reqRow.current_version+1,
       updated_at: getCurrentDateTime(),
     };
 
@@ -297,7 +337,7 @@ exports.modifyRequest = async (req, res) => {
       console.dir("Image not found")
     }
 
-    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, reqRow.current_version, "User modified request");
+    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version+1), "requested updated",reqRow.title,reqRow.description);
 
     return res.status(200).send({ status: true, message: "Request updated" });
   } catch (error) {
@@ -329,7 +369,7 @@ exports.deleteRequest = async (req, res) => {
     await sqlModel.delete("request_responses", { request_id: requestId });
     await sqlModel.delete("request_history", { request_id: requestId });
 
-    await addHistory(requestId, user.id, "request_deleted", status, null, null, "User deleted request");
+    await addHistory(requestId, user.id, "request_deleted", status, null, null, "User deleted request",title,description);
 
     return res.status(200).send({ status: true, message: "Request deleted" });
   } catch (error) {
@@ -337,3 +377,98 @@ exports.deleteRequest = async (req, res) => {
     return res.status(200).send({ status: false, error: error.message });
   }
 };
+
+exports.deleteAttachment = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const requestId = req.params.id;
+    const [existing_att] = await sqlModel.select("request_attachments", ["request_id"], { id: requestId, emp_id: user.id });
+    if (!existing_att || existing_att.length === 0) return res.status(200).send({ status: false, message: "Attachment not found" });
+
+    const [existing] = await sqlModel.select("requests", ["status"], { id: existing_att[0].request_id, emp_id: user.id });
+    if (!existing || existing.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
+
+    const status = existing[0].status;
+    if (status !== "requested") return res.status(200).send({ status: false, message: "Only pending requests can be deleted" });
+
+    await sqlModel.delete("request_attachments", {id:requestId});
+
+    return res.status(200).send({ status: true, message: "Request deleted" });
+  }catch(error){
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+}
+
+exports.shareRequest = async (req, res) => {
+    try {
+    const { name, email, mobile, request_id } = req.body;
+
+    if (!name || !email || !mobile || !request_id) {
+      return res.status(400).json({ message: "All fields are required!" });
+    }
+    
+    const saveData = await sqlModel.insert("share_requests_logs", {name:name,email:email,mobile:mobile, request_id:request_id});
+
+    if (saveData.error) {
+       return res.status(200).send({ status: false, error: error.message });
+    }else{
+       return res.status(200).send({ status: true, message: "Detail submitted successfully!", });
+    }
+
+  } catch (error) {
+    console.error("Submit Error:", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+}
+
+exports.getfollowup = async (req, res) => {
+     try {
+          return res.status(200).send({ status: true, data:[{'label':"1 Day", 'value':"1_day"},{'label':"2 Day", 'value':"2_day"},{'label':"3 Day", 'value':"3_day"}] ,message: "Detail submitted successfully!", });
+     }catch(err){
+        console.error("Submit Error:", error);
+        return res.status(500).json({ message: "Server error", error });
+     }
+}
+
+
+exports.updateRequestStatus = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+    const requestId = req.params.id;
+    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
+    if (!existing || existing.length === 0 || req.body.status === '') return res.status(200).send({ status: false, message: "Request not found or invalid status." });
+    console.dir("requests requests");
+    console.log(existing);
+    const reqRow = existing;
+    if (!["requested"].includes(reqRow.status)) {
+      return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
+    }
+
+    const updateData = {
+      status:req.body.status,
+      updated_at: getCurrentDateTime(),
+    };
+
+    await sqlModel.update("requests", updateData, { id: requestId });
+    
+
+    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version), "status updated",reqRow.title,reqRow.description);
+
+    return res.status(200).send({ status: true, message: "Request updated" });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
+

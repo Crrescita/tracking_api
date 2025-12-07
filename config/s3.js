@@ -2,6 +2,7 @@
 const AWS = require("aws-sdk");
 const fs = require("fs");
 const path = require("path");
+const mime = require("mime-types");
 
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY,
@@ -23,15 +24,18 @@ async function uploadLocalFileToS3(localAbsolutePath, keyPrefix) {
   if (!fs.existsSync(localAbsolutePath)) {
     throw new Error("Local file not found: " + localAbsolutePath);
   }
-
+console.dir("localAbsolutePath");
+console.log(localAbsolutePath);
   const fileContent = fs.readFileSync(localAbsolutePath);
   const fileName = path.basename(localAbsolutePath).replace(/\s/g, "_");
   const key = `${keyPrefix}/${Date.now()}_${fileName}`;
+  const mimeType = mime.lookup(localAbsolutePath);
 
   const params = {
     Bucket: BUCKET,
     Key: key,
     Body: fileContent,
+    ContentType: mimeType,
     ACL: "public-read",
   };
 
