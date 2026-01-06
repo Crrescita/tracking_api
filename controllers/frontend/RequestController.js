@@ -235,16 +235,33 @@ exports.getRequestDetail = async (req, res) => {
     }));
 
     // Responses
-    const responses = await sqlModel.select("request_responses", "*", {
-      request_id: requestId
-    });
+    // const responses = await sqlModel.select("request_responses", "*", {
+    //   request_id: requestId
+    // });
+    const responses = await sqlModel.select(
+                          "request_responses",
+                          "*",
+                          { request_id: requestId },
+                          {
+                            orderBy: "id DESC", // or created_at DESC
+                            limit: 1
+                          }
+                        );
 
-    r.admin_response = responses.map((rr) => ({
-      ...rr,
-      file_url: rr.file_path
-        ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}`
+    const latestResponse = responses[0] || null;
+    r.admin_response = latestResponse ? {
+      ...latestResponse,
+      file_url: latestResponse.file_path
+        ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${latestResponse.file_path}`
         : null
-    }));
+    } : null;
+
+    // r.admin_response = responses.map((rr) => ({
+    //   ...rr,
+    //   file_url: rr.file_path
+    //     ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}`
+    //     : null
+    // }));
 
     // History
     const history = await sqlModel.select("request_history", "*", {
@@ -429,7 +446,7 @@ exports.shareRequest = async (req, res) => {
 
 exports.getfollowup = async (req, res) => {
      try {
-          return res.status(200).send({ status: true, data:[{'label':"1 Day", 'value':"1_day"},{'label':"2 Day", 'value':"2_day"},{'label':"3 Day", 'value':"3_day"}] ,message: "Detail submitted successfully!", });
+          return res.status(200).send({ status: true, data:[{'label':"1 Day", 'value':"1_day"},{'label':"2 Day", 'value':"2_day"},{'label':"3 Day", 'value':"3_day"},{'label':"Closed", 'value':"Closed"}] ,message: "Detail submitted successfully!", });
      }catch(err){
         console.error("Submit Error:", error);
         return res.status(500).json({ message: "Server error", error });
