@@ -238,16 +238,12 @@ exports.getRequestDetail = async (req, res) => {
     // const responses = await sqlModel.select("request_responses", "*", {
     //   request_id: requestId
     // });
-    const responses = await sqlModel.select(
-                          "request_responses",
-                          "*",
-                          { request_id: requestId },
-                          {
-                            orderBy: "id DESC", // or created_at DESC
-                            limit: 1
-                          }
-                        );
-
+	const responses = await sqlModel.select(
+  "request_responses",
+  "*",
+  { request_id: requestId },
+  "ORDER BY id DESC LIMIT 1"
+);
     const latestResponse = responses[0] || null;
     r.admin_response = latestResponse ? {
       ...latestResponse,
