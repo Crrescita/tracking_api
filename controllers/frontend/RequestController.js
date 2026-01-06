@@ -238,12 +238,16 @@ exports.getRequestDetail = async (req, res) => {
     // const responses = await sqlModel.select("request_responses", "*", {
     //   request_id: requestId
     // });
-	const responses = await sqlModel.select(
-  "request_responses",
-  "*",
-  { request_id: requestId },
-  "ORDER BY id DESC LIMIT 1"
-);
+    const responses = await sqlModel.select(
+                          "request_responses",
+                          "*",
+                          { request_id: requestId },
+                          {
+                            orderBy: "id DESC", // or created_at DESC
+                            limit: 1
+                          }
+                        );
+
     const latestResponse = responses[0] || null;
     r.admin_response = latestResponse ? {
       ...latestResponse,
@@ -484,4 +488,106 @@ exports.updateRequestStatus = async (req, res) => {
     return res.status(200).send({ status: false, error: error.message });
   }
 };
+
+exports.getRequestMenuData = async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    if (!type) {
+      return res.status(400).json({
+        status: false,
+        message: "Type is required",
+      });
+    }
+    const REQUEST_TYPE_CONFIG = {
+                                    quotation: [
+                                      {
+                                        id: "raise_request",
+                                        type: "quotation",
+                                        title: "Raise a Request",
+                                      },
+                                      {
+                                        id: "submitted_requests",
+                                        type: "quotation",
+                                        title: "Submitted Quotations",
+                                      },
+                                    ],
+
+                                    invoice: [
+                                      {
+                                        id: "raise_invoice",
+                                        type: "invoice",
+                                        title: "Raise Invoice",
+                                      },
+                                      {
+                                        id: "submitted_invoices",
+                                        type: "invoice",
+                                        title: "Submitted Invoices",
+                                      },
+                                    ],
+
+                                    statement: [
+                                      {
+                                        id: "account_statement",
+                                        type: "statement",
+                                        title: "Account Statement",
+                                      },
+                                      {
+                                        id: "download_statement",
+                                        type: "statement",
+                                        title: "Download Statement",
+                                      },
+                                    ],
+
+                                    credit_note: [
+                                      {
+                                        id: "raise_credit_note",
+                                        type: "credit_note",
+                                        title: "Raise Credit Note",
+                                      },
+                                      {
+                                        id: "submitted_credit_notes",
+                                        type: "credit_note",
+                                        title: "Submitted Credit Notes",
+                                      },
+                                    ],
+
+                                    stock_status: [
+                                      {
+                                        id: "current_stock",
+                                        type: "stock_status",
+                                        title: "Current Stock",
+                                      },
+                                      {
+                                        id: "stock_history",
+                                        type: "stock_status",
+                                        title: "Stock History",
+                                      },
+                                    ],
+        };
+
+    const data = REQUEST_TYPE_CONFIG[type];
+
+    if (!data) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid type",
+        allowed_types: Object.keys(REQUEST_TYPE_CONFIG),
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
 

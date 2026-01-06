@@ -167,5 +167,6 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.delete("/deleteAttachment/:id", RequestsController.deleteAttachment);
   router.post("/shareRequest", RequestsController.shareRequest);
   router.get("/getfollowup", RequestsController.getfollowup); 
+  router.get("/request-menu", getRequestMenuData);
   
 module.exports = router;
