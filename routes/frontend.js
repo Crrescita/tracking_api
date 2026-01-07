@@ -161,6 +161,7 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.post("/request", upload.array("files"), RequestsController.createRequest);
   router.put("/request/:id", upload.array("files"), RequestsController.modifyRequest);
   router.patch("/request/:id",  RequestsController.updateRequestStatus);
+  router.put("/request/:id/followup",  RequestsController.updateFollowupStatus);
   router.delete("/request/:id", RequestsController.deleteRequest);
   router.get("/request", RequestsController.getRequestsByEmployee); // token-based list
   router.get("/request/:id", RequestsController.getRequestDetail);

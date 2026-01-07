@@ -239,14 +239,11 @@ exports.getRequestDetail = async (req, res) => {
     //   request_id: requestId
     // });
     const responses = await sqlModel.select(
-                          "request_responses",
-                          "*",
-                          { request_id: requestId },
-                          {
-                            orderBy: "id DESC", // or created_at DESC
-                            limit: 1
-                          }
-                        );
+                                              "request_responses",
+                                              "*",
+                                              { request_id: requestId },
+                                              "ORDER BY id DESC LIMIT 1"
+                                            );
 
     const latestResponse = responses[0] || null;
     r.admin_response = latestResponse ? {
@@ -454,40 +451,43 @@ exports.getfollowup = async (req, res) => {
 }
 
 
-exports.updateRequestStatus = async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+// exports.updateRequestStatus = async (req, res) => {
+//   try {
+//     const token = req.headers.authorization?.split(" ")[1];
+//     if (!token) return res.status(200).send({ status: false, message: "Token is required" });
 
-    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
-    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+//     const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+//     if (!user) return res.status(200).send({ status: false, message: "User not found" });
 
-    const requestId = req.params.id;
-    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
-    if (!existing || existing.length === 0 || req.body.status === '') return res.status(200).send({ status: false, message: "Request not found or invalid status." });
-    console.dir("requests requests");
-    console.log(existing);
-    const reqRow = existing;
-    if (!["requested"].includes(reqRow.status)) {
-      return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
-    }
+//     const requestId = req.params.id;
+//     const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
+//     if (!existing || existing.length === 0 || req.body.status === '') return res.status(200).send({ status: false, message: "Request not found or invalid status." });
+//     console.dir("requests requests");
+//     console.log(existing);
+//     const reqRow = existing;
+//     if (!["requested"].includes(reqRow.status)) {
+//       return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
+//     }
 
-    const updateData = {
-      status:req.body.status,
-      updated_at: getCurrentDateTime(),
-    };
+//     const updateData = {
+//       status:req.body.status,
+//       updated_at: getCurrentDateTime(),
+//     };
+//     if(req.body.status === 'ready'){
 
-    await sqlModel.update("requests", updateData, { id: requestId });
+//     }
+//     await sqlModel.update("requests", updateData, { id: requestId });
     
+//     if(reqRow.status !== 'requested'){
+//       await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version), "status updated",reqRow.title,reqRow.description);
+//     }
 
-    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version), "status updated",reqRow.title,reqRow.description);
-
-    return res.status(200).send({ status: true, message: "Request updated" });
-  } catch (error) {
-    console.error(error);
-    return res.status(200).send({ status: false, error: error.message });
-  }
-};
+//     return res.status(200).send({ status: true, message: "Request updated" });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(200).send({ status: false, error: error.message });
+//   }
+// };
 
 exports.getRequestMenuData = async (req, res) => {
   try {
@@ -588,6 +588,173 @@ exports.getRequestMenuData = async (req, res) => {
   }
 };
 
+exports.updateRequestStatus = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(200).send({ status: false, message: "Token is required" });
+    }
+
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) {
+      return res.status(200).send({ status: false, message: "User not found" });
+    }
+
+    const requestId = req.params.id;
+    const newStatus = req.body.status;
+
+    const allowedStatuses = ["ready", "cancelled", "approved"];
+    if (!allowedStatuses.includes(newStatus)) {
+      return res.status(200).send({ status: false, message: "Invalid status value" });
+    }
+
+    const [reqRow] = await sqlModel.select(
+      "requests",
+      ["status", "type", "current_version", "title", "description"],
+      { id: requestId, emp_id: user.id }
+    );
+
+    if (!reqRow) {
+      return res.status(200).send({ status: false, message: "Request not found" });
+    }
+
+    if (reqRow.status !== "requested") {
+      return res.status(200).send({
+        status: false,
+        message: "Cannot modify request in current status",
+      });
+    }
+
+    // Base update data
+    const updateData = {
+      status: newStatus,
+      updated_at: getCurrentDateTime(),
+    };
+
+    // ✅ Special logic for READY status
+    if (newStatus === "ready") {
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + 2);
+
+      updateData.nextFollowup = "2_day";
+      updateData.nextFollowup_date = nextDate
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+    }
+
+    await sqlModel.update("requests", updateData, { id: requestId });
+
+    await addHistory(
+      requestId,
+      user.id,
+      "request_status_updated",
+      reqRow.status,
+      newStatus,
+      reqRow.current_version,
+      "Status updated",
+      reqRow.title,
+      reqRow.description
+    );
+
+    return res.status(200).send({ status: true, message: "Request updated successfully" });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({ status: false, error: error.message });
+  }
+};
 
 
+exports.updateFollowupStatus = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(200).send({ status: false, message: "Token is required" });
+    }
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
+    if (!user) {
+      return res.status(200).send({ status: false, message: "User not found" });
+    }
+
+    const requestId = req.params.id;
+    const followup = req.body.followup;
+
+    const allowedFollowups = ["1_day", "2_day", "3_day", "Closed"];
+    if (!allowedFollowups.includes(followup)) {
+      return res.status(200).send({
+        status: false,
+        message: "Invalid follow-up value",
+      });
+    }
+
+    const [reqRow] = await sqlModel.select(
+      "requests",
+      ["id", "nextFollowup"],
+      { id: requestId, emp_id: user.id }
+    );
+
+    if (!reqRow) {
+      return res.status(200).send({
+        status: false,
+        message: "Request not found",
+      });
+    }
+
+    const updateData = {
+      nextFollowup: followup,
+      updated_at: getCurrentDateTime(),
+    };
+
+    // ✅ Follow-up date logic
+    if (followup !== "Closed") {
+      const daysMap = {
+        "1_day": 1,
+        "2_day": 2,
+        "3_day": 3,
+      };
+
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + daysMap[followup]);
+
+      updateData.nextFollowup_date = `${nextDate.getFullYear()}-${String(
+        nextDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`;
+    } else {
+      updateData.nextFollowup_date = null;
+    }
+
+    await sqlModel.update("requests", updateData, { id: requestId });
+
+    await addHistory(
+      requestId,
+      user.id,
+      "followup_updated",
+      reqRow.nextFollowup,
+      followup,
+      null,
+      "Follow-up updated",
+      null,
+      null
+    );
+
+    return res.status(200).send({
+      status: true,
+      message: "Follow-up updated successfully",
+    });
+
+  } catch (error) {
+    console.error("Follow-up Update Error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
 
