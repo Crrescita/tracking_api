@@ -145,7 +145,7 @@ exports.createRequest = async (req, res) => {
 /**
  * Get all requests for the authenticated employee (list)
  */
-exports.getRequestsByEmployee = async (req, res) => {
+exports.getRequestsByEmployeeOld = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(200).send({ status: false, message: "Token is required" });
@@ -197,6 +197,116 @@ exports.getRequestsByEmployee = async (req, res) => {
     return res.status(200).send({ status: false, error: error.message });
   }
 };
+
+/**New Logic for Above */
+
+exports.getRequestsByEmployee = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token)
+      return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id", "company_id", "name", "image"],
+      { api_token: token }
+    );
+
+    if (!user)
+      return res.status(200).send({ status: false, message: "User not found" });
+
+    const { type, status = "all" } = req.query;
+
+    if (!type) {
+      return res.status(200).send({
+        status: false,
+        message: "type is required",
+      });
+    }
+
+    /* ----------------------------------
+       Build WHERE condition dynamically
+    -----------------------------------*/
+    let whereSql = `WHERE r.emp_id = ? AND r.type = ?`;
+    const params = [user.id, type];
+
+    if (status !== "all") {
+      whereSql += ` AND r.status = ?`;
+      params.push(status);
+    }
+
+    /* ----------------------------------
+       Fetch requests
+    -----------------------------------*/
+    const requests = await sqlModel.customQuery(
+      `
+      SELECT r.*, u.name AS employee_name
+      FROM requests r
+      LEFT JOIN employees u ON u.id = r.emp_id
+      ${whereSql}
+      ORDER BY r.id DESC
+      `,
+      params
+    );
+
+    /* ----------------------------------
+       Enrich with attachments & response
+    -----------------------------------*/
+    for (const r of requests) {
+      // Attachments
+      const attachments = await sqlModel.select(
+        "request_attachments",
+        ["id", "file_path", "file_type", "created_at"],
+        { request_id: r.id }
+      );
+
+      r.attachments = attachments.map((a) => ({
+        ...a,
+        file_url: a.file_path
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
+              process.env.AWS_REGION || "ap-south-1"
+            }.amazonaws.com/${a.file_path}`
+          : null,
+      }));
+
+      // Latest admin response
+      const [latestResp] = await sqlModel.customQuery(
+        `
+        SELECT rr.*, u.username AS admin_name
+        FROM request_responses rr
+        LEFT JOIN users u ON u.id = rr.responded_by
+        WHERE rr.request_id = ?
+        ORDER BY rr.version DESC
+        LIMIT 1
+        `,
+        [r.id]
+      );
+
+      r.admin_response = latestResp
+        ? {
+            ...latestResp,
+            file_url: latestResp.file_path
+              ? `https://${process.env.AWS_S3_BUCKET}.s3.${
+                  process.env.AWS_REGION || "ap-south-1"
+                }.amazonaws.com/${latestResp.file_path}`
+              : null,
+          }
+        : null;
+    }
+
+    return res.status(200).send({
+      status: true,
+      data: requests,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({
+      status: false,
+      error: error.message,
+    });
+  }
+};
+
 
 /**
  * Get single request detail (attachments, responses, history)
