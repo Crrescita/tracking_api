@@ -461,10 +461,22 @@ router.get("/", function (req, res, next) {
 });
 
 
-Request
-router.get("/admin/requests", AdminRequestController.getAllRequests);
-router.post("/admin/request/:id/respond", upload.array("files"), AdminRequestController.respondToRequest);
-router.put("/admin/request/:id/status", AdminRequestController.updateStatus);
-router.get("/admin/request/:id/history", AdminRequestController.getHistory);
+// Request
+router.get("/getRequests", AdminRequestController.getAllRequests);
+router.get("/getRequestById", AdminRequestController.getRequestById);
+// router.post("/request/:id/respond", upload.array("files"),AdminRequestController.respondToRequest);
+router.post("/updateRequest/:id",  upload.fields([{ name: "file", maxCount: 1 }])
+,AdminRequestController.respondToRequest);
+
+router.delete("/deleteRequest/:id", AdminRequestController.deleteRequest);
+
+router.post(
+  "/deleteRequest-multiple",
+  AdminRequestController.deleteRequestMultiple
+);
+
+
+router.put("/updateRequestStatus/:id", AdminRequestController.updateStatus);
+router.get("/request/:id/history", AdminRequestController.getHistory);
 router.get("/request/:id", AdminRequestController.getSingleRequest);
 module.exports = router;

@@ -130,4 +130,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-# config/db.js
+config/db.js
+.env
+
+.DS_Store

@@ -45,14 +45,20 @@ const storage = multer.diskStorage({
   },
 });
 
+const allowedTypes = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "application/pdf",
+  "video/mp4",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
 const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === "image/jpeg" ||
-    file.mimetype === "image/jpg" ||
-    file.mimetype === "image/png" ||
-    file.mimetype === "application/pdf" ||
-    file.mimetype === "video/mp4"
-  ) {
+ if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     return cb(new Error("Only .jpg or .png files are allowed!"));

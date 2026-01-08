@@ -51,6 +51,7 @@ exports.createRequest = async (req, res) => {
     const insert = {
       emp_id: user.id,
       type: req.body.type, // expected: 'quotation'|'invoice'|...
+      company_id:user.company_id,
       title: req.body.title || null,
       description: req.body.description || null,
       priority: req.body.priority || "medium",
