@@ -161,11 +161,13 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.post("/request", upload.array("files"), RequestsController.createRequest);
   router.put("/request/:id", upload.array("files"), RequestsController.modifyRequest);
   router.patch("/request/:id",  RequestsController.updateRequestStatus);
+  router.put("/request/:id/followup",  RequestsController.updateFollowupStatus);
   router.delete("/request/:id", RequestsController.deleteRequest);
   router.get("/request", RequestsController.getRequestsByEmployee); // token-based list
   router.get("/request/:id", RequestsController.getRequestDetail);
   router.delete("/deleteAttachment/:id", RequestsController.deleteAttachment);
   router.post("/shareRequest", RequestsController.shareRequest);
   router.get("/getfollowup", RequestsController.getfollowup); 
+  router.get("/request-menu", RequestsController.getRequestMenuData);
   
 module.exports = router;

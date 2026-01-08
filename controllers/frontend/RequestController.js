@@ -20,7 +20,7 @@ function buildLocalAbsolutePath(relPath) {
   return path.join(process.cwd(), "public", relPath);
 }
 
-async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message,title, description) {
+async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message,title, description,request_attachment_id=0) {
   await sqlModel.insert("request_history", {
     request_id,
     action_by,
@@ -31,6 +31,7 @@ async function addHistory(request_id, action_by, action_type, from_status, to_st
     message,
     title,
     description,
+    request_attachment_id,
     created_at: getCurrentDateTime(),
   });
 }
@@ -65,7 +66,7 @@ exports.createRequest = async (req, res) => {
     if (saveData.error) return res.status(200).send(saveData);
 
     const request_id = saveData.insertId;
-
+    let attachment_id=0;
     // If multer saved files locally, multerConfig pushes paths to req.fileFullPath (array of 'images/<folder>/<file>')
     if (
           req.fileFullPath &&
@@ -86,26 +87,27 @@ exports.createRequest = async (req, res) => {
 
               const { key, url } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
 
-              await sqlModel.insert("request_attachments", {
+              const result =await sqlModel.insert("request_attachments", {
                 request_id,
                 file_path: key, // store S3 key (best practice)
                 file_type: path.extname(localAbsolute).replace(".", ""),
                 created_at: getCurrentDateTime(),
               });
-
+              attachment_id = result.insertId;
               // delete local file
               fs.unlinkSync(localAbsolute);
 
               uploadedRecords.push({ key, url });
+              
+   
             } catch (e) {
               console.error("S3 upload failed for", relPath, e.message);
             }
           }
         }
 
-
     // history
-    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "User created request", req.body.title, req.body.description);
+    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "Request created request", req.body.title, req.body.description, attachment_id );
 
     // notify company admins (FCM) similar to leave flow
     const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
@@ -145,8 +147,7 @@ exports.createRequest = async (req, res) => {
 
 /**
  * Get all requests for the authenticated employee (list)
- */
-exports.getRequestsByEmployee = async (req, res) => {
+exports.getRequestsByEmployeeOld = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(200).send({ status: false, message: "Token is required" });
@@ -198,67 +199,288 @@ exports.getRequestsByEmployee = async (req, res) => {
     return res.status(200).send({ status: false, error: error.message });
   }
 };
+*/
+/**New Logic for Above */
+
+exports.getRequestsByEmployee = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token)
+      return res.status(200).send({ status: false, message: "Token is required" });
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id", "company_id", "name", "image"],
+      { api_token: token }
+    );
+
+    if (!user)
+      return res.status(200).send({ status: false, message: "User not found" });
+
+    const { type, status = "all" } = req.query;
+
+    if (!type) {
+      return res.status(200).send({
+        status: false,
+        message: "type is required",
+      });
+    }
+
+    /* ----------------------------------
+       Build WHERE condition dynamically
+    -----------------------------------*/
+    let whereSql = `WHERE r.emp_id = ? AND r.type = ?`;
+    const params = [user.id, type];
+
+    if (status !== "all") {
+      whereSql += ` AND r.status = ?`;
+      params.push(status);
+    }
+
+    /* ----------------------------------
+       Fetch requests
+    -----------------------------------*/
+    const requests = await sqlModel.customQuery(
+      `
+      SELECT r.*, u.name AS employee_name
+      FROM requests r
+      LEFT JOIN employees u ON u.id = r.emp_id
+      ${whereSql}
+      ORDER BY r.id DESC
+      `,
+      params
+    );
+
+    /* ----------------------------------
+       Enrich with attachments & response
+    -----------------------------------*/
+    for (const r of requests) {
+      // Attachments
+      const attachments = await sqlModel.select(
+        "request_attachments",
+        ["id", "file_path", "file_type", "created_at"],
+        { request_id: r.id }
+      );
+
+      r.attachments = attachments.map((a) => ({
+        ...a,
+        file_url: a.file_path
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
+              process.env.AWS_REGION || "ap-south-1"
+            }.amazonaws.com/${a.file_path}`
+          : null,
+      }));
+
+      // Latest admin response
+      const [latestResp] = await sqlModel.customQuery(
+        `
+        SELECT rr.*, u.username AS admin_name
+        FROM request_responses rr
+        LEFT JOIN users u ON u.id = rr.responded_by
+        WHERE rr.request_id = ?
+        ORDER BY rr.version DESC
+        LIMIT 1
+        `,
+        [r.id]
+      );
+
+      r.admin_response = latestResp
+        ? {
+            ...latestResp,
+            file_url: latestResp.file_path
+              ? `https://${process.env.AWS_S3_BUCKET}.s3.${
+                  process.env.AWS_REGION || "ap-south-1"
+                }.amazonaws.com/${latestResp.file_path}`
+              : null,
+          }
+        : null;
+    }
+
+    return res.status(200).send({
+      status: true,
+      data: requests,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({
+      status: false,
+      error: error.message,
+    });
+  }
+};
+
 
 /**
  * Get single request detail (attachments, responses, history)
  */
+// exports.getRequestDetail = async (req, res) => {
+//   try {
+//     const token = req.headers.authorization?.split(" ")[1];
+//     if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+//     const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+//     if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+//     const requestId = req.params.id;
+
+//     const requestRows = await sqlModel.select("requests", ["*"], {
+//       id: requestId,
+//       emp_id: user.id
+//     });
+
+//     if (!requestRows || requestRows.length === 0) {
+//       return res.status(200).send({ status: false, message: "Request not found" });
+//     }
+
+//     const r = requestRows[0]; // FIXED
+
+//     // Attachments
+//     const attachments = await sqlModel.select("request_attachments", "*", {
+//       request_id: requestId
+//     });
+
+//     r.attachments = attachments.map((a) => ({
+//       ...a,
+//       file_url: a.file_path
+//         ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}`
+//         : null
+//     }));
+
+//     // Responses
+//     // const responses = await sqlModel.select("request_responses", "*", {
+//     //   request_id: requestId
+//     // });
+//     const responses = await sqlModel.select(
+//                                               "request_responses",
+//                                               "*",
+//                                               { request_id: requestId },
+//                                               "ORDER BY id DESC LIMIT 1"
+//                                             );
+
+//     const latestResponse = responses[0] || null;
+//     r.admin_response = latestResponse ? {
+//       ...latestResponse,
+//       file_url: latestResponse.file_path
+//         ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${latestResponse.file_path}`
+//         : null
+//     } : null;
+
+//     // r.admin_response = responses.map((rr) => ({
+//     //   ...rr,
+//     //   file_url: rr.file_path
+//     //     ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}`
+//     //     : null
+//     // }));
+
+//     // History
+//     const history = await sqlModel.select("request_history", "*", {
+//       request_id: requestId
+//     });
+ 
+//     r.history = history.map((a) => ({
+//       ...a,
+//       type:r.type,
+//       priority:r.priority,
+//       status:r.status,
+//     }));
+
+
+//     return res.status(200).send({ status: true, data: r });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(200).send({ status: false, error: error.message });
+//   }
+// };
+
 exports.getRequestDetail = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+    if (!token)
+      return res.status(200).send({ status: false, message: "Token is required" });
 
-    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
-    if (!user) return res.status(200).send({ status: false, message: "User not found" });
+    const [user] = await sqlModel.select("employees", ["id"], {
+      api_token: token,
+    });
+    if (!user)
+      return res.status(200).send({ status: false, message: "User not found" });
 
     const requestId = req.params.id;
 
-    const requestRows = await sqlModel.select("requests", ["*"], {
+    const [r] = await sqlModel.select("requests", "*", {
       id: requestId,
-      emp_id: user.id
+      emp_id: user.id,
     });
 
-    if (!requestRows || requestRows.length === 0) {
+    if (!r)
       return res.status(200).send({ status: false, message: "Request not found" });
-    }
 
-    const r = requestRows[0]; // FIXED
-
-    // Attachments
+    /* ---------------- Attachments ---------------- */
     const attachments = await sqlModel.select("request_attachments", "*", {
-      request_id: requestId
+      request_id: requestId,
     });
 
-    r.attachments = attachments.map((a) => ({
-      ...a,
-      file_url: a.file_path
-        ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${a.file_path}`
-        : null
-    }));
+    const attachmentMap = {};
+    attachments.forEach((a) => {
+      attachmentMap[a.id] = {
+        ...a,
+        file_url: a.file_path
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
+              process.env.AWS_REGION || "ap-south-1"
+            }.amazonaws.com/${a.file_path}`
+          : null,
+      };
+    });
 
-    // Responses
+    r.attachments = Object.values(attachmentMap);
+
+    /* ---------------- Responses ---------------- */
     const responses = await sqlModel.select("request_responses", "*", {
-      request_id: requestId
+      request_id: requestId,
     });
 
-    r.admin_response = responses.map((rr) => ({
-      ...rr,
-      file_url: rr.file_path
-        ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${rr.file_path}`
-        : null
-    }));
+    const responseMap = {};
+    responses.forEach((rr) => {
+      responseMap[rr.id] = {
+        ...rr,
+        file_url: rr.file_path
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
+              process.env.AWS_REGION || "ap-south-1"
+            }.amazonaws.com/${rr.file_path}`
+          : null,
+      };
+    });
 
-    // History
+    // Latest admin response
+    const latestResponse =
+      responses.sort((a, b) => b.version - a.version)[0] || null;
+
+    r.admin_response = latestResponse
+      ? responseMap[latestResponse.id]
+      : null;
+
+    /* ---------------- History ---------------- */
     const history = await sqlModel.select("request_history", "*", {
-      request_id: requestId
+      request_id: requestId,
     });
- 
-    r.history = history.map((a) => ({
-      ...a,
-      type:r.type,
-      priority:r.priority,
-      status:r.status,
-    }));
 
+    r.history = history.map((h) => ({
+      ...h,
+
+      request_attachment:
+        h.request_attachment_id &&
+        attachmentMap[h.request_attachment_id]
+          ? attachmentMap[h.request_attachment_id]
+          : {},
+
+      request_response:
+        h.request_response_id && responseMap[h.request_response_id]
+          ? responseMap[h.request_response_id]
+          : {},
+
+      type: r.type,
+      priority: r.priority,
+      status: r.status,
+    }));
 
     return res.status(200).send({ status: true, data: r });
   } catch (error) {
@@ -266,7 +488,6 @@ exports.getRequestDetail = async (req, res) => {
     return res.status(200).send({ status: false, error: error.message });
   }
 };
-
 
 /**
  * Update (modify) request by user
@@ -310,6 +531,7 @@ exports.modifyRequest = async (req, res) => {
     // If files uploaded, upload them to S3 under same version (v0 user uploads or create new user-modification folder)
     console.log("req.fileFullPath");
     console.log(req.fileFullPath);
+    let attachment_id=0;
     if (req.fileFullPath && req.fileFullPath.length > 0) {
       for (const relPath of req.fileFullPath) {
 
@@ -321,13 +543,13 @@ exports.modifyRequest = async (req, res) => {
 
           const { key, url } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
 
-          await sqlModel.insert("request_attachments", {
+          const result = await sqlModel.insert("request_attachments", {
             request_id: requestId,
             file_path: key,
             file_type: path.extname(localAbsolute).replace(".", ""),
             created_at: getCurrentDateTime(),
           });
-
+          attachment_id = result.insertId;
           fs.unlinkSync(localAbsolute);
 
         } catch (err) {
@@ -337,9 +559,10 @@ exports.modifyRequest = async (req, res) => {
     }else{
       console.dir("Image not found")
     }
-
-    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version+1), "requested updated",reqRow.title,reqRow.description);
-
+    //**Update history only when attachment updated */
+    if(attachment_id){
+    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version+1), "requested updated",reqRow.title,reqRow.description,attachment_id);
+    }
     return res.status(200).send({ status: true, message: "Request updated" });
   } catch (error) {
     console.error(error);
@@ -430,7 +653,7 @@ exports.shareRequest = async (req, res) => {
 
 exports.getfollowup = async (req, res) => {
      try {
-          return res.status(200).send({ status: true, data:[{'label':"1 Day", 'value':"1_day"},{'label':"2 Day", 'value':"2_day"},{'label':"3 Day", 'value':"3_day"}] ,message: "Detail submitted successfully!", });
+          return res.status(200).send({ status: true, data:[{'label':"1 Day", 'value':"1_day"},{'label':"2 Day", 'value':"2_day"},{'label':"3 Day", 'value':"3_day"},{'label':"Closed", 'value':"Closed"}] ,message: "Detail submitted successfully!", });
      }catch(err){
         console.error("Submit Error:", error);
         return res.status(500).json({ message: "Server error", error });
@@ -438,38 +661,310 @@ exports.getfollowup = async (req, res) => {
 }
 
 
+// exports.updateRequestStatus = async (req, res) => {
+//   try {
+//     const token = req.headers.authorization?.split(" ")[1];
+//     if (!token) return res.status(200).send({ status: false, message: "Token is required" });
+
+//     const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+//     if (!user) return res.status(200).send({ status: false, message: "User not found" });
+
+//     const requestId = req.params.id;
+//     const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
+//     if (!existing || existing.length === 0 || req.body.status === '') return res.status(200).send({ status: false, message: "Request not found or invalid status." });
+//     console.dir("requests requests");
+//     console.log(existing);
+//     const reqRow = existing;
+//     if (!["requested"].includes(reqRow.status)) {
+//       return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
+//     }
+
+//     const updateData = {
+//       status:req.body.status,
+//       updated_at: getCurrentDateTime(),
+//     };
+//     if(req.body.status === 'ready'){
+
+//     }
+//     await sqlModel.update("requests", updateData, { id: requestId });
+    
+//     if(reqRow.status !== 'requested'){
+//       await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version), "status updated",reqRow.title,reqRow.description);
+//     }
+
+//     return res.status(200).send({ status: true, message: "Request updated" });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(200).send({ status: false, error: error.message });
+//   }
+// };
+
+exports.getRequestMenuData = async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    if (!type) {
+      return res.status(400).json({
+        status: false,
+        message: "Type is required",
+      });
+    }
+    const REQUEST_TYPE_CONFIG = {
+                                    quotation: [
+                                      {
+                                        id: "raise_request",
+                                        type: "quotation",
+                                        title: "Raise a Request",
+                                      },
+                                      {
+                                        id: "submitted_requests",
+                                        type: "quotation",
+                                        title: "Submitted Quotations",
+                                      },
+                                    ],
+
+                                    invoice: [
+                                      {
+                                        id: "raise_invoice",
+                                        type: "invoice",
+                                        title: "Raise Invoice",
+                                      },
+                                      {
+                                        id: "submitted_invoices",
+                                        type: "invoice",
+                                        title: "Submitted Invoices",
+                                      },
+                                    ],
+
+                                    statement: [
+                                      {
+                                        id: "account_statement",
+                                        type: "statement",
+                                        title: "Account Statement",
+                                      },
+                                      {
+                                        id: "download_statement",
+                                        type: "statement",
+                                        title: "Download Statement",
+                                      },
+                                    ],
+
+                                    credit_note: [
+                                      {
+                                        id: "raise_credit_note",
+                                        type: "credit_note",
+                                        title: "Raise Credit Note",
+                                      },
+                                      {
+                                        id: "submitted_credit_notes",
+                                        type: "credit_note",
+                                        title: "Submitted Credit Notes",
+                                      },
+                                    ],
+
+                                    stock_status: [
+                                      {
+                                        id: "current_stock",
+                                        type: "stock_status",
+                                        title: "Current Stock",
+                                      },
+                                      {
+                                        id: "stock_history",
+                                        type: "stock_status",
+                                        title: "Stock History",
+                                      },
+                                    ],
+        };
+
+    const data = REQUEST_TYPE_CONFIG[type];
+
+    if (!data) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid type",
+        allowed_types: Object.keys(REQUEST_TYPE_CONFIG),
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
 exports.updateRequestStatus = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(200).send({ status: false, message: "Token is required" });
-
-    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
-    if (!user) return res.status(200).send({ status: false, message: "User not found" });
-
-    const requestId = req.params.id;
-    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
-    if (!existing || existing.length === 0 || req.body.status === '') return res.status(200).send({ status: false, message: "Request not found or invalid status." });
-    console.dir("requests requests");
-    console.log(existing);
-    const reqRow = existing;
-    if (!["requested"].includes(reqRow.status)) {
-      return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
+    if (!token) {
+      return res.status(200).send({ status: false, message: "Token is required" });
     }
 
+    const [user] = await sqlModel.select("employees", ["id"], { api_token: token });
+    if (!user) {
+      return res.status(200).send({ status: false, message: "User not found" });
+    }
+
+    const requestId = req.params.id;
+    const newStatus = req.body.status;
+
+    const allowedStatuses = ["ready", "cancelled", "approved"];
+    if (!allowedStatuses.includes(newStatus)) {
+      return res.status(200).send({ status: false, message: "Invalid status value" });
+    }
+
+    const [reqRow] = await sqlModel.select(
+      "requests",
+      ["status", "type", "current_version", "title", "description"],
+      { id: requestId, emp_id: user.id }
+    );
+
+    if (!reqRow) {
+      return res.status(200).send({ status: false, message: "Request not found" });
+    }
+
+    if (reqRow.status !== "requested") {
+      return res.status(200).send({
+        status: false,
+        message: "Cannot modify request in current status",
+      });
+    }
+
+    // Base update data
     const updateData = {
-      status:req.body.status,
+      status: newStatus,
       updated_at: getCurrentDateTime(),
     };
 
+    // ✅ Special logic for READY status
+    if (newStatus === "ready") {
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + 2);
+
+      updateData.nextFollowup = "2_day";
+      updateData.nextFollowup_date = nextDate
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+    }
+
     await sqlModel.update("requests", updateData, { id: requestId });
-    
 
-    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version), "status updated",reqRow.title,reqRow.description);
+    await addHistory(
+      requestId,
+      user.id,
+      "request_status_updated",
+      reqRow.status,
+      newStatus,
+      reqRow.current_version,
+      "Status updated",
+      reqRow.title,
+      reqRow.description
+    );
 
-    return res.status(200).send({ status: true, message: "Request updated" });
+    return res.status(200).send({ status: true, message: "Request updated successfully" });
+
   } catch (error) {
     console.error(error);
     return res.status(200).send({ status: false, error: error.message });
+  }
+};
+
+
+exports.updateFollowupStatus = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(200).send({ status: false, message: "Token is required" });
+    }
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
+    if (!user) {
+      return res.status(200).send({ status: false, message: "User not found" });
+    }
+
+    const requestId = req.params.id;
+    const followup = req.body.followup;
+
+    const allowedFollowups = ["1_day", "2_day", "3_day", "Closed"];
+    if (!allowedFollowups.includes(followup)) {
+      return res.status(200).send({
+        status: false,
+        message: "Invalid follow-up value",
+      });
+    }
+
+    const [reqRow] = await sqlModel.select(
+      "requests",
+      ["id", "nextFollowup"],
+      { id: requestId, emp_id: user.id }
+    );
+
+    if (!reqRow) {
+      return res.status(200).send({
+        status: false,
+        message: "Request not found",
+      });
+    }
+
+    const updateData = {
+      nextFollowup: followup,
+      updated_at: getCurrentDateTime(),
+    };
+
+    // ✅ Follow-up date logic
+    if (followup !== "Closed") {
+      const daysMap = {
+        "1_day": 1,
+        "2_day": 2,
+        "3_day": 3,
+      };
+
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + daysMap[followup]);
+
+      updateData.nextFollowup_date = `${nextDate.getFullYear()}-${String(
+        nextDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`;
+    } else {
+      updateData.nextFollowup_date = null;
+    }
+
+    await sqlModel.update("requests", updateData, { id: requestId });
+
+    await addHistory(
+      requestId,
+      user.id,
+      "followup_updated",
+      reqRow.nextFollowup,
+      followup,
+      null,
+      "Follow-up updated",
+      null,
+      null
+    );
+
+    return res.status(200).send({
+      status: true,
+      message: "Follow-up updated successfully",
+    });
+
+  } catch (error) {
+    console.error("Follow-up Update Error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
