@@ -20,10 +20,17 @@ async function addHistory(
   from_status,
   to_status,
   version,
-  message
+  message,
 ) {
-  await sqlModel.insert("request_history", {
-    request_id,
+  // 1️⃣ Get latest history for this request
+    const [lastHistory] = await sqlModel.select(
+      "request_history",
+      ["id"],
+      { request_id: request_id }, // explicit WHERE request_id = ?
+      "ORDER BY id DESC LIMIT 1"
+    );
+
+  const payload = {
     request_response_id,
     action_by,
     action_type,
@@ -31,9 +38,26 @@ async function addHistory(
     to_status,
     version,
     message,
-    created_at: getCurrentDateTime(),
-  });
+    updated_at: getCurrentDateTime(),
+  };
+
+  if (lastHistory?.id) {
+    // 2️⃣ Update latest history
+    await sqlModel.update(
+      "request_history",
+      payload,
+      { id: lastHistory.id }
+    );
+  } else {
+    // 3️⃣ Insert new history
+    await sqlModel.insert("request_history", {
+      request_id,
+      ...payload,
+      created_at: getCurrentDateTime(),
+    });
+  }
 }
+
 
 
 // Admin: list with filters
@@ -377,12 +401,12 @@ const [lastResp] = await sqlModel.execute(
 
           uploadedKey = uploadedKey || key;
 
-          await sqlModel.insert("request_attachments", {
-            request_id: requestId,
-            file_path: relPath,
-            file_type: path.extname(localAbs).replace(".", ""),
-            created_at: getCurrentDateTime(),
-          });
+          // await sqlModel.insert("request_attachments", {
+          //   request_id: requestId,
+          //   file_path: relPath,
+          //   file_type: path.extname(localAbs).replace(".", ""),
+          //   created_at: getCurrentDateTime(),
+          // });
 
           fs.unlinkSync(localAbs);
         } catch (e) {
@@ -451,19 +475,19 @@ const followUpDateTime = followUpDate
   .replace("T", " ");
 
 
-    await sqlModel.update("requests", { current_version: newVersion, status: "ready",nextFollowup: followUpDateTime, updated_at: getCurrentDateTime() }, { id: requestId });
+    await sqlModel.update("requests", { current_version: newVersion, status: "ready",nextFollowup:'2_day',nextFollowup_date: followUpDateTime, updated_at: getCurrentDateTime() }, { id: requestId });
 
     // record history
     await addHistory(
-  requestId,
-  adminResponseId, 
-  adminUser.id,   
-  "response_uploaded",
-  prevStatus,
-  "ready",
-  newVersion,
-  req.body.admin_note || "Admin responded"
-);
+                      requestId,
+                      adminResponseId, 
+                      adminUser.id,   
+                      "response_uploaded",
+                      prevStatus,
+                      "ready",
+                      newVersion,
+                      req.body.admin_note || "Admin responded"
+                    );
 
     // await addHistory(requestId, adminUser.id, "response_uploaded", prevStatus, "responded", newVersion, req.body.admin_note || "Admin responded");
 
