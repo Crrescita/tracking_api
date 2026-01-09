@@ -68,11 +68,6 @@ exports.getAllRequests = async (req, res) => {
     let where = " WHERE r.company_id = ? AND r.type = ? ";
     const params = [company_id, type];
 
-    if (type) {
-      where += " AND r.type = ? ";
-      params.push(type);
-    }
-
     if (date_from && date_to) {
       where += " AND r.created_at BETWEEN ? AND ? ";
       params.push(date_from, date_to);
@@ -83,42 +78,45 @@ exports.getAllRequests = async (req, res) => {
     const offsetVal = Number(offset) || 0;
 
     /* ------------------ QUERY ------------------ */
-    const query = `
-      SELECT 
-        r.id,
-        r.title,
-        r.description,
-        r.priority,
-        r.status,
-        r.created_at,
-        ra.file_path AS attachment_file,
-        e.name AS name,
-         e.mobile,
-        e.email,
-         de.name AS designation_name,
-           b.name AS branch_name,
-        d.name AS department_name,
-        CASE
-          WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-          ELSE e.image
-        END AS image
-      FROM requests r
-      LEFT JOIN request_attachments ra ON ra.request_id = r.id
-      LEFT JOIN employees e 
-        ON e.id = r.emp_id
-       AND e.company_id = r.company_id
-          LEFT JOIN designation de ON e.designation = de.id
-            LEFT JOIN branch b ON e.branch = b.id
-      LEFT JOIN department d ON e.department = d.id
-      ${where}
-      ORDER BY r.id DESC
-      LIMIT ${limitVal} OFFSET ${offsetVal}
-    `;
+   const query = `
+                SELECT 
+                  r.id,
+                  r.title,
+                  r.description,
+                  r.priority,
+                  r.status,
+                  r.created_at,
+                  ra.file_path AS attachment_file,
+                  e.name AS name,
+                  e.mobile,
+                  e.email,
+                  de.name AS designation_name,
+                  b.name AS branch_name,
+                  d.name AS department_name,
+                  CASE
+                    WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+                    ELSE e.image
+                  END AS image
+                FROM requests r
+                LEFT JOIN request_attachments ra ON ra.request_id = r.id
+                LEFT JOIN employees e 
+                  ON e.id = r.emp_id
+                AND e.company_id = r.company_id
+                LEFT JOIN designation de ON e.designation = de.id
+                LEFT JOIN branch b ON e.branch = b.id
+                LEFT JOIN department d ON e.department = d.id
+                ${where}
+                ORDER BY r.id DESC
+                LIMIT ${limitVal} OFFSET ${offsetVal}
+              `;
 
-    const list = await sqlModel.customQuery(query, [
-      process.env.BASE_URL,
-      ...params,
-    ]);
+              const list = await sqlModel.customQuery(query, [
+                process.env.BASE_URL,
+                ...params,
+              ]);
+
+  console.log("SQL:", query);
+
 
     /* ------------------ LATEST RESPONSE (N+1 but safe) ------------------ */
     for (const r of list) {
