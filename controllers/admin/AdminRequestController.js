@@ -102,37 +102,45 @@ exports.getAllRequests = async (req, res) => {
     const offsetVal = Number(offset) || 0;
 
     /* ------------------ QUERY ------------------ */
-   const query = `
-                SELECT 
-                  r.id,
-                  r.title,
-                  r.description,
-                  r.priority,
-                  r.status,
-                  r.created_at,
-                  ra.file_path AS attachment_file,
-                  e.name AS name,
-                  e.mobile,
-                  e.email,
-                  de.name AS designation_name,
-                  b.name AS branch_name,
-                  d.name AS department_name,
-                  CASE
-                    WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-                    ELSE e.image
-                  END AS image
-                FROM requests r
-                LEFT JOIN request_attachments ra ON ra.request_id = r.id
-                LEFT JOIN employees e 
-                  ON e.id = r.emp_id
-                AND e.company_id = r.company_id
-                LEFT JOIN designation de ON e.designation = de.id
-                LEFT JOIN branch b ON e.branch = b.id
-                LEFT JOIN department d ON e.department = d.id
-                ${where}
-                ORDER BY r.id DESC
-                LIMIT ${limitVal} OFFSET ${offsetVal}
-              `;
+		const query = `
+SELECT 
+  r.id,
+  r.title,
+  r.description,
+  r.priority,
+  r.status,
+  r.created_at,
+  ra.file_path AS attachment_file,
+  e.name,
+  e.mobile,
+  e.email,
+  de.name AS designation_name,
+  b.name AS branch_name,
+  d.name AS department_name,
+  CASE
+    WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+    ELSE e.image
+  END AS image
+FROM requests r
+LEFT JOIN request_attachments ra 
+  ON ra.id = (
+    SELECT ra2.id
+    FROM request_attachments ra2
+    WHERE ra2.request_id = r.id
+    ORDER BY ra2.id DESC
+    LIMIT 1
+  )
+LEFT JOIN employees e ON e.id = r.emp_id
+LEFT JOIN designation de ON e.designation = de.id
+LEFT JOIN branch b ON e.branch = b.id
+LEFT JOIN department d ON e.department = d.id
+${where}
+ORDER BY r.id DESC
+LIMIT ${limitVal} OFFSET ${offsetVal}
+`;
+
+
+
 
               const list = await sqlModel.customQuery(query, [
                 process.env.BASE_URL,
