@@ -294,6 +294,14 @@ exports.getRequestById = async (req, res) => {
 
     const request = list[0];
 
+    request.attachment_file_url = request.attachment_file
+  ? buildS3Url(request.attachment_file)
+  : null;
+
+// optional: remove raw path if you don’t want to expose it
+delete request.attachment_file;
+
+
     /* ------------------ LATEST RESPONSE (N+1 but safe) ------------------ */
     // for (const r of list) {
       const [latestResp] = await sqlModel.customQuery(
