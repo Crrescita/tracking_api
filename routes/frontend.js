@@ -169,5 +169,10 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.post("/shareRequest", RequestsController.shareRequest);
   router.get("/getfollowup", RequestsController.getfollowup); 
   router.get("/request-menu", RequestsController.getRequestMenuData);
+
+  router.post("/insertVistorLog",upload.array("files"), RequestsController.insertVisitorLog);
+  router.get("/getVistorLog", RequestsController.getVisitList);
+  router.get("/getVistorLogDetail/:visit_id", RequestsController.getVisitDetails);
+  router.put("/updateVistorLog/:visit_id",  upload.none(),    RequestsController.updateVisitLog);
   
 module.exports = router;

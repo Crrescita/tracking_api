@@ -968,3 +968,350 @@ exports.updateFollowupStatus = async (req, res) => {
   }
 };
 
+
+
+exports.insertVisitorLog = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).send({ status: false, message: "Token is required" });
+    }
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id", "company_id", "name", "image"],
+      { api_token: token }
+    );
+
+
+    if (!user) {
+      return res.status(401).send({ status: false, message: "Invalid token" });
+    }
+
+   const insert = {
+  emp_id: user.id,
+  company_id: user.company_id,
+  business_name: req.body.business_name || null,
+  business_address: req.body.business_address || null,
+  mobile: req.body.mobile || null,
+  email: req.body.email || null,
+  visit_date: req.body.visit_date || null,
+  from_time: req.body.from_time || null,
+  to_time: req.body.to_time || null,
+  remark: req.body.remark || null,
+  created_at: getCurrentDateTime(),
+  updated_at: getCurrentDateTime(),
+};
+
+
+    const saveData = await sqlModel.insert("visits", insert);
+    if (saveData?.error) {
+      return res.status(500).send(saveData);
+    }
+
+    const visit_id = saveData.insertId;
+
+   
+    if (Array.isArray(req.fileFullPath) && req.fileFullPath.length > 0) {
+      for (const relPath of req.fileFullPath) {
+        try {
+          const fixedPath = fixMulterRelativePath(relPath);
+          const localAbsolute = buildLocalAbsolutePath(fixedPath);
+
+          const keyPrefix = `visits/${visit_id}/v0`;
+          const { key } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
+
+          await sqlModel.insert("visit_attachments", {
+            visit_id,
+            file_path: key,
+            file_type: path.extname(localAbsolute).slice(1),
+            created_at: getCurrentDateTime(),
+          });
+
+          fs.unlinkSync(localAbsolute);
+        } catch (err) {
+          console.error("Attachment upload failed:", err.message);
+        }
+      }
+    }
+
+     // notify company admins (FCM) similar to leave flow
+    const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
+    if (tokens.length > 0) {
+      const messageContent = `New ${insert.type} request from ${user.name}`;
+      const notificationPromises = tokens.map(({ fcm_token }) => {
+        return adminMessaging.messaging().send({
+          notification: {
+            title: `New ${insert.type} Request`,
+            body: messageContent,
+            image: user.image ? `${process.env.BASE_URL}${user.image}` : "",
+          },
+          token: fcm_token,
+        });
+      });
+      try {
+        await Promise.all(notificationPromises);
+        await sqlModel.insert("notification", {
+          company_id: user.company_id,
+          title: "New Request",
+          body: messageContent,
+          image: user.image,
+          status: "unread",
+          timestamp: getCurrentDateTime(),
+        });
+      } catch (e) {
+        console.error("FCM error", e.message);
+      }
+    }
+    return res.status(200).send({
+      status: true,
+      message: "Visit log created successfully",
+      visit_id,
+    });
+
+  } catch (error) {
+    console.error("insertVisitorLog error:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+exports.getVisitList = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).send({ status: false, message: "Token is required" });
+    }
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
+
+    if (!user) {
+      return res.status(401).send({ status: false, message: "Invalid token" });
+    }
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Number(req.query.limit || 10), 50);
+    const offset = (page - 1) * limit;
+
+    let where = `WHERE emp_id = ?`;
+    const whereValues = [user.id];
+
+    if (req.query.from_date && req.query.to_date) {
+      where += ` AND visit_date BETWEEN ? AND ?`;
+      whereValues.push(req.query.from_date, req.query.to_date);
+    }
+
+    const dataSql = `
+      SELECT 
+        id,
+        business_name,
+        business_address,
+        mobile,
+        email,
+        visit_date,
+        from_time,
+        to_time,
+        remark,
+        created_at
+      FROM visits
+      ${where}
+      ORDER BY id DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+
+    const rows = await sqlModel.customQuery(dataSql, whereValues);
+
+    const countSql = `
+      SELECT COUNT(*) as total
+      FROM visits
+      ${where}
+    `;
+
+    const countResult = await sqlModel.customQuery(countSql, whereValues);
+    const total = countResult[0]?.total || 0;
+
+    return res.status(200).send({
+      status: true,
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+      },
+    });
+
+  } catch (error) {
+    console.error("getVisitList error:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+exports.getVisitDetails = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const visit_id = Number(req.params.visit_id);
+
+    if (!token) {
+      return res.status(401).send({ status: false, message: "Token is required" });
+    }
+
+    if (!visit_id) {
+      return res.status(400).send({
+        status: false,
+        message: "visit_id is required",
+      });
+    }
+
+    const users = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
+    const user = users[0];
+
+    if (!user) {
+      return res.status(401).send({ status: false, message: "Invalid token" });
+    }
+
+    const visits = await sqlModel.customQuery(
+      `
+      SELECT *
+      FROM visits
+      WHERE id = ? AND emp_id = ?
+      `,
+      [visit_id, user.id]
+    );
+
+    const visit = visits[0];
+
+    if (!visit) {
+      return res.status(404).send({
+        status: false,
+        message: "Visit not found",
+      });
+    }
+
+    const attachments = await sqlModel.select(
+      "visit_attachments",
+      ["id", "file_path", "file_type", "created_at"],
+      { visit_id }
+    );
+
+    return res.status(200).send({
+      status: true,
+      data: {
+        ...visit,
+        attachments: attachments.map(a => ({
+          ...a,
+          file_url: buildS3Url(a.file_path),
+        })),
+      },
+    });
+
+  } catch (error) {
+    console.error("getVisitDetails error:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+exports.updateVisitLog = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const visit_id = Number(req.params.visit_id);
+
+    if (!token) {
+      return res.status(401).send({ status: false, message: "Token is required" });
+    }
+
+    if (!visit_id) {
+      return res.status(400).send({
+        status: false,
+        message: "visit_id is required",
+      });
+    }
+
+    const users = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
+    const user = users[0];
+
+    if (!user) {
+      return res.status(401).send({ status: false, message: "Invalid token" });
+    }
+
+    const visits = await sqlModel.customQuery(
+      `SELECT id FROM visits WHERE id = ? AND emp_id = ?`,
+      [visit_id, user.id]
+    );
+
+    console.log("visits:", visits);
+
+    if (!visits.length) {
+      return res.status(404).send({
+        status: false,
+        message: "Visit not found",
+      });
+    }
+console.log(req.body)
+    /* ---------- SIMPLE UPDATE (LIKE INSERT) ---------- */
+    const updateData = {
+      ...req.body,
+      updated_at: getCurrentDateTime(),
+    };
+
+    console.log(updateData  )
+
+    if (!Object.keys(updateData).length) {
+      return res.status(400).send({
+        status: false,
+        message: "Nothing to update",
+      });
+    }
+
+    await sqlModel.update("visits", updateData, { id: visit_id });
+
+    return res.status(200).send({
+      status: true,
+      message: "Visit updated successfully",
+    });
+
+  } catch (error) {
+    console.error("updateVisitLog error:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+
+
+
+const buildS3Url = (key) => {
+  if (!key) return null;
+  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
+};
+
+
+
+
+
+
