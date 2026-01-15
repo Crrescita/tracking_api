@@ -1276,7 +1276,7 @@ console.log(req.body)
       updated_at: getCurrentDateTime(),
     };
 
-    console.log(updateData  )
+    console.log(updateData)
 
     if (!Object.keys(updateData).length) {
       return res.status(400).send({
@@ -1300,9 +1300,6 @@ console.log(req.body)
     });
   }
 };
-
-
-
 
 
 const buildS3Url = (key) => {

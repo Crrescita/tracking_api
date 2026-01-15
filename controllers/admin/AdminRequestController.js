@@ -109,6 +109,7 @@ SELECT
   r.description,
   r.priority,
   r.status,
+  r.is_read,
   r.created_at,
   ra.file_path AS attachment_file,
   e.name,
@@ -491,7 +492,7 @@ const followUpDateTime = followUpDate
   .replace("T", " ");
 
 
-    await sqlModel.update("requests", { current_version: newVersion, status: "ready",nextFollowup:'2_day',nextFollowup_date: followUpDateTime, updated_at: getCurrentDateTime() }, { id: requestId });
+    await sqlModel.update("requests", { current_version: newVersion, status: "ready",nextFollowup:'2_day',nextFollowup_date: followUpDateTime,is_read:"true", updated_at: getCurrentDateTime() }, { id: requestId });
 
     // record history
     await addHistory(
