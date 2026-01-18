@@ -14,6 +14,7 @@ const VersionController = require("../controllers/frontend/VersionController");
 const FirebaseController = require("../controllers/frontend/FirebaseController");
 const PayrollController = require("../controllers/frontend/PayrollController");
 const RequestsController = require("../controllers/frontend/RequestController");
+const TaskController = require("../controllers/frontend/TaskController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -174,5 +175,18 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.get("/getVistorLog", RequestsController.getVisitList);
   router.get("/getVistorLogDetail/:visit_id", RequestsController.getVisitDetails);
   router.put("/updateVistorLog/:visit_id",  upload.none(),    RequestsController.updateVisitLog);
+
+  // task
+  router.get("/getAlltasks", TaskController.getEmployeeTask);
+  router.get("/getTaskById/:task_id", TaskController.getEmployeeTaskById);
+  router.post("/updateTaskStatus", TaskController.updateTaskStatus);
+
+  // backgroundVerificationEmp
+  router.post("/backgroundVerificationEmp", upload.fields([{ name: "documentFile", maxCount: 1 }]), EmployeeController.insertBackgroundVerificationByEmp);
+  router.get("/getBackgroundVerificationEmp", EmployeeController.getBackgroundVerification);
+
+  // bank details
+  router.post("/bankDetails", EmployeeController.insertBankDetail);
+  router.get("/getBankDetails", EmployeeController.getBankDetail);
   
 module.exports = router;

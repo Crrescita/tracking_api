@@ -479,4 +479,8 @@ router.post(
 router.put("/updateRequestStatus/:id", AdminRequestController.updateStatus);
 router.get("/request/:id/history", AdminRequestController.getHistory);
 router.get("/request/:id", AdminRequestController.getSingleRequest);
+
+
+//visit logs
+router.get("/visitLogs", AdminRequestController.getAllVisitsLogs);
 module.exports = router;

@@ -762,25 +762,39 @@ exports.deleteRequestMultiple = async (req, res) => {
       });
     }
 
+    // ensure all ids are integers
+    const requestIds = ids.map(id => Number(id)).filter(Boolean);
+
+    if (requestIds.length === 0) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid request ids",
+      });
+    }
+
+    // create placeholders (?, ?, ?)
+    const placeholders = requestIds.map(() => "?").join(",");
+
+    // delete child tables first (FK safety)
     await sqlModel.execute(
-      `DELETE FROM request_responses WHERE request_id IN (?)`,
-      [ids]
+      `DELETE FROM request_responses WHERE request_id IN (${placeholders})`,
+      requestIds
     );
 
     await sqlModel.execute(
-      `DELETE FROM request_attachments WHERE request_id IN (?)`,
-      [ids]
+      `DELETE FROM request_attachments WHERE request_id IN (${placeholders})`,
+      requestIds
     );
 
-      await sqlModel.execute(
-      `DELETE FROM request_history WHERE request_id IN (?)`,
-      [id]
+    await sqlModel.execute(
+      `DELETE FROM request_history WHERE request_id IN (${placeholders})`,
+      requestIds
     );
 
-    // delete requests
+    // delete parent table
     const result = await sqlModel.execute(
-      `DELETE FROM requests WHERE id IN (?)`,
-      [ids]
+      `DELETE FROM requests WHERE id IN (${placeholders})`,
+      requestIds
     );
 
     return res.status(200).json({
@@ -792,10 +806,174 @@ exports.deleteRequestMultiple = async (req, res) => {
     console.error("deleteRequestMultiple error:", error);
     return res.status(500).json({
       status: false,
-      message: "Failed to delete requests",
+      message: error.message,
     });
   }
 };
+
+
+exports.getAllVisitsLogs = async (req, res) => {
+  try {
+    const { company_id, limit = 50, offset = 0 } = req.query;
+
+    if (!company_id) {
+      return res.status(400).json({
+        status: false,
+        message: "company_id is required",
+      });
+    }
+
+    /* ------------------ VISITS ------------------ */
+   const limitVal = Number(limit) || 50;
+const offsetVal = Number(offset) || 0;
+
+const visits = await sqlModel.customQuery(
+  `
+  SELECT
+    v.id,
+    v.emp_id,
+    v.company_id,
+    v.business_name,
+    v.business_address,
+    v.mobile AS visit_mobile,
+    v.email AS visit_email,
+    v.visit_date,
+    v.from_time,
+    v.to_time,
+    v.remark,
+    v.created_at,
+    v.updated_at,
+
+    e.name,
+    e.mobile AS emp_mobile,
+    e.email AS emp_email,
+    de.name AS designation_name,
+    b.name AS branch_name,
+    d.name AS department_name,
+
+    CASE
+      WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+      ELSE NULL
+    END AS image
+  FROM visits v
+  LEFT JOIN employees e ON e.id = v.emp_id
+  LEFT JOIN designation de ON e.designation = de.id
+  LEFT JOIN branch b ON e.branch = b.id
+  LEFT JOIN department d ON e.department = d.id
+  WHERE v.company_id = ?
+  ORDER BY v.id DESC
+  LIMIT ${limitVal} OFFSET ${offsetVal}
+  `,
+  [process.env.BASE_URL, company_id]
+);
+
+
+
+
+// 	const query = `
+// SELECT 
+//   r.id,
+//   r.title,
+//   r.description,
+//   r.priority,
+//   r.status,
+//   r.is_read,
+//   r.created_at,
+//   ra.file_path AS attachment_file,
+//   e.name,
+//   e.mobile,
+//   e.email,
+//   de.name AS designation_name,
+//   b.name AS branch_name,
+//   d.name AS department_name,
+//   CASE
+//     WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+//     ELSE e.image
+//   END AS image
+// FROM requests r
+// LEFT JOIN request_attachments ra 
+//   ON ra.id = (
+//     SELECT ra2.id
+//     FROM request_attachments ra2
+//     WHERE ra2.request_id = r.id
+//     ORDER BY ra2.id DESC
+//     LIMIT 1
+//   )
+// LEFT JOIN employees e ON e.id = r.emp_id
+// LEFT JOIN designation de ON e.designation = de.id
+// LEFT JOIN branch b ON e.branch = b.id
+// LEFT JOIN department d ON e.department = d.id
+// ${where}
+// ORDER BY r.id DESC
+// LIMIT ${limitVal} OFFSET ${offsetVal}
+// `;
+
+
+    if (!visits.length) {
+      return res.status(200).json({
+        status: true,
+        count: 0,
+        data: [],
+      });
+    }
+
+    /* ------------------ ATTACHMENTS ------------------ */
+   const visitIds = visits.map(v => v.id);
+console.log("Visit IDs:", visitIds);
+
+const placeholders = visitIds.map(() => "?").join(",");
+
+const attachments = await sqlModel.customQuery(
+  `
+  SELECT
+    id,
+    visit_id,
+    file_path,
+    file_type,
+    created_at
+  FROM visit_attachments
+  WHERE visit_id IN (${placeholders})
+  `,
+  visitIds
+);
+
+console.log("Attachments fetched:", attachments.length);
+    /* ------------------ MAP ATTACHMENTS ------------------ */
+    const attachmentMap = {};
+
+    for (const att of attachments) {
+      if (!attachmentMap[att.visit_id]) {
+        attachmentMap[att.visit_id] = [];
+      }
+
+      attachmentMap[att.visit_id].push({
+        id: att.id,
+        file_type: att.file_type,
+        file_url: buildS3Url(att.file_path),
+        created_at: att.created_at,
+      });
+    }
+
+    /* ------------------ MERGE ------------------ */
+    const response = visits.map(v => ({
+      ...v,
+      attachments: attachmentMap[v.id] || [],
+    }));
+
+    return res.status(200).json({
+      status: true,
+      count: response.length,
+      data: response,
+    });
+  } catch (error) {
+    console.error("getAllVisitsLogs error:", error);
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
 
 
 

@@ -4,6 +4,8 @@ const deleteOldFile = require("../../middleware/deleteImage");
 const bcrypt = require("bcrypt");
 const sendMail = require("../../mail/nodemailer");
 const saltRounds = 10;
+const { uploadLocalFileToS3 } = require("../../config/s3");
+const fs = require("fs");
 const crypto = require("crypto");
 
 const formatDuration = (totalSeconds) => {
@@ -679,3 +681,393 @@ exports.getEmployeeCompany = async (req, res, next) => {
     res.status(200).send({ status: false, error: error.message });
   }
 };
+
+
+
+exports.insertBackgroundVerificationByEmp = async (req, res) => {
+  try {
+    /* ------------------ TOKEN ------------------ */
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).send({
+        status: false,
+        message: "Token is required",
+      });
+    }
+
+    /* ------------------ EMPLOYEE ------------------ */
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
+
+    if (!employee) {
+      return res.status(401).send({
+        status: false,
+        message: "Invalid token",
+      });
+    }
+
+    const emp_id = employee.id;
+    const company_id = employee.company_id;
+
+    const { documentNo, documentType } = req.body;
+
+    if (!documentType || !documentNo) {
+      return res.status(400).send({
+        status: false,
+        message: "Document type and document number are required",
+      });
+    }
+
+    /* ------------------ DOCUMENT TYPE ------------------ */
+    const sanitizedDocumentName =
+      documentType.toLowerCase().replace(/\s+/g, "_");
+
+    const sanitizedDocumentType = `${sanitizedDocumentName}_file`;
+
+    /* ------------------ VALIDATION ------------------ */
+    const validDocumentTypes = {
+      aadhaar_file: /^\d{12}$/,
+      pan_file: /^[A-Z]{5}\d{4}[A-Z]{1}$/,
+      driving_license_file: /^[A-Z0-9]{15}$/,
+      voter_id_file: /^[A-Z]{3}\d{7}$/,
+      uan_file: /^\d{12}$/,
+    };
+
+    if (
+      !validDocumentTypes[sanitizedDocumentType] ||
+      !validDocumentTypes[sanitizedDocumentType].test(documentNo)
+    ) {
+      return res.status(400).send({
+        status: false,
+        message: `Invalid ${documentType} number format`,
+      });
+    }
+
+    /* ------------------ FILE UPLOAD (S3) ------------------ */
+    let uploadedKey = null;
+
+    if (req.fileFullPath && req.fileFullPath.length > 0) {
+      const relPath = req.fileFullPath[0];
+      const projectRoot = path.resolve(__dirname, "..", "..");
+      const localAbs = path.join(projectRoot, "public", relPath);
+
+      const keyPrefix = `employee-verification/${emp_id}/${sanitizedDocumentName}`;
+
+      const { key } = await uploadLocalFileToS3(localAbs, keyPrefix);
+      uploadedKey = key;
+
+      fs.unlinkSync(localAbs);
+    }
+
+    /* ------------------ EXISTING RECORD ------------------ */
+    const existingRecord = await sqlModel.select(
+      "emp_verification_document",
+      ["id", sanitizedDocumentType],
+      { emp_id }
+    );
+
+    const dataToSave = {
+      emp_id,
+      company_id,
+      [sanitizedDocumentName]: documentNo,
+      updated_at: getCurrentDateTime(),
+    };
+
+    if (uploadedKey) {
+      dataToSave[sanitizedDocumentType] = uploadedKey;
+    }
+
+    /* ------------------ UPDATE / INSERT ------------------ */
+    if (existingRecord.length > 0) {
+      // delete old S3 file if replaced
+      if (uploadedKey && existingRecord[0][sanitizedDocumentType]) {
+        try {
+          await deleteOldFile.deleteOldFile(existingRecord[0][sanitizedDocumentType]);
+        } catch (e) {
+          console.warn("Old file delete failed:", e.message);
+        }
+      }
+
+      await sqlModel.update(
+        "emp_verification_document",
+        dataToSave,
+        { emp_id }
+      );
+
+      return res.status(200).send({
+        status: true,
+        message: "Background verification document updated successfully",
+      });
+    } else {
+      dataToSave.created_at = getCurrentDateTime();
+
+      await sqlModel.insert(
+        "emp_verification_document",
+        dataToSave
+      );
+
+      return res.status(200).send({
+        status: true,
+        message: "Background verification document submitted successfully",
+      });
+    }
+  } catch (error) {
+    console.error("insertBackgroundVerificationByEmp error:", error);
+    return res.status(500).send({
+      status: false,
+      message: "An error occurred",
+      error: error.message,
+    });
+  }
+};
+
+
+const buildPublicUrl = (filePath) => {
+  if (!filePath) return "";
+
+
+  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+    return filePath;
+  }
+
+  if (filePath.startsWith("employee-verification/")) {
+    return buildS3Url(filePath);
+  }
+
+  return `${process.env.BASE_URL}${filePath}`;
+};
+
+
+const buildS3Url = (key) => {
+  if (!key) return null;
+  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
+};
+exports.getBackgroundVerification = async (req, res) => {
+  try {
+    /* ------------------ TOKEN ------------------ */
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).send({
+        status: false,
+        message: "Token is required",
+      });
+    }
+
+    /* ------------------ EMPLOYEE ------------------ */
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
+
+    if (!employee) {
+      return res.status(401).send({
+        status: false,
+        message: "Invalid token",
+      });
+    }
+
+    const emp_id = employee.id;
+
+    /* ------------------ FETCH DATA ------------------ */
+    const records = await sqlModel.select(
+      "emp_verification_document",
+      {},
+      { emp_id }
+    );
+
+    if (!records || records.length === 0) {
+      return res.status(200).send({
+        status: false,
+        message: "No background verification data found",
+      });
+    }
+
+    /* ------------------ FORMAT RESPONSE ------------------ */
+    const result = records.map(item => ({
+      ...item,
+
+      aadhaar_file: buildPublicUrl(item.aadhaar_file),
+      pan_file: buildPublicUrl(item.pan_file),
+      driving_license_file: buildPublicUrl(item.driving_license_file),
+      voter_id_file: buildPublicUrl(item.voter_id_file),
+      uan_file: buildPublicUrl(item.uan_file),
+    }));
+
+    return res.status(200).send({
+      status: true,
+      data: result[0],
+    });
+
+  } catch (error) {
+    console.error("getBackgroundVerification error:", error);
+    return res.status(500).send({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+exports.getBankDetail = async (req, res) => {
+  try {
+    /* ------------------ TOKEN ------------------ */
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).send({
+        status: false,
+        message: "Token is required",
+      });
+    }
+
+    /* ------------------ EMPLOYEE ------------------ */
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
+
+    if (!employee) {
+      return res.status(401).send({
+        status: false,
+        message: "Invalid token",
+      });
+    }
+
+    /* ------------------ FETCH BANK DETAIL ------------------ */
+    const data = await sqlModel.select(
+      "emp_bank_detail",
+      {},
+      { emp_id: employee.id }
+    );
+
+    if (!data || data.length === 0) {
+      return res.status(200).send({
+        status: false,
+        message: "No bank details found",
+      });
+    }
+
+    return res.status(200).send({
+      status: true,
+      data: data[0], // single record per employee
+    });
+
+  } catch (error) {
+    console.error("getBankDetail error:", error);
+    return res.status(500).send({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+
+exports.insertBankDetail = async (req, res) => {
+  try {
+    /* ------------------ TOKEN ------------------ */
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).send({
+        status: false,
+        message: "Token is required",
+      });
+    }
+
+    /* ------------------ EMPLOYEE ------------------ */
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
+
+    if (!employee) {
+      return res.status(401).send({
+        status: false,
+        message: "Invalid token",
+      });
+    }
+
+    const emp_id = employee.id;
+    const company_id = employee.company_id;
+
+    const {
+      acc_holder_name,
+      acc_number,
+      bank_name,
+      ifsc_code,
+    } = req.body;
+
+    /* ------------------ VALIDATION ------------------ */
+    const validation = validateFields({
+      acc_holder_name,
+      acc_number,
+      bank_name,
+      ifsc_code,
+    });
+
+    if (!validation.valid) {
+      return res.status(400).send({
+        status: false,
+        message: validation.message,
+      });
+    }
+
+    const dataToSave = {
+      emp_id,
+      company_id,
+      acc_holder_name,
+      acc_number,
+      bank_name,
+      ifsc_code,
+    };
+
+    /* ------------------ CHECK EXISTING ------------------ */
+    const existingRecord = await sqlModel.select(
+      "emp_bank_detail",
+      ["id"],
+      { emp_id }
+    );
+
+    if (existingRecord.length > 0) {
+      // UPDATE
+      dataToSave.updated_at = getCurrentDateTime();
+
+      await sqlModel.update(
+        "emp_bank_detail",
+        dataToSave,
+        { emp_id }
+      );
+
+      return res.status(200).send({
+        status: true,
+        message: "Bank details updated successfully",
+      });
+    } else {
+      // INSERT
+      dataToSave.created_at = getCurrentDateTime();
+
+      await sqlModel.insert(
+        "emp_bank_detail",
+        dataToSave
+      );
+
+      return res.status(200).send({
+        status: true,
+        message: "Bank details saved successfully",
+      });
+    }
+
+  } catch (error) {
+    console.error("insertBankDetail error:", error);
+    return res.status(500).send({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
