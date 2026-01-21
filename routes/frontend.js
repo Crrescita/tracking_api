@@ -125,6 +125,11 @@ router
   .put(LeaveController.createLeaveRequest);
 // .delete(LeaveController.deleteDesignation);
 
+router.get("/getLeaveSummary", LeaveController.getLeaveSummary);
+router.get("/getEmployeeLeaveRequests", LeaveController.getEmployeeLeaveRequests);
+router.get("/getLeaveDetail/:id", LeaveController.getLeaveDetail);
+router.put("/cancelLeave/:id", LeaveController.cancelLeaveRequest);
+
 // router.post("/leave", LeaveController.setLeaveRequest);
 // router.put("/leave/:id", LeaveController.setLeaveRequest);
 
