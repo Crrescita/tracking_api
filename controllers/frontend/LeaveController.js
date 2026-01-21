@@ -63,10 +63,109 @@ exports.getLeaveSummary = async (req, res) => {
 };
 
 
+// exports.getEmployeeLeaveRequests = async (req, res) => {
+//   try {
+//     const token = req.headers.authorization?.split(" ")[1];
+//     const { status } = req.query; // UI status filter
+
+//     if (!token) {
+//       return res.status(200).send({
+//         status: false,
+//         message: "Token required",
+//       });
+//     }
+
+//     const [employee] = await sqlModel.select(
+//       "employees",
+//       ["id", "company_id"],
+//       { api_token: token }
+//     );
+
+//     if (!employee) {
+//       return res.status(200).send({
+//         status: false,
+//         message: "Employee not found",
+//       });
+//     }
+
+//     const query = `
+//       SELECT
+//         lr.id,
+//         lr.from_date,
+//         lr.to_date,
+//         lr.no_of_days,
+//         lr.status AS db_status,
+//         lr.reason,
+//         lr.created_at,
+//         lt.name AS leave_type
+//       FROM leave_request lr
+//       JOIN leave_type lt ON lt.id = lr.leave_type
+//       WHERE lr.emp_id = ?
+//         AND lr.company_id = ?
+//       ORDER BY lr.created_at DESC
+//     `;
+
+//     const rows = await sqlModel.customQuery(query, [
+//       employee.id,
+//       employee.company_id,
+//     ]);
+
+//     const today = new Date().toISOString().split("T")[0];
+
+//     /* ---------------- MAP DB STATUS → UI STATUS ---------------- */
+//     const mapped = rows.map((row) => {
+//       let ui_status = row.db_status;
+
+//       if (row.db_status == "Approve") {
+//         if (today < row.from_date) {
+//           ui_status = "Approved";
+//         } else if (today >= row.from_date && today <= row.to_date) {
+//           ui_status = "Ongoing";
+//         } else {
+//           ui_status = "Expired";
+//         }
+//       }
+
+//       if (row.db_status == "Reject") {
+//         ui_status = "Rejected";
+//       }
+
+//       return {
+//         id: row.id,
+//         leave_type: row.leave_type,
+//         from_date: row.from_date,
+//         to_date: row.to_date,
+//         no_of_days: row.no_of_days,
+//         status: ui_status,
+//         reason: row.reason,
+//         created_at: row.created_at,
+//       };
+//     });
+
+//     /* ---------------- APPLY UI STATUS FILTER ---------------- */
+//     const filteredData = status
+//       ? mapped.filter(
+//           (item) =>
+//             item.status.toLowerCase() === status.toLowerCase()
+//         )
+//       : mapped;
+
+//     return res.status(200).send({
+//       status: true,
+//       data: filteredData,
+//     });
+//   } catch (error) {
+//     return res.status(200).send({
+//       status: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 exports.getEmployeeLeaveRequests = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const { status } = req.query; // UI status filter
+    const { status, page = 1, limit = 10 } = req.query;
 
     if (!token) {
       return res.status(200).send({
@@ -88,6 +187,11 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
       });
     }
 
+    const pageNum = Math.max(parseInt(page), 1);
+    const limitNum = Math.max(parseInt(limit), 1);
+    const offset = (pageNum - 1) * limitNum;
+
+    /* ---------------- FETCH ALL (FOR STATUS MAPPING) ---------------- */
     const query = `
       SELECT
         lr.id,
@@ -116,7 +220,7 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
     const mapped = rows.map((row) => {
       let ui_status = row.db_status;
 
-      if (row.db_status == "Approve") {
+      if (row.db_status === "Approve") {
         if (today < row.from_date) {
           ui_status = "Approved";
         } else if (today >= row.from_date && today <= row.to_date) {
@@ -126,8 +230,12 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
         }
       }
 
-      if (row.db_status == "Reject") {
+      if (row.db_status === "Reject") {
         ui_status = "Rejected";
+      }
+
+      if (row.db_status === "Cancelled") {
+        ui_status = "Cancelled";
       }
 
       return {
@@ -142,17 +250,30 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
       };
     });
 
-    /* ---------------- APPLY UI STATUS FILTER ---------------- */
-    const filteredData = status
+    /* ---------------- FILTER BY UI STATUS ---------------- */
+    const filtered = status
       ? mapped.filter(
           (item) =>
             item.status.toLowerCase() === status.toLowerCase()
         )
       : mapped;
 
+    /* ---------------- PAGINATION ---------------- */
+    const total = filtered.length;
+    const paginatedData = filtered.slice(offset, offset + limitNum);
+
     return res.status(200).send({
       status: true,
-      data: filteredData,
+        pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        total_pages: Math.ceil(total / limitNum),
+        has_next: offset + limitNum < total,
+        has_prev: pageNum > 1,
+      },
+      data: paginatedData,
+    
     });
   } catch (error) {
     return res.status(200).send({
@@ -161,7 +282,6 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
     });
   }
 };
-
 
 exports.getLeaveDetail = async (req, res) => {
   try {
