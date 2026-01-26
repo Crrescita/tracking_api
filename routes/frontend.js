@@ -117,6 +117,7 @@ router.get("/getEmployeeCompany", EmployeeController.getEmployeeCompany);
 
 //payroll
 router.get("/getPayroll", PayrollController.getPayroll);
+router.get("/getPayrollDetail/:payslip_for_month", PayrollController.getPayrollDetail);
 
 //leave api
 router
