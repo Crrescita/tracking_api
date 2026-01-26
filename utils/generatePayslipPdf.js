@@ -31,7 +31,7 @@ module.exports = async function generatePayslipPdf(data) {
 
   const pdfPath = path.join(
     pdfDir,
-    `payslip_${data.emp.code}_${Date.now()}.pdf`
+    `payslip_${Date.now()}.pdf`
   );
 
   await page.pdf({

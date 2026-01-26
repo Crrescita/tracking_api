@@ -531,7 +531,7 @@ emp: {
     });
 
     /* ---------------- UPLOAD TO S3 ---------------- */
-    const keyPrefix = `payslip/${emp_id}/${payslip_for_month}`;
+    const keyPrefix = `payslip/${payslip_for_month}`;
     const { key } = await uploadLocalFileToS3(pdfPath, keyPrefix);
     fs.unlinkSync(pdfPath);
 
