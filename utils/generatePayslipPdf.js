@@ -6,7 +6,7 @@ const ejs = require("ejs");
 module.exports = async function generatePayslipPdf(data) {
 
   const browser = await puppeteer.launch({
-    executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    // executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
