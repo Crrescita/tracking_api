@@ -319,6 +319,20 @@ exports.insertSalaryPayslip = async (req, res, next) => {
       });
     }
 
+    const existingPayslip = await sqlModel.select(
+  "emp_payslip",
+  ["id", "payslip_url"],
+  { emp_id, payslip_for_month }
+);
+
+if (existingPayslip.length && existingPayslip[0].payslip_url) {
+  return res.status(400).json({
+    status: false,
+    message: "Payslip already finalized for this month"
+  });
+}
+
+
   
     let parsedDeduction;
     try {
