@@ -1,24 +1,28 @@
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 const path = require("path");
 const fs = require("fs");
 const ejs = require("ejs");
 
 module.exports = async function generatePayslipPdf(data) {
-
   const browser = await puppeteer.launch({
-    // executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu"
+    ]
   });
 
   const page = await browser.newPage();
 
-  const logoUrl = `file://${data.logoPath}`;
+  // ⚠️ IMPORTANT: logoPath is already a URL (S3), do NOT prefix file://
+  // const logoUrl = data.logoPath;
 
   const templatePath = path.join(__dirname, "../views/payslip.ejs");
   const html = await ejs.renderFile(templatePath, {
     ...data,
-    logoUrl,
+    // logoUrl,
     maxRows: Array.from({
       length: Math.max(data.earnings.length, data.deductions.length)
     })
@@ -29,10 +33,7 @@ module.exports = async function generatePayslipPdf(data) {
   const pdfDir = path.join(__dirname, "../public/temp-pdf");
   if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
 
-  const pdfPath = path.join(
-    pdfDir,
-    `payslip_${Date.now()}.pdf`
-  );
+  const pdfPath = path.join(pdfDir, `payslip_${Date.now()}.pdf`);
 
   await page.pdf({
     path: pdfPath,
