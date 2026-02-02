@@ -835,6 +835,7 @@ const visits = await sqlModel.customQuery(
     v.company_id,
     v.business_name,
     v.business_address,
+    v.concerned_person,
     v.mobile AS visit_mobile,
     v.email AS visit_email,
     v.visit_date,
