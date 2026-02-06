@@ -375,6 +375,7 @@ try {
                 visit_id: visitId.toString(),
                 latitude: baseLat.toString(),
                 longitude: baseLng.toString(),
+                address:address.toString(),
               },
             };
 
