@@ -1,4 +1,5 @@
 const sqlModel = require("../../config/db");
+const { getAddressFromLatLng } = require("../../utils/mapboxReverseGeocode");
 // const sqlRdsModel = require("../../config/rdsdb");
 
 // const getCurrentDate = () => {
@@ -332,11 +333,15 @@ try {
 
         if (!existingVisit) {
           /* ---------- INSERT VISIT ---------- */
+
+          const address = await getAddressFromLatLng(baseLat, baseLng);
+
           const visitData = {
             emp_id,
             company_id,
             latitude: baseLat,
             longitude: baseLng,
+            address: address,
             status: "pending",
             created_at: getCurrentDateTime(),
           };
