@@ -5,6 +5,26 @@ const sqlModel = require("../../config/db");
 //   return new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
 // };
 
+const admin = require("../../firebase");
+
+/* ---------------- HELPER: Distance (Haversine) ---------------- */
+function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = (v) => (v * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+
 const getCurrentDate = () => {
   const currentDate = new Date();
 
@@ -212,6 +232,162 @@ exports.setCoordinates = async (req, res) => {
 
     const result = await sqlModel.insert("emp_tracking", trackingData);
     // const rds = await sqlRdsModel.insert("emp_tracking", trackingData);
+
+ /* ============================================================
+   SAME LOCATION (1 HOUR) USING datetime_mobile (NON-BLOCKING)
+============================================================ */
+
+try {
+  /* ---------- STEP 1: FETCH LATEST MOBILE TIME ---------- */
+  const [latestRow] = await sqlModel.customQuery(
+    `
+    SELECT datetime_mobile
+    FROM emp_tracking
+    WHERE emp_id = ?
+      AND company_id = ?
+    ORDER BY datetime_mobile DESC
+    LIMIT 1
+  `,
+    [emp_id, company_id]
+  );
+
+  if (!latestRow?.datetime_mobile) {
+    console.log("No latest datetime_mobile found");
+  } else {
+    /* ---------- STEP 2: CALCULATE 1 HOUR WINDOW ---------- */
+    const latestMobileTime = new Date(
+      latestRow.datetime_mobile.replace(" ", "T")
+    );
+
+    const oneHourAgoMobile = new Date(latestMobileTime);
+    oneHourAgoMobile.setMinutes(oneHourAgoMobile.getMinutes() - 60);
+
+    const oneHourAgoMobileStr = oneHourAgoMobile
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+
+    /* ---------- STEP 3: FETCH LAST 1 HOUR DATA ---------- */
+    const lastHourHistory = await sqlModel.customQuery(
+      `
+      SELECT latitude, longitude, datetime_mobile
+      FROM emp_tracking
+      WHERE emp_id = ?
+        AND company_id = ?
+        AND datetime_mobile >= ?
+      ORDER BY datetime_mobile ASC
+    `,
+      [emp_id, company_id, oneHourAgoMobileStr]
+    );
+
+    console.log("Last hour records:", lastHourHistory.length);
+
+    /* ---------- STEP 4: STATIONARY CHECK ---------- */
+    if (lastHourHistory && lastHourHistory.length >= 5) {
+      const baseLat = parseFloat(lastHourHistory[0].latitude);
+      const baseLng = parseFloat(lastHourHistory[0].longitude);
+
+      const ALLOWED_RADIUS = 30;
+
+      const isStationary = lastHourHistory.every((p) => {
+        return (
+          getDistanceInMeters(
+            baseLat,
+            baseLng,
+            parseFloat(p.latitude),
+            parseFloat(p.longitude)
+          ) <= ALLOWED_RADIUS
+        );
+      });
+
+      const startTime = new Date(
+        lastHourHistory[0].datetime_mobile.replace(" ", "T")
+      );
+      const endTime = new Date(
+        lastHourHistory[lastHourHistory.length - 1].datetime_mobile.replace(
+          " ",
+          "T"
+        )
+      );
+
+      const durationMinutes = (endTime - startTime) / (1000 * 60);
+
+      console.log("Is stationary:", isStationary);
+      console.log("Duration (minutes):", durationMinutes);
+
+      if (isStationary && durationMinutes >= 60) {
+        /* ---------- CHECK EXISTING PENDING VISIT ---------- */
+        const [existingVisit] = await sqlModel.customQuery(
+          `
+          SELECT id
+          FROM visits
+          WHERE emp_id = ?
+            AND company_id = ?
+            AND status = 'pending'
+          ORDER BY id DESC
+          LIMIT 1
+        `,
+          [emp_id, company_id]
+        );
+
+        if (!existingVisit) {
+          /* ---------- INSERT VISIT ---------- */
+          const visitData = {
+            emp_id,
+            company_id,
+            latitude: baseLat,
+            longitude: baseLng,
+            status: "pending",
+            created_at: getCurrentDateTime(),
+          };
+
+          const visitResult = await sqlModel.insert("visits", visitData);
+          const visitId = visitResult.insertId;
+
+          /* ---------- FETCH FCM TOKEN (FROM EMPLOYEES) ---------- */
+          const [employeeRow] = await sqlModel.select(
+            "employees",
+            ["fcm_token"],
+            { id: emp_id }
+          );
+
+          console.log("Employee FCM token:", employeeRow?.fcm_token);
+
+          if (employeeRow?.fcm_token) {
+            const message = {
+              token: employeeRow.fcm_token,
+               notification: {
+    title: "Visit Required",
+    body: "You have been at the same location for over 1 hour. Please create a visit.",
+  },
+              apns: {
+                payload: {
+                  aps: { sound: "default" },
+                },
+              },
+              data: {
+                type: "VISIT_PENDING",
+                visit_id: visitId.toString(),
+                latitude: baseLat.toString(),
+                longitude: baseLng.toString(),
+              },
+            };
+
+            await admin.messaging().send(message);
+            console.log("FCM sent for visit:", visitId);
+          }
+        }
+      }
+    } else {
+      console.log("Skipping stationary check: insufficient data");
+    }
+  }
+} catch (err) {
+  console.error("Stationary logic error:", err);
+}
+
+
+
 
     return res.status(200).json({
       status: true,

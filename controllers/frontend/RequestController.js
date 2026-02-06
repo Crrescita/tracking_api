@@ -1271,7 +1271,6 @@ exports.updateVisitLog = async (req, res) => {
         message: "Visit not found",
       });
     }
-console.log(req.body)
     /* ---------- SIMPLE UPDATE (LIKE INSERT) ---------- */
     const updateData = {
       ...req.body,
@@ -1309,8 +1308,61 @@ const buildS3Url = (key) => {
   return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
 };
 
+exports.remindVisitLater = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({
+        status: false,
+        message: "Authorization token required",
+      });
+    }
 
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
 
+    if (!employee) {
+      return res.status(404).json({
+        status: false,
+        message: "Employee not found",
+      });
+    }
+
+    const { visit_id, remind_after_minutes = 15 } = req.body;
+
+    if (!visit_id) {
+      return res.status(400).json({
+        status: false,
+        message: "visit_id is required",
+      });
+    }
+
+    const remindAt = new Date();
+    remindAt.setMinutes(remindAt.getMinutes() + remind_after_minutes);
+
+    await sqlModel.insert("visit_reminders", {
+      visit_id,
+      emp_id: employee.id,
+      remind_at: remindAt,
+      status: "pending",
+      created_at: getCurrentDateTime(),
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: `Reminder scheduled after ${remind_after_minutes} minutes`,
+    });
+  } catch (err) {
+    console.error("Remind later error:", err);
+    return res.status(500).json({
+      status: false,
+      message: "Something went wrong",
+    });
+  }
+};
 
 
 
