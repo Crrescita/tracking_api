@@ -90,7 +90,7 @@ if (duration < 1) continue;  // only 1 minute for test
       );
 
       if (existingVisit) continue;
-
+console.log(baseLat ,baseLng )
       /* -------- insert visit -------- */
       const address = await getAddressFromLatLng(baseLat, baseLng);
 
