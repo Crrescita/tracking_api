@@ -37,26 +37,53 @@ console.log(`Found ${employees.length} employees with tracking data in the last 
     for (const emp of employees) {
       const { emp_id, company_id } = emp;
 
-      const history = await sqlModel.customQuery(
-        `
-        SELECT latitude, longitude, datetime_mobile
-        FROM emp_tracking
-        WHERE emp_id = ?
-          AND company_id = ?
-          AND datetime_mobile >= NOW() - INTERVAL 1 HOUR
-        ORDER BY datetime_mobile ASC
-      `,
-        [emp_id, company_id]
-      );
+    //   const history = await sqlModel.customQuery(
+    //     `
+    //     SELECT latitude, longitude, datetime_mobile
+    //     FROM emp_tracking
+    //     WHERE emp_id = ?
+    //       AND company_id = ?
+    //       AND datetime_mobile >= NOW() - INTERVAL 1 HOUR
+    //     ORDER BY datetime_mobile ASC
+    //   `,
+    //     [emp_id, company_id]
+    //   );
+
+    const history = await sqlModel.customQuery(
+  `
+  SELECT latitude, longitude, datetime_mobile
+  FROM emp_tracking
+  WHERE emp_id = ?
+    AND company_id = ?
+    AND datetime_mobile >= NOW() - INTERVAL 1 HOUR
+    AND latitude IS NOT NULL
+    AND longitude IS NOT NULL
+    AND latitude != 0
+    AND longitude != 0
+  ORDER BY datetime_mobile ASC
+`,
+  [emp_id, company_id]
+);
+
+
+      const validHistory = history.filter(
+  (p) => parseFloat(p.latitude) !== 0 && parseFloat(p.longitude) !== 0
+);
+
+if (validHistory.length < 5) {
+  console.log("Skipping due to invalid GPS");
+  continue;
+}
+
 console.log(`Employee ${emp_id} has ${history.length} tracking points in the last hour.`);
       if (!history || history.length < 5) continue;
 
-      const baseLat = parseFloat(history[0].latitude);
-      const baseLng = parseFloat(history[0].longitude);
+      const baseLat = parseFloat(validHistory[0].latitude);
+      const baseLng = parseFloat(validHistory[0].longitude);
 
       const ALLOWED_RADIUS = 30;
 
-      const isStationary = history.every((p) => {
+      const isStationary = validHistory.every((p) => {
         return (
           getDistanceInMeters(
             baseLat,
