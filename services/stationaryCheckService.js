@@ -104,7 +104,7 @@ console.log(`Employee ${emp_id} stationary: ${isStationary}, duration: ${duratio
       });
 
       const visitId = visitResult.insertId;
-
+console.log(`Created visit ${visitId} for employee ${emp_id} at address: ${address} `, visitResult);
       /* -------- send FCM -------- */
       const [empRow] = await sqlModel.select(
         "employees",
@@ -121,8 +121,12 @@ console.log(`Employee ${emp_id} stationary: ${isStationary}, duration: ${duratio
               "You have been at the same location for over 1 hour. Please create a visit.",
           },
           data: {
-            visit_id: visitId.toString(),
-          },
+                type: "VISIT_PENDING",
+                visit_id: visitId.toString(),
+                latitude: baseLat.toString(),
+                longitude: baseLng.toString(),
+                address:address.toString(),
+              },
         });
       }
     }
