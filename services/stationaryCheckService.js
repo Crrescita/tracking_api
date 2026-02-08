@@ -101,8 +101,8 @@ console.log(`Employee ${emp_id} has ${history.length} tracking points in the las
 
       const duration = (end - start) / (1000 * 60);
 console.log(`Employee ${emp_id} stationary: ${isStationary}, duration: ${duration.toFixed(2)} minutes`);
-    //   if (!isStationary || duration < 60) continue;
-if (duration < 1) continue;  // only 1 minute for test
+      if (!isStationary || duration < 60) continue;
+// if (duration < 1) continue;  // only 1 minute for test
 
       /* -------- check existing visit -------- */
       const [existingVisit] = await sqlModel.customQuery(
@@ -116,7 +116,7 @@ if (duration < 1) continue;  // only 1 minute for test
         [emp_id, company_id]
       );
 
-      if (existingVisit) continue;
+    //   if (existingVisit) continue;
 console.log(baseLat ,baseLng )
       /* -------- insert visit -------- */
       const address = await getAddressFromLatLng(baseLat, baseLng);
