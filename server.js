@@ -6,7 +6,7 @@ const cron = require("node-cron");
 const { checkStationaryEmployees } = require("./services/stationaryCheckService");
 
 // every 5 minutes
-cron.schedule("*/5  * * * * *", async () => {
+cron.schedule("*/5  * * * *", async () => {
   console.log("⏱ Running stationary cron...");
   await checkStationaryEmployees();
 });
