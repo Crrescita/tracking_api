@@ -74,7 +74,8 @@ console.log(`Employee ${emp_id} has ${history.length} tracking points in the las
 
       const duration = (end - start) / (1000 * 60);
 console.log(`Employee ${emp_id} stationary: ${isStationary}, duration: ${duration.toFixed(2)} minutes`);
-      if (!isStationary || duration < 60) continue;
+    //   if (!isStationary || duration < 60) continue;
+if (duration < 1) continue;  // only 1 minute for test
 
       /* -------- check existing visit -------- */
       const [existingVisit] = await sqlModel.customQuery(
