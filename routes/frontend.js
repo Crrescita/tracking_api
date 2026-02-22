@@ -190,7 +190,7 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.post("/updateTaskStatus", TaskController.updateTaskStatus);
 
   // backgroundVerificationEmp
-  router.post("/backgroundVerificationEmp", upload.fields([{ name: "documentFile", maxCount: 1 }]), EmployeeController.insertBackgroundVerificationByEmp);
+  router.post("/backgroundVerificationEmp", upload.fields([{ name: "documentFile", maxCount: 1 }, { name: "documentFile2", maxCount: 1 } ]), EmployeeController.insertBackgroundVerificationByEmp);
   router.get("/getBackgroundVerificationEmp", EmployeeController.getBackgroundVerification);
 
   // bank details

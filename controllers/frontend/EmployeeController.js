@@ -727,6 +727,16 @@ exports.insertBackgroundVerificationByEmp = async (req, res) => {
 
     const sanitizedDocumentType = `${sanitizedDocumentName}_file`;
 
+    const backFile = req.files?.documentFile2?.[0] || null;
+console.log("Back file:", backFile); // Debug log for back file presence
+// Backside mandatory except PAN
+if (sanitizedDocumentName !== "pan" && !backFile) {
+  return res.status(400).send({
+    status: false,
+    message: "Back side image is required for this document type",
+  });
+}
+
     /* ------------------ VALIDATION ------------------ */
     const validDocumentTypes = {
       aadhaar_file: /^\d{12}$/,
@@ -762,12 +772,39 @@ exports.insertBackgroundVerificationByEmp = async (req, res) => {
       fs.unlinkSync(localAbs);
     }
 
+
+   let uploadedBackKey = null;
+
+// const backFile = req.files?.documentFile2?.[0] || null;
+
+if (backFile) {
+
+  // IMPORTANT: Use multer file path directly
+  const localAbs = backFile.path;  
+
+  const keyPrefix = `employee-verification/${emp_id}/${sanitizedDocumentName}/back`;
+
+  const { key } = await uploadLocalFileToS3(localAbs, keyPrefix);
+  uploadedBackKey = key;
+
+  fs.unlinkSync(localAbs);
+}
+
+
     /* ------------------ EXISTING RECORD ------------------ */
-    const existingRecord = await sqlModel.select(
-      "emp_verification_document",
-      ["id", sanitizedDocumentType],
-      { emp_id }
-    );
+    // const existingRecord = await sqlModel.select(
+    //   "emp_verification_document",
+    //   ["id", sanitizedDocumentType],
+    //   { emp_id }
+    // );
+
+    const backColumnName = `${sanitizedDocumentType}_back`;
+
+const existingRecord = await sqlModel.select(
+  "emp_verification_document",
+  ["id", sanitizedDocumentType, backColumnName],
+  { emp_id }
+);
 
     const dataToSave = {
       emp_id,
@@ -780,6 +817,10 @@ exports.insertBackgroundVerificationByEmp = async (req, res) => {
       dataToSave[sanitizedDocumentType] = uploadedKey;
     }
 
+    if (uploadedBackKey) {
+  dataToSave[backColumnName] = uploadedBackKey;
+}
+
     /* ------------------ UPDATE / INSERT ------------------ */
     if (existingRecord.length > 0) {
       // delete old S3 file if replaced
@@ -790,6 +831,15 @@ exports.insertBackgroundVerificationByEmp = async (req, res) => {
           console.warn("Old file delete failed:", e.message);
         }
       }
+
+      // delete old back file if replaced
+if (uploadedBackKey && existingRecord[0][backColumnName]) {
+  try {
+    await deleteOldFile.deleteOldFile(existingRecord[0][backColumnName]);
+  } catch (e) {
+    console.warn("Old back file delete failed:", e.message);
+  }
+}
 
       await sqlModel.update(
         "emp_verification_document",
@@ -891,10 +941,16 @@ exports.getBackgroundVerification = async (req, res) => {
       ...item,
 
       aadhaar_file: buildPublicUrl(item.aadhaar_file),
+      aadhaar_file_back: buildPublicUrl(item.aadhaar_file_back),
       pan_file: buildPublicUrl(item.pan_file),
+      pan_file_back: buildPublicUrl(item.pan_file_back),
       driving_license_file: buildPublicUrl(item.driving_license_file),
-      voter_id_file: buildPublicUrl(item.voter_id_file),
+      driving_license_file_back: buildPublicUrl(item.driving_license_file_back),
+      // voter_id_file: buildPublicUrl(item.voter_id_file),
+      voter_file: buildPublicUrl(item.voter_file),
+      voter_file_back: buildPublicUrl(item.voter_file_back),
       uan_file: buildPublicUrl(item.uan_file),
+      uan_file_back: buildPublicUrl(item.uan_file_back),
     }));
 
     return res.status(200).send({
