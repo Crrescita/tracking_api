@@ -15,6 +15,7 @@ const FirebaseController = require("../controllers/frontend/FirebaseController")
 const PayrollController = require("../controllers/frontend/PayrollController");
 const RequestsController = require("../controllers/frontend/RequestController");
 const TaskController = require("../controllers/frontend/TaskController");
+const reimbursementController = require("../controllers/frontend/reimbursementController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -196,5 +197,24 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   // bank details
   router.post("/bankDetails", EmployeeController.insertBankDetail);
   router.get("/getBankDetails", EmployeeController.getBankDetail);
+
+
+  router.get(
+  "/getReimbursementTypes",
+  reimbursementController.getReimbursementTypes
+);
+  router.post("/reimbursement", upload.array("files"), reimbursementController.applyReimbursement);
+  router.post(
+  "/updateReimbursementAttachment",
+  upload.array("document", 1),
+  reimbursementController.updateReimbursementAttachment
+);
+
+  router.post("/createReimbursementType", reimbursementController.createReimbursementType);
+  router.get("/reimbursement", reimbursementController.getReimbursementsByMonth);
+  // router.get("/reimbursement", reimbursementController.getReimbursements);
+  // router.get("/reimbursement/:id", reimbursementController.getReimbursementDetail);
+  // router.delete("/reimbursement/:id", reimbursementController.deleteReimbursement);
+  // router.delete("/reimbursement/attachment/:id", reimbursementController.deleteReimbursementAttachment);
   
 module.exports = router;

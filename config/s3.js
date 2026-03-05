@@ -57,4 +57,21 @@ async function deleteByKey(key) {
     .promise();
 }
 
-module.exports = { uploadLocalFileToS3, deleteByKey, BASE_URL };
+async function deleteFileFromS3 (key) {
+  try {
+     if (!key) return;
+    const params = {
+     Bucket: BUCKET,
+      Key: key,
+    };
+
+    await s3.deleteObject(params).promise();
+
+    return true;
+  } catch (error) {
+    console.error("S3 delete error:", error);
+    return false;
+  }
+};
+
+module.exports = { uploadLocalFileToS3, deleteByKey, deleteFileFromS3, BASE_URL };
