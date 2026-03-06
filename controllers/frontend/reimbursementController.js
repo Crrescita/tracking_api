@@ -456,3 +456,124 @@ exports.getReimbursementsByMonth = async (req, res) => {
     });
   }
 };
+
+
+exports.deleteReimbursement = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token)
+      return res.status(200).send({ status: false, message: "Token required" });
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id", "company_id"],
+      { api_token: token }
+    );
+
+    if (!user)
+      return res.status(200).send({ status: false, message: "User not found" });
+
+    const reimbursement_id = req.params.id;
+
+    // verify reimbursement belongs to user
+    const [reimbursement] = await sqlModel.select(
+      "reimbursements",
+      ["id"],
+      { id: reimbursement_id, emp_id: user.id }
+    );
+
+    if (!reimbursement)
+      return res.status(200).send({
+        status: false,
+        message: "Reimbursement not found",
+      });
+
+    // get attachments
+    const attachments = await sqlModel.select(
+      "reimbursement_attachments",
+      ["id", "file_path"],
+      { reimbursement_id }
+    );
+
+    // delete S3 files
+    for (const file of attachments) {
+      if (file.file_path) {
+        await deleteFileFromS3(file.file_path);
+      }
+    }
+
+    // delete attachments from DB
+    await sqlModel.delete("reimbursement_attachments", { reimbursement_id });
+
+    // delete reimbursement
+    await sqlModel.delete("reimbursements", { id: reimbursement_id });
+
+    return res.status(200).send({
+      status: true,
+      message: "Reimbursement deleted successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(200).send({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+
+exports.deleteReimbursementAttachment = async (req, res) => {
+  try {
+
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token)
+      return res.status(200).send({ status: false, message: "Token required" });
+
+    const [user] = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
+
+    if (!user)
+      return res.status(200).send({ status: false, message: "User not found" });
+
+    const attachment_id = req.params.id;
+
+    const [attachment] = await sqlModel.select(
+      "reimbursement_attachments",
+      ["id", "file_path", "reimbursement_id"],
+      { id: attachment_id }
+    );
+
+    if (!attachment)
+      return res.status(200).send({
+        status: false,
+        message: "Attachment not found",
+      });
+
+    // delete file from S3
+    if (attachment.file_path) {
+      await deleteFileFromS3(attachment.file_path);
+    }
+
+    // delete from DB
+    await sqlModel.delete("reimbursement_attachments", { id: attachment_id });
+
+    return res.status(200).send({
+      status: true,
+      message: "Attachment deleted successfully",
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(200).send({
+      status: false,
+      message: error.message,
+    });
+
+  }
+};

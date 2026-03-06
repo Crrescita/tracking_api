@@ -214,7 +214,7 @@ router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
   router.get("/reimbursement", reimbursementController.getReimbursementsByMonth);
   // router.get("/reimbursement", reimbursementController.getReimbursements);
   // router.get("/reimbursement/:id", reimbursementController.getReimbursementDetail);
-  // router.delete("/reimbursement/:id", reimbursementController.deleteReimbursement);
-  // router.delete("/reimbursement/attachment/:id", reimbursementController.deleteReimbursementAttachment);
+  router.delete("/reimbursement/:id", reimbursementController.deleteReimbursement);
+  router.delete("/reimbursement/attachment/:id", reimbursementController.deleteReimbursementAttachment);
   
 module.exports = router;
