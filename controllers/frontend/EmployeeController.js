@@ -713,7 +713,7 @@ exports.insertBackgroundVerificationByEmp = async (req, res) => {
     const company_id = employee.company_id;
 
     const { documentNo, documentType } = req.body;
-
+console.log("Received documentNo:", documentNo), console.log("Received documentType:", documentType);
     if (!documentType || !documentNo) {
       return res.status(400).send({
         status: false,
@@ -722,10 +722,22 @@ exports.insertBackgroundVerificationByEmp = async (req, res) => {
     }
 
     /* ------------------ DOCUMENT TYPE ------------------ */
-    const sanitizedDocumentName =
-      documentType.toLowerCase().replace(/\s+/g, "_");
 
-    const sanitizedDocumentType = `${sanitizedDocumentName}_file`;
+    const documentMap = {
+  aadhaar: "aadhaar",
+  pan: "pan",
+  driving_license: "driving_license",
+  voter_id: "voter",
+  uan: "uan"
+};
+
+const sanitizedDocumentName = documentMap[documentType];
+const sanitizedDocumentType = `${sanitizedDocumentName}_file`;
+
+    // const sanitizedDocumentName =
+    //   documentType.toLowerCase().replace(/\s+/g, "_");
+
+    // const sanitizedDocumentType = `${sanitizedDocumentName}_file`;
 
     const backFile = req.files?.documentFile2?.[0] || null;
 console.log("Back file:", backFile); // Debug log for back file presence
@@ -742,10 +754,10 @@ if (sanitizedDocumentName !== "pan" && !backFile) {
       aadhaar_file: /^\d{12}$/,
       pan_file: /^[A-Z]{5}\d{4}[A-Z]{1}$/,
       driving_license_file: /^[A-Z0-9]{15}$/,
-      voter_id_file: /^[A-Z]{3}\d{7}$/,
+      voter_file: /^[A-Z]{3}\d{7}$/,
       uan_file: /^\d{12}$/,
     };
-
+console.log("Validating document number:", documentNo, "against regex:", validDocumentTypes[sanitizedDocumentType]);
     if (
       !validDocumentTypes[sanitizedDocumentType] ||
       !validDocumentTypes[sanitizedDocumentType].test(documentNo)
