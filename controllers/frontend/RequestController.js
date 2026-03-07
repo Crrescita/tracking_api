@@ -507,9 +507,9 @@ exports.modifyRequest = async (req, res) => {
     console.dir("requests requests");
     console.log(existing);
     const reqRow = existing;
-    if (!["requested"].includes(reqRow.status)) {
-      return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
-    }
+    // if (!["requested"].includes(reqRow.status)) {
+    //   return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
+    // }
 
     const updateData = {
       title: req.body.title,
