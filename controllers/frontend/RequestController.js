@@ -511,10 +511,18 @@ exports.modifyRequest = async (req, res) => {
     //   return res.status(200).send({ status: false, message: "Cannot modify request in current status" });
     // }
 
+    // 🔹 if status is ready then convert to modified
+    let newStatus = reqRow.status;
+    if (reqRow.status == "ready") {
+      newStatus = "modified";
+    }
+
+
     const updateData = {
       title: req.body.title,
       description: req.body.description,
       priority: req.body.priority || reqRow.priority,
+      status: newStatus, 
       current_version:reqRow.current_version+1,
       updated_at: getCurrentDateTime(),
     };
