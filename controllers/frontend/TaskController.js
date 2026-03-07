@@ -4,7 +4,7 @@ const fs = require("fs");
 const sqlModel = require("../../config/db");
 const { uploadLocalFileToS3 } = require("../../config/s3");
 // const adminMessaging = require("../../firebase"); 
-const { getCurrentDateTime } = require("../../config/datetime"); 
+const { getCurrentDateTime } = require("../../config/datetime");
 
 const admin = require("../../firebase");
 exports.getEmployeeTask = async (req, res) => {
@@ -113,32 +113,51 @@ exports.getEmployeeTask = async (req, res) => {
       };
     });
 
+    /* ------------------ FETCH ALL STATUSES ------------------ */
+    const allTaskIds = tasks.map(t => t.id);
+    const allTaskStatuses = await sqlModel.select(
+      "assign_task_status",
+      ["task_id", "emp_id", "status"],
+      {} // select all for these tasks
+    );
+    // Filter in JS since we don't have a complex where builder here
+    const statusMap = {};
+    allTaskStatuses.forEach(s => {
+      if (allTaskIds.includes(s.task_id)) {
+        if (!statusMap[s.task_id]) statusMap[s.task_id] = {};
+        statusMap[s.task_id][s.emp_id] = s.status;
+      }
+    });
+
     /* ------------------ FINAL TASK MAP ------------------ */
     const now = new Date();
 
     tasks.forEach(task => {
       const empIds = task.emp_id
         ? task.emp_id
-            .split(",")
-            .map(id => Number(id.trim()))
-            .filter(id => !isNaN(id))
+          .split(",")
+          .map(id => Number(id.trim()))
+          .filter(id => !isNaN(id))
         : [];
 
       task.assigned_employee_ids = empIds;
 
       task.employees = empIds
-        .map(id => employeeMap[id])
+        .map(id => {
+          const emp = employeeMap[id];
+          if (!emp) return null;
+          return {
+            ...emp,
+            status: statusMap[task.id]?.[id] || "To-Do",
+          };
+        })
         .filter(Boolean);
-
-    //   task.missing_employee_ids = empIds.filter(
-    //     id => !employeeMap[id]
-    //   );
 
       task.isOverdue =
         !["Pending-Review", "Completed", "Cancelled", "On-Hold"].includes(task.status) &&
         new Date(task.end_date) < now;
 
-      delete task.emp_id; // clean response
+      delete task.emp_id;
     });
 
     return res.status(200).send({
@@ -211,13 +230,13 @@ exports.getEmployeeTaskById = async (req, res) => {
     /* ------------------ ASSIGNED EMP IDS ------------------ */
     const empIds = task.emp_id
       ? task.emp_id
-          .split(",")
-          .map(id => Number(id.trim()))
-          .filter(id => !isNaN(id))
+        .split(",")
+        .map(id => Number(id.trim()))
+        .filter(id => !isNaN(id))
       : [];
 
     task.assigned_employee_ids = empIds;
-
+    task.assigned_by = 'Admin';
     /* ------------------ FETCH EMPLOYEES ------------------ */
     let employeeMap = {};
 
@@ -245,20 +264,33 @@ exports.getEmployeeTaskById = async (req, res) => {
       });
     }
 
+    /* ------------------ FETCH STATUSES & COMMENTS ------------------ */
+    const statuses = await sqlModel.select(
+      "assign_task_status",
+      ["emp_id", "status", "comment"],
+      { task_id: task.id }
+    );
+
+    const statusMap = {};
+    statuses.forEach(s => {
+      statusMap[s.emp_id] = {
+        status: s.status,
+        comment: s.comment ? JSON.parse(s.comment) : [],
+      };
+    });
+
     /* ------------------ EMPLOYEES (ALWAYS ALL) ------------------ */
-        // task.employees = empIds.map(id => {
-        // if (employeeMap[id]) return employeeMap[id];
-
-        // //   return {
-        // //     id,
-        // //     name: "Unknown / Removed User",
-        // //     image: null,
-        // //   };
-        // });
-
     task.employees = empIds
-  .map(id => employeeMap[id])
-  .filter(Boolean);
+      .map(id => {
+        const emp = employeeMap[id];
+        if (!emp) return null;
+        return {
+          ...emp,
+          status: statusMap[id]?.status || "To-Do",
+          comments: statusMap[id]?.comment || [],
+        };
+      })
+      .filter(Boolean);
 
 
     /* ------------------ OVERDUE ------------------ */
@@ -354,14 +386,14 @@ exports.updateTaskStatus = async (req, res) => {
       });
     }
 
-    /* ------------------ FETCH EXISTING COMMENT ------------------ */
-    let existingComments = [];
+    /* ------------------ UPSERT TASK STATUS ------------------ */
     const existingStatus = await sqlModel.select(
       "assign_task_status",
-      ["comment"],
+      ["id", "comment"],
       { task_id, emp_id: empId }
     );
 
+    let existingComments = [];
     if (existingStatus.length && existingStatus[0].comment) {
       try {
         existingComments = JSON.parse(existingStatus[0].comment);
@@ -377,24 +409,39 @@ exports.updateTaskStatus = async (req, res) => {
       });
     }
 
-    /* ------------------ UPSERT TASK STATUS ------------------ */
-    await sqlModel.update(
-      "assign_task_status",
-      {
-        status,
-        comment: existingComments.length
-          ? JSON.stringify(existingComments)
-          : null,
-        updated_at: getCurrentDateTime(),
-      },
-      { task_id, emp_id: empId }
-    );
+    const commentData = existingComments.length
+      ? JSON.stringify(existingComments)
+      : null;
 
+    if (existingStatus.length > 0) {
+      // Update existing record
+      await sqlModel.update(
+        "assign_task_status",
+        {
+          status,
+          comment: commentData,
+          updated_at: getCurrentDateTime(),
+        },
+        { task_id, emp_id: empId }
+      );
+    } else {
+      // Insert new record if missing
+      await sqlModel.insert("assign_task_status", {
+        task_id,
+        emp_id: empId,
+        status,
+        comment: commentData,
+        created_at: getCurrentDateTime(),
+        updated_at: getCurrentDateTime(),
+      });
+    }
+
+    /* ------------------ HISTORY ------------------ */
     await sqlModel.insert("assign_task_status_history", {
       task_id,
       emp_id: empId,
       status,
-      comment: JSON.stringify(existingComments),
+      comment: commentData,
       created_at: getCurrentDateTime(),
     });
 
@@ -405,9 +452,9 @@ exports.updateTaskStatus = async (req, res) => {
       { task_id }
     );
 
-    const allCompleted =
-      allStatuses.length > 0 &&
-      allStatuses.every(r => r.status === "Completed");
+    const statuses = allStatuses.map(r => r.status);
+    const allCompleted = statuses.length > 0 && statuses.every(s => s === "Completed");
+    const allCancelled = statuses.length > 0 && statuses.every(s => s === "Cancelled");
 
     if (allCompleted) {
       await sqlModel.update(
@@ -415,7 +462,15 @@ exports.updateTaskStatus = async (req, res) => {
         { status: "Pending-Review" },
         { id: task_id }
       );
-    } else if (status === "In-Progress") {
+    } else if (allCancelled) {
+      await sqlModel.update(
+        "assign_task",
+        { status: "Cancelled" },
+        { id: task_id }
+      );
+    } else {
+      // If any part of the task is in progress, mark overall as In-Progress
+      // even if the current status is Completed (but others aren't)
       await sqlModel.update(
         "assign_task",
         { status: "In-Progress" },
@@ -424,59 +479,59 @@ exports.updateTaskStatus = async (req, res) => {
     }
 
     /* ------------------ NOTIFICATION ------------------ */
-  /* ------------------ NOTIFICATION ------------------ */
-const adminTokens = await sqlModel.select(
-  "fcm_tokens",
-  ["id", "fcm_token"],
-  { user_id: companyId }
-);
+    /* ------------------ NOTIFICATION ------------------ */
+    const adminTokens = await sqlModel.select(
+      "fcm_tokens",
+      ["id", "fcm_token"],
+      { user_id: companyId }
+    );
 
-if (adminTokens.length) {
-  const message =
-    status === "Completed"
-      ? `✅ ${user.name} completed task "${task.task_title}"`
-      : status === "Cancelled"
-      ? `❌ ${user.name} cancelled task "${task.task_title}"`
-      : `🔔 ${user.name} started task "${task.task_title}"`;
+    if (adminTokens.length) {
+      const message =
+        status === "Completed"
+          ? `✅ ${user.name} completed task "${task.task_title}"`
+          : status === "Cancelled"
+            ? `❌ ${user.name} cancelled task "${task.task_title}"`
+            : `🔔 ${user.name} started task "${task.task_title}"`;
 
-  const sendPromises = adminTokens.map(async ({ id, fcm_token }) => {
-    try {
-      await admin.messaging().send({
-        notification: {
-          title: "Task Update",
-          body: message,
-        },
-        token: fcm_token,
+      const sendPromises = adminTokens.map(async ({ id, fcm_token }) => {
+        try {
+          await admin.messaging().send({
+            notification: {
+              title: "Task Update",
+              body: message,
+            },
+            token: fcm_token,
+          });
+        } catch (err) {
+          // ✅ Handle invalid / expired token
+          if (
+            err.code === "messaging/registration-token-not-registered" ||
+            err.code === "messaging/invalid-registration-token"
+          ) {
+            console.warn("Removing invalid FCM token:", fcm_token);
+
+            // Delete invalid token from DB
+            await sqlModel.delete("fcm_tokens", { id });
+          } else {
+            console.error("FCM send error:", err.message);
+          }
+        }
       });
-    } catch (err) {
-      // ✅ Handle invalid / expired token
-      if (
-        err.code === "messaging/registration-token-not-registered" ||
-        err.code === "messaging/invalid-registration-token"
-      ) {
-        console.warn("Removing invalid FCM token:", fcm_token);
 
-        // Delete invalid token from DB
-        await sqlModel.delete("fcm_tokens", { id });
-      } else {
-        console.error("FCM send error:", err.message);
-      }
+      // IMPORTANT: wait for all, but never throw
+      await Promise.allSettled(sendPromises);
+
+      // Save notification in DB (once)
+      await sqlModel.insert("notification", {
+        company_id: companyId,
+        title: "Task Update",
+        body: message,
+        link: `/task-detail/${task.id}`,
+        status: "unread",
+        timestamp: getCurrentDateTime(),
+      });
     }
-  });
-
-  // IMPORTANT: wait for all, but never throw
-  await Promise.allSettled(sendPromises);
-
-  // Save notification in DB (once)
-  await sqlModel.insert("notification", {
-    company_id: companyId,
-    title: "Task Update",
-    body: message,
-    link: `/task-detail/${task.id}`,
-    status: "unread",
-    timestamp: getCurrentDateTime(),
-  });
-}
 
     return res.status(200).send({
       status: true,

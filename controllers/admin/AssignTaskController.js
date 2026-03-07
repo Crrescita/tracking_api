@@ -14,7 +14,7 @@ const generateTaskID = () => {
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
-  
+
   const year = date.toLocaleString("en-US", {
     year: "numeric",
     timeZone: "Asia/Kolkata",
@@ -29,7 +29,7 @@ const formatDate = (dateString) => {
 // exports.getAssignTask = async (req, res, next) => {
 //   try {
 //     const whereClause = {};
-    
+
 //     // Ensure only tasks from the logged-in user's company are retrieved
 //     if (req.user?.id) {
 //       whereClause.company_id = req.user.id;
@@ -200,8 +200,8 @@ exports.getAssignTask = async (req, res, next) => {
           name: emp.name,
           image: `${process.env.BASE_URL}${emp.image}`,
           designation: emp.designation,
-      branch: emp.branch,
-      department: emp.department,
+          branch: emp.branch,
+          department: emp.department,
         };
       }
     });
@@ -364,7 +364,7 @@ exports.assignTask = async (req, res, next) => {
                 emp_id: empId,
                 name: empDetail[0].name,
                 status: insert.status,
-                task_no:id,
+                task_no: id,
                 task_id: oldTask.task_id,
                 task_title: insert.task_title,
                 start_date: formatDate(insert.start_date),
@@ -381,30 +381,30 @@ exports.assignTask = async (req, res, next) => {
             await sqlModel.update("assign_task_status", { status: "Completed" }, { task_id: id, emp_id: empId });
           }
 
-            const [existingChat] = await sqlModel.customQuery(
-          `SELECT id FROM task_chats WHERE task_id = ? AND is_group = false AND FIND_IN_SET(?, participants) AND FIND_IN_SET(?, participants)`,
-          [id, insert.company_id, empId]
-        );
-        if (!existingChat) {
-          await sqlModel.insert("task_chats", {
-            task_id: id,
-            is_group: false,
-            participants: `${insert.company_id},${empId}`,
-          });
-        }
+          const [existingChat] = await sqlModel.customQuery(
+            `SELECT id FROM task_chats WHERE task_id = ? AND is_group = false AND FIND_IN_SET(?, participants) AND FIND_IN_SET(?, participants)`,
+            [id, insert.company_id, empId]
+          );
+          if (!existingChat) {
+            await sqlModel.insert("task_chats", {
+              task_id: id,
+              is_group: false,
+              participants: `${insert.company_id},${empId}`,
+            });
+          }
         });
 
-         const [existingGroupChat] = await sqlModel.customQuery(
-        `SELECT id FROM task_chats WHERE task_id = ? AND is_group = true`,
-        [id]
-      );
-      if (!existingGroupChat) {
-        await sqlModel.insert("task_chats", {
-          task_id: id,
-          is_group: true,
-          participants: `${id},${empIds.join(",")}`,
-        });
-      }
+        const [existingGroupChat] = await sqlModel.customQuery(
+          `SELECT id FROM task_chats WHERE task_id = ? AND is_group = true`,
+          [id]
+        );
+        if (!existingGroupChat) {
+          await sqlModel.insert("task_chats", {
+            task_id: id,
+            is_group: true,
+            participants: `${id},${empIds.join(",")}`,
+          });
+        }
 
         await Promise.all(updatePromises);
 
@@ -441,7 +441,7 @@ exports.assignTask = async (req, res, next) => {
 
         // Send WhatsApp notification to each employee
         await sendWhatsapp.taskAssigned({
-          taskId:taskId,
+          taskId: taskId,
           task_id: insert.task_id,
           emp_id: emp.id,
           name: emp.name,
@@ -451,7 +451,7 @@ exports.assignTask = async (req, res, next) => {
           end_date: formatDate(insert.end_date),
         });
 
-          // Create personal chat (admin ↔ emp)
+        // Create personal chat (admin ↔ emp)
         await sqlModel.insert("task_chats", {
           task_id: taskId,
           is_group: false,
@@ -459,7 +459,7 @@ exports.assignTask = async (req, res, next) => {
         });
       });
 
-       
+
       // Create group chat
       await sqlModel.insert("task_chats", {
         task_id: taskId,
@@ -494,8 +494,8 @@ function getStatusMessage(status, data, isOverdue) {
       return `✅ Congratulations! Task *${data.task_title}* has been marked as Completed. 🎉`;
     case "On-Hold":
       return `⏸ Task *${data.task_title}* is On Hold. Please wait for further updates.`;
-      case "Cancelled":
-        return `❌ Task *${data.task_title}* has been Cancelled. No further action is required.`;    
+    case "Cancelled":
+      return `❌ Task *${data.task_title}* has been Cancelled. No further action is required.`;
     default:
       return `📢 Reminder: Your task *${data.task_title}* is due soon. Please complete it on time.`;
   }
@@ -744,7 +744,7 @@ exports.empTaskStatus = async (req, res, next) => {
       conditions.emp_id = emp_id;
     }
 
-   
+
     const taskStatusRecords = await sqlModel.select("assign_task_status", ["emp_id", "status", "updated_at"], conditions);
 
     // if (taskStatusRecords.error || taskStatusRecords.length === 0) {
@@ -803,15 +803,15 @@ exports.sendReminder = async (req, res, next) => {
 
     for (const emp of employeeDetails) {
 
-       let message;
+      let message;
 
-  if (customMessage) {
-    message = customMessage;
-  } else if (isOverdue) {
-    message = `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`;
-  } else {
-    message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
-  }
+      if (customMessage) {
+        message = customMessage;
+      } else if (isOverdue) {
+        message = `🔴 Your task *${task.task_title}* is overdue! Please complete it as soon as possible.`;
+      } else {
+        message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
+      }
 
 
       // let message = statusMessages[task.status] || `📌 Reminder: Your task *${task.task_title}* is due soon. Please make sure to complete it on time.`;
@@ -826,7 +826,7 @@ exports.sendReminder = async (req, res, next) => {
         name: emp.name,
         status: task.status,
         task_id: task.task_id,
-        task_no :task.id,
+        task_no: task.id,
         task_title: task.task_title,
         start_date: formatDate(task.start_date),
         end_date: formatDate(task.end_date),
@@ -879,11 +879,11 @@ exports.sendTaskChatMessage = async (req, res) => {
     };
 
     // Insert into DB and return inserted row
-  const inserted = await sqlModel.insert("task_messages", newMsg);
+    const inserted = await sqlModel.insert("task_messages", newMsg);
 
 
 
-   const io = req.app.get('io');
+    const io = req.app.get('io');
     io.to(`task-${task_id}`).emit('newTaskMessage', inserted);
 
     return res.status(201).json({ success: true, data: inserted });
@@ -1028,7 +1028,7 @@ async function runFrequencyNotifier() {
             end_date: formatDate(task.end_date),
             message: `🔁 Recurring Task Reminder: ${task.task_title}`,
             mobile: emp.mobile,
-            task_no:task.id,
+            task_no: task.id,
           });
         }
 
