@@ -62,9 +62,6 @@ app.use("/frontend", frontendRequestLogger);
 app.use("/frontend", frontendRouter);
 app.use("/admin", adminRouter);
 
-// Middleware for error logging
-app.use("/admin", adminErrorLogger);
-app.use("/frontend", frontendErrorLogger);
 
 // Middleware for handling 404 errors
 app.use(function (req, res, next) {
