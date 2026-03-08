@@ -172,11 +172,12 @@ exports.addReimbursementAttachment = async (req, res) => {
 
         const token = req.headers.authorization?.split(" ")[1];
 
-        if (!token)
+        if (!token) {
             return res.status(200).send({
                 status: false,
                 message: "Token required"
             });
+        }
 
         const [user] = await sqlModel.select(
             "employees",
@@ -184,29 +185,29 @@ exports.addReimbursementAttachment = async (req, res) => {
             { api_token: token }
         );
 
-        if (!user)
+        if (!user) {
             return res.status(200).send({
                 status: false,
                 message: "User not found"
             });
+        }
 
-        const {
-            reimbursement_id,
-            reimbursement_name,
-            amount
-        } = req.body;
+        const { reimbursement_id, reimbursement_name, amount } = req.body;
 
-        if (!reimbursement_id || !reimbursement_name || !amount)
+        if (!reimbursement_id || !reimbursement_name || !amount) {
             return res.status(200).send({
                 status: false,
                 message: "reimbursement_id, reimbursement_name and amount required"
             });
+        }
 
-        if (!req.fileFullPath || req.fileFullPath.length === 0)
+        // validate file
+        if (!req.file) {
             return res.status(200).send({
                 status: false,
                 message: "File required"
             });
+        }
 
         // check reimbursement exists
         const [reimbursement] = await sqlModel.select(
@@ -215,28 +216,22 @@ exports.addReimbursementAttachment = async (req, res) => {
             { id: reimbursement_id }
         );
 
-        if (!reimbursement)
+        if (!reimbursement) {
             return res.status(200).send({
                 status: false,
                 message: "Reimbursement not found"
             });
+        }
 
-        const relPath = req.fileFullPath[0];
+        const localAbsolute = req.file.path;
 
-        const fixed = fixMulterRelativePath(relPath);
-
-        const localAbsolute = buildLocalAbsolutePath(fixed);
+        const keyPrefix = `reimbursement/${reimbursement_id}`;
 
         let newKey = "";
 
         try {
 
-            const keyPrefix = `reimbursement/${reimbursement_id}`;
-
-            const { key } = await uploadLocalFileToS3(
-                localAbsolute,
-                keyPrefix
-            );
+            const { key } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
 
             newKey = key;
 
@@ -253,39 +248,43 @@ exports.addReimbursementAttachment = async (req, res) => {
                 }
             );
 
-            // update total_amount
+            // update total amount
             await sqlModel.customQuery(
-                `UPDATE reimbursements 
+                `UPDATE reimbursements
          SET total_amount = total_amount + ?
          WHERE id = ?`,
-                [amount, reimbursement_id]
+                [parseFloat(amount), reimbursement_id]
             );
 
-            // delete local file
-            fs.unlinkSync(localAbsolute);
+            // delete local uploaded file
+            if (fs.existsSync(localAbsolute)) {
+                fs.unlinkSync(localAbsolute);
+            }
 
             return res.status(200).send({
                 status: true,
                 message: "Attachment added successfully",
                 attachment_id: result.insertId,
-                file_url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"
-                    }.amazonaws.com/${newKey}`
+                file_url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${newKey}`
             });
 
-        } catch (err) {
+        } catch (uploadError) {
 
-            console.error("Upload failed:", err.message);
+            console.error("S3 Upload Error:", uploadError);
+
+            if (fs.existsSync(localAbsolute)) {
+                fs.unlinkSync(localAbsolute);
+            }
 
             return res.status(200).send({
                 status: false,
                 message: "File upload failed"
             });
-
         }
 
     } catch (error) {
 
-        console.error(error);
+        console.error("Controller Error:", error);
 
         return res.status(200).send({
             status: false,
