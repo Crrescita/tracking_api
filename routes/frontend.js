@@ -228,7 +228,7 @@ router.post(
 );
 
 router.post(
-  "/reimbursements/attachments",
+  "/reimbursements/attachments", upload.single("file"),
   ReimbursementController.addReimbursementAttachment
 );
 
