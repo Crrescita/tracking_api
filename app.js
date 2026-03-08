@@ -19,7 +19,7 @@ const app = express();
 const corsOptions = {
   origin: [
     "http://localhost:4200",
-    
+
     "http://localhost:3000/",
     "http://localhost:6000/",
     "http://localhost:60912",
@@ -73,45 +73,43 @@ app.use(function (req, res, next) {
 
 // Error handler
 app.use(function (err, req, res, next) {
-  // Log the error with the appropriate logger based on the route
-  if (req.originalUrl.startsWith("/admin")) {
-    adminErrorLogger.winstonInstance.error(err.message, {
-      request: {
-        method: req.method,
-        url: req.originalUrl,
-        headers: req.headers,
-        body: req.body,
-      },
-      response: {
-        statusCode: res.statusCode || 500,
-        responseTime: res.responseTime || "N/A",
-        headers: res.getHeaders ? res.getHeaders() : {},
-        body: res.body || {},
-      },
-    });
-  } else if (req.originalUrl.startsWith("/frontend")) {
-    frontendErrorLogger.winstonInstance.error(err.message, {
-      request: {
-        method: req.method,
-        url: req.originalUrl,
-        headers: req.headers,
-        body: req.body,
-      },
-      response: {
-        statusCode: res.statusCode || 500,
-        responseTime: res.responseTime || "N/A",
-        headers: res.getHeaders ? res.getHeaders() : {},
-        body: res.body || {},
-      },
-    });
+
+  console.error("GLOBAL ERROR:", err);
+
+  try {
+
+    if (req.originalUrl.startsWith("/admin") && adminErrorLogger?.winstonInstance) {
+      adminErrorLogger.winstonInstance.error(err.message, {
+        request: {
+          method: req.method,
+          url: req.originalUrl,
+          headers: req.headers,
+          body: req.body,
+        },
+      });
+    }
+
+    if (req.originalUrl.startsWith("/frontend") && frontendErrorLogger?.winstonInstance) {
+      frontendErrorLogger.winstonInstance.error(err.message, {
+        request: {
+          method: req.method,
+          url: req.originalUrl,
+          headers: req.headers,
+          body: req.body,
+        },
+      });
+    }
+
+  } catch (logError) {
+    console.error("Logger failed:", logError);
   }
 
-  // Send JSON error response
-  res.status(err.status || 500).json({
+  return res.status(err.status || 500).json({
     status: false,
-    message: err.message,
-    error: req.app.get("env") == "development" ? err : {},
+    message: err.message || "Internal server error",
+    error: req.app.get("env") === "development" ? err : {},
   });
+
 });
 
 // Handle uncaught exceptions
