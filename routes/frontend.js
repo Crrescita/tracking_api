@@ -252,4 +252,9 @@ router.delete(
   ReimbursementController.deleteReimbursement
 );
 
+router.put(
+  "/reimbursements/:id",
+  ReimbursementController.updateReimbursement
+);
+
 module.exports = router;

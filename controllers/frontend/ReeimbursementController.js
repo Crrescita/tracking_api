@@ -466,6 +466,13 @@ exports.getReimbursementDetails = async (req, res) => {
                 message: "Token required"
             });
 
+        if (!req.query.month || !req.query.year) {
+            return res.status(200).send({
+                status: false,
+                message: "month and year required"
+            });
+        }
+
         const [user] = await sqlModel.select(
             "employees",
             ["id"],
@@ -605,6 +612,99 @@ exports.deleteReimbursement = async (req, res) => {
     } catch (error) {
 
         return res.status(200).send({
+            status: false,
+            message: error.message
+        });
+
+    }
+};
+
+exports.updateReimbursement = async (req, res) => {
+    try {
+
+        const token = req.headers.authorization?.split(" ")[1];
+
+        if (!token) {
+            return res.status(200).json({
+                status: false,
+                message: "Token required"
+            });
+        }
+
+        const [user] = await sqlModel.select(
+            "employees",
+            ["id", "company_id"],
+            { api_token: token }
+        );
+
+        if (!user) {
+            return res.status(200).json({
+                status: false,
+                message: "User not found"
+            });
+        }
+
+        const reimbursement_id = req.params.id;
+
+        const { reimbursement_type_id, total_amount } = req.body;
+
+        if (!reimbursement_type_id && !total_amount) {
+            return res.status(200).json({
+                status: false,
+                message: "Nothing to update"
+            });
+        }
+
+        // check reimbursement exists
+        const [reimbursement] = await sqlModel.select(
+            "reimbursements",
+            ["id", "emp_id"],
+            { id: reimbursement_id }
+        );
+
+        if (!reimbursement) {
+            return res.status(200).json({
+                status: false,
+                message: "Reimbursement not found"
+            });
+        }
+
+        // check ownership
+        if (reimbursement.emp_id !== user.id) {
+            return res.status(200).json({
+                status: false,
+                message: "Unauthorized reimbursement access"
+            });
+        }
+
+        const updateData = {
+            updated_at: getCurrentDateTime()
+        };
+
+        if (reimbursement_type_id) {
+            updateData.reimbursement_type_id = reimbursement_type_id;
+        }
+
+        if (total_amount) {
+            updateData.total_amount = total_amount;
+        }
+
+        await sqlModel.update(
+            "reimbursements",
+            updateData,
+            { id: reimbursement_id }
+        );
+
+        return res.status(200).json({
+            status: true,
+            message: "Reimbursement updated successfully"
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(200).json({
             status: false,
             message: error.message
         });
