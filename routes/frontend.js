@@ -203,7 +203,6 @@ router.get(
   "/getReimbursementTypes",
   ReimbursementController.getReimbursementTypes
 );
-router.post("/reimbursement", upload.array("files"), ReimbursementController.applyReimbursement);
 
 
 // router.post("/createReimbursementType", reimbursementController.createReimbursementType);
