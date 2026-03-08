@@ -378,11 +378,12 @@ exports.getReimbursements = async (req, res) => {
 
         const token = req.headers.authorization?.split(" ")[1];
 
-        if (!token)
+        if (!token) {
             return res.status(200).send({
                 status: false,
                 message: "Token required"
             });
+        }
 
         const [user] = await sqlModel.select(
             "employees",
@@ -390,61 +391,85 @@ exports.getReimbursements = async (req, res) => {
             { api_token: token }
         );
 
-        if (!user)
+        if (!user) {
             return res.status(200).send({
                 status: false,
                 message: "User not found"
             });
+        }
 
-        const month = req.query.month;
-        const year = req.query.year;
+        let month = req.query.month;
+        let year = req.query.year;
+
+        // Support format: 03-2026
+        if (req.query.month_year) {
+            const parts = req.query.month_year.split("-");
+            month = parts[0];
+            year = parts[1];
+        }
+
+        // Validation: month without year not allowed
+        if (month && !year) {
+            return res.status(200).send({
+                status: false,
+                message: "Year is required when month is provided"
+            });
+        }
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-
         const offset = (page - 1) * limit;
 
-        const reimbursements = await sqlModel.customQuery(
-            `
-SELECT
-r.id,
-r.total_amount,
-r.status,
-r.applied_date,
-rt.name as reimbursement_type
-FROM reimbursements r
-LEFT JOIN reimbursement_types rt
-ON rt.id=r.reimbursement_type_id
-WHERE r.emp_id=?
-AND MONTH(r.applied_date)=?
-AND YEAR(r.applied_date)=?
-ORDER BY r.created_at DESC
-LIMIT ? OFFSET ?
-`,
-            [user.id, month, year, limit, offset]
-        );
+        let whereClause = `WHERE r.emp_id = ?`;
+        let params = [user.id];
 
-        const [count] = await sqlModel.customQuery(
-            `
-SELECT COUNT(*) as total
-FROM reimbursements
-WHERE emp_id=?
-AND MONTH(applied_date)=?
-AND YEAR(applied_date)=?
-`,
-            [user.id, month, year]
-        );
+        if (month && year) {
+            whereClause += ` AND MONTH(r.applied_date) = ? AND YEAR(r.applied_date) = ?`;
+            params.push(parseInt(month), parseInt(year));
+        }
+
+        const query = `
+      SELECT
+        r.id,
+        r.total_amount,
+        r.status,
+        r.applied_date,
+        rt.name AS reimbursement_type
+      FROM reimbursements r
+      LEFT JOIN reimbursement_types rt
+        ON rt.id = r.reimbursement_type_id
+      ${whereClause}
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+        params.push(limit, offset);
+
+        const reimbursements = await sqlModel.customQuery(query, params);
+
+        // count query
+        let countQuery = `
+      SELECT COUNT(*) as total
+      FROM reimbursements r
+      ${whereClause}
+    `;
+
+        const countResult = await sqlModel.customQuery(countQuery, params.slice(0, params.length - 2));
+
+        const totalRecords = countResult[0]?.total || 0;
 
         return res.status(200).send({
             status: true,
             page,
             limit,
-            total_records: count.total,
-            total_pages: Math.ceil(count.total / limit),
+            total_records: totalRecords,
+            total_pages: Math.ceil(totalRecords / limit),
             data: reimbursements
         });
 
     } catch (error) {
+
+        console.error(error);
 
         return res.status(200).send({
             status: false,
