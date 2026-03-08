@@ -15,7 +15,7 @@ const FirebaseController = require("../controllers/frontend/FirebaseController")
 const PayrollController = require("../controllers/frontend/PayrollController");
 const RequestsController = require("../controllers/frontend/RequestController");
 const TaskController = require("../controllers/frontend/TaskController");
-const reimbursementController = require("../controllers/frontend/reimbursementController");
+const ReimbursementController = require("../controllers/frontend/ReeimbursementController");
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -163,58 +163,94 @@ router.get("/", function (req, res, next) {
 });
 
 // return coordinates
-router.post("/get-coordinates" ,EmployeeTrackController.getCoordinates);
+router.post("/get-coordinates", EmployeeTrackController.getCoordinates);
 
 //RequestsController
-  router.post("/request", upload.array("files"), RequestsController.createRequest);
-  router.put("/request/:id", upload.array("files"), RequestsController.modifyRequest);
-  router.patch("/request/:id",  RequestsController.updateRequestStatus);
-  router.put("/request/:id/followup",  RequestsController.updateFollowupStatus);
-  router.delete("/request/:id", RequestsController.deleteRequest);
-  router.get("/request", RequestsController.getRequestsByEmployee); // token-based list
-  router.get("/request/:id", RequestsController.getRequestDetail);
-  router.delete("/deleteAttachment/:id", RequestsController.deleteAttachment);
-  router.post("/shareRequest", RequestsController.shareRequest);
-  router.get("/getfollowup", RequestsController.getfollowup); 
-  router.get("/request-menu", RequestsController.getRequestMenuData);
+router.post("/request", upload.array("files"), RequestsController.createRequest);
+router.put("/request/:id", upload.array("files"), RequestsController.modifyRequest);
+router.patch("/request/:id", RequestsController.updateRequestStatus);
+router.put("/request/:id/followup", RequestsController.updateFollowupStatus);
+router.delete("/request/:id", RequestsController.deleteRequest);
+router.get("/request", RequestsController.getRequestsByEmployee); // token-based list
+router.get("/request/:id", RequestsController.getRequestDetail);
+router.delete("/deleteAttachment/:id", RequestsController.deleteAttachment);
+router.post("/shareRequest", RequestsController.shareRequest);
+router.get("/getfollowup", RequestsController.getfollowup);
+router.get("/request-menu", RequestsController.getRequestMenuData);
 
-  router.post("/insertVistorLog",upload.array("files"), RequestsController.insertVisitorLog);
-  router.get("/getVistorLog", RequestsController.getVisitList);
-  router.get("/getVistorLogDetail/:visit_id", RequestsController.getVisitDetails);
-  router.put("/updateVistorLog/:visit_id",  upload.none(),    RequestsController.updateVisitLog);
+router.post("/insertVistorLog", upload.array("files"), RequestsController.insertVisitorLog);
+router.get("/getVistorLog", RequestsController.getVisitList);
+router.get("/getVistorLogDetail/:visit_id", RequestsController.getVisitDetails);
+router.put("/updateVistorLog/:visit_id", upload.none(), RequestsController.updateVisitLog);
 
-  router.post("/remindLater" , RequestsController.remindVisitLater);
+router.post("/remindLater", RequestsController.remindVisitLater);
 
-  // task
-  router.get("/getAlltasks", TaskController.getEmployeeTask);
-  router.get("/getTaskById/:task_id", TaskController.getEmployeeTaskById);
-  router.post("/updateTaskStatus", TaskController.updateTaskStatus);
+// task
+router.get("/getAlltasks", TaskController.getEmployeeTask);
+router.get("/getTaskById/:task_id", TaskController.getEmployeeTaskById);
+router.post("/updateTaskStatus", TaskController.updateTaskStatus);
 
-  // backgroundVerificationEmp
-  router.post("/backgroundVerificationEmp", upload.fields([{ name: "documentFile", maxCount: 1 }, { name: "documentFile2", maxCount: 1 } ]), EmployeeController.insertBackgroundVerificationByEmp);
-  router.get("/getBackgroundVerificationEmp", EmployeeController.getBackgroundVerification);
+// backgroundVerificationEmp
+router.post("/backgroundVerificationEmp", upload.fields([{ name: "documentFile", maxCount: 1 }, { name: "documentFile2", maxCount: 1 }]), EmployeeController.insertBackgroundVerificationByEmp);
+router.get("/getBackgroundVerificationEmp", EmployeeController.getBackgroundVerification);
 
-  // bank details
-  router.post("/bankDetails", EmployeeController.insertBankDetail);
-  router.get("/getBankDetails", EmployeeController.getBankDetail);
+// bank details
+router.post("/bankDetails", EmployeeController.insertBankDetail);
+router.get("/getBankDetails", EmployeeController.getBankDetail);
 
 
-  router.get(
+router.get(
   "/getReimbursementTypes",
-  reimbursementController.getReimbursementTypes
+  ReimbursementController.getReimbursementTypes
 );
-  router.post("/reimbursement", upload.array("files"), reimbursementController.applyReimbursement);
-  router.post(
-  "/updateReimbursementAttachment",
-  upload.array("document", 1),
-  reimbursementController.updateReimbursementAttachment
+router.post("/reimbursement", upload.array("files"), ReimbursementController.applyReimbursement);
+
+
+// router.post("/createReimbursementType", reimbursementController.createReimbursementType);
+// router.get("/reimbursement", reimbursementController.getReimbursementsByMonth);
+// // router.get("/reimbursement", reimbursementController.getReimbursements);
+// router.get("/reimbursement/:id", reimbursementController.getReimbursementDetail);
+// router.delete("/reimbursement/:id", reimbursementController.deleteReimbursement);
+// router.delete("/reimbursement/attachment/:id", reimbursementController.deleteReimbursementAttachment);
+
+router.get(
+  "/reimbursement-types",
+  ReimbursementController.getReimbursementTypes
 );
 
-  router.post("/createReimbursementType", reimbursementController.createReimbursementType);
-  router.get("/reimbursement", reimbursementController.getReimbursementsByMonth);
-  // router.get("/reimbursement", reimbursementController.getReimbursements);
-  // router.get("/reimbursement/:id", reimbursementController.getReimbursementDetail);
-  router.delete("/reimbursement/:id", reimbursementController.deleteReimbursement);
-  router.delete("/reimbursement/attachment/:id", reimbursementController.deleteReimbursementAttachment);
-  
+router.post(
+  "/reimbursement-types",
+  ReimbursementController.createReimbursementType
+);
+
+router.post(
+  "/reimbursements",
+  ReimbursementController.createReimbursement
+);
+
+router.post(
+  "/reimbursements/attachments",
+  ReimbursementController.addReimbursementAttachment
+);
+
+router.delete(
+  "/reimbursements/attachments/:id",
+  ReimbursementController.deleteAttachment
+);
+
+router.get(
+  "/reimbursements",
+  ReimbursementController.getReimbursements
+);
+
+router.get(
+  "/reimbursements/:id",
+  ReimbursementController.getReimbursementDetails
+);
+
+router.delete(
+  "/reimbursements/:id",
+  ReimbursementController.deleteReimbursement
+);
+
 module.exports = router;
