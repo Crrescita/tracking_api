@@ -78,6 +78,11 @@ app.use(function (err, req, res, next) {
 
   try {
 
+    const responseHeaders =
+      typeof res.getHeaders === "function"
+        ? res.getHeaders()
+        : {};
+
     if (req.originalUrl.startsWith("/admin") && adminErrorLogger?.winstonInstance) {
       adminErrorLogger.winstonInstance.error(err.message, {
         request: {
@@ -85,6 +90,10 @@ app.use(function (err, req, res, next) {
           url: req.originalUrl,
           headers: req.headers,
           body: req.body,
+        },
+        response: {
+          statusCode: res.statusCode || 500,
+          headers: responseHeaders,
         },
       });
     }
@@ -97,6 +106,10 @@ app.use(function (err, req, res, next) {
           headers: req.headers,
           body: req.body,
         },
+        response: {
+          statusCode: res.statusCode || 500,
+          headers: responseHeaders,
+        },
       });
     }
 
@@ -104,10 +117,10 @@ app.use(function (err, req, res, next) {
     console.error("Logger failed:", logError);
   }
 
-  return res.status(err.status || 500).json({
+  res.status(err.status || 500).json({
     status: false,
     message: err.message || "Internal server error",
-    error: req.app.get("env") === "development" ? err : {},
+    error: process.env.NODE_ENV === "development" ? err : {},
   });
 
 });
