@@ -25,7 +25,7 @@ const PayrollController = require("../controllers/admin/PayrollController")
 const SupportController = require("../controllers/admin/SupportController");
 // const WhatsappController = require("../controllers/admin/WhatsappController");
 const AdminRequestController = require("../controllers/admin/AdminRequestController");
-
+const ReimbursementController = require("../controllers/admin/reimbursementController");
 
 
 const verifyToken = async (req, res, next) => {
@@ -483,4 +483,6 @@ router.get("/request/:id", AdminRequestController.getSingleRequest);
 
 //visit logs
 router.get("/visitLogs", AdminRequestController.getAllVisitsLogs);
+router.get("/reimbursement", ReimbursementController.getReimbursementDashboard);
+router.put("/updateReimbursementStatus/:id", ReimbursementController.updateReimbursementStatus);
 module.exports = router;
