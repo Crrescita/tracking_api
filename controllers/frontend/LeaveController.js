@@ -491,6 +491,7 @@ exports.createLeaveRequest = async (req, res, next) => {
       SELECT id
       FROM leave_request
       WHERE emp_id = ?
+      AND status != 'Cancelled'
       AND ((from_date BETWEEN ? AND ?) OR (to_date BETWEEN ? AND ?))
     `;
 

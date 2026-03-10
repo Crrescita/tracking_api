@@ -1,5 +1,5 @@
 const sqlModel = require("../../config/db");
-
+const admin = require("../../firebase");
 const buildS3Url = (key) => {
   if (!key) return null;
   return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
@@ -160,7 +160,7 @@ exports.updateReimbursementStatus = async (req, res) => {
     // Check reimbursement belongs to company
     const [reimbursement] = await sqlModel.select(
       "reimbursements",
-      ["id", "company_id", "status"],
+      ["id", "company_id", "status", "emp_id", "amount"],
       { id: reimbursement_id }
     );
 
@@ -176,12 +176,12 @@ exports.updateReimbursementStatus = async (req, res) => {
     //     message: "Unauthorized access",
     //   });
 
-    if (reimbursement.status !== "pending") {
-      return res.status(200).send({
-        status: false,
-        message: "Only pending reimbursement can be updated",
-      });
-    }
+    // if (reimbursement.status !== "pending") {
+    //   return res.status(200).send({
+    //     status: false,
+    //     message: "Only pending reimbursement can be updated",
+    //   });
+    // }
 
     // Update status
     await sqlModel.update(
@@ -193,6 +193,41 @@ exports.updateReimbursementStatus = async (req, res) => {
       },
       { id: reimbursement_id }
     );
+
+
+     const emp_id = reimbursement.emp_id;
+// console.log(reimbursement)
+    const [empRow] = await sqlModel.select(
+      "employees",
+      ["id", "name", "fcm_token"],
+      { id: emp_id }
+    );
+
+    if (empRow?.fcm_token) {
+
+      const title =
+        status === "approved"
+          ? "Reimbursement Approved"
+          : "Reimbursement Rejected";
+
+      const body =
+        status === "approved"
+          ? `Your reimbursement request of has been approved.`
+          : `Your reimbursement request of has been rejected.`;
+
+      await admin.messaging().send({
+        token: empRow.fcm_token,
+        notification: {
+          title,
+          body,
+        },
+        data: {
+          type: "REIMBURSEMENT_STATUS",
+          reimbursement_id: reimbursement_id.toString(),
+          status: status,
+        },
+      });
+    }
 
     return res.status(200).send({
       status: true,
