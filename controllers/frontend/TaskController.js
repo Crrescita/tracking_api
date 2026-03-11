@@ -357,7 +357,7 @@ exports.updateTaskStatus = async (req, res) => {
       ["id", "emp_id", "company_id", "task_title", "status"],
       { id: task_id, company_id: companyId }
     );
-
+console.log("Task found:", task);
     if (!task) {
       return res.status(404).send({
         status: false,

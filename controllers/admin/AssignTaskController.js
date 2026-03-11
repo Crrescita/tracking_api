@@ -451,6 +451,30 @@ exports.assignTask = async (req, res, next) => {
           end_date: formatDate(insert.end_date),
         });
 
+        const [empRow] = await sqlModel.select(
+    "employees",
+    ["fcm_token"],
+    { id: emp.id }
+  );
+
+  if (empRow?.fcm_token) {
+    try {
+      await adminMessaging.messaging().send({
+        token: empRow.fcm_token,
+        notification: {
+          title: "New Task Assigned",
+          body: `You have been assigned a new task: ${insert.task_title}`,
+        },
+        data: {
+          type: "TASK_ASSIGNED",
+          task_id: taskId.toString(),
+        },
+      });
+    } catch (err) {
+      console.error("FCM error:", err.message);
+    }
+  }
+
         // Create personal chat (admin ↔ emp)
         await sqlModel.insert("task_chats", {
           task_id: taskId,

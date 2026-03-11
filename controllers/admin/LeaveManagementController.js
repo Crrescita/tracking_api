@@ -823,7 +823,7 @@ exports.leaveDetail = async (req, res, next) => {
     // If no `id` is provided, return only the processedResults
     if (!id) {
       const empleaveRequestQuery = `
-      SELECT lr.from_date, lr.to_date, lr.status, lt.name, lr.reason, lr.no_of_days, lr.created_at
+      SELECT lr.from_date, lr.to_date, lr.status, lt.name, lr.reason, lr.no_of_days, lr.created_at, lr.cc
       FROM leave_request lr
       LEFT JOIN leave_type lt ON lr.leave_type = lt.id
       WHERE lr.emp_id = ? AND lr.status IN ('Approve', 'Reject', 'Pending') ORDER BY created_at DESC
@@ -869,7 +869,7 @@ exports.leaveDetail = async (req, res, next) => {
 
     // Fetch leave request details if `id` is provided
     const leaveRequestQuery = `
-      SELECT lr.from_date, lr.to_date, lr.status ,lt.name, lr.reason, lr.no_of_days, lr.created_at
+      SELECT lr.from_date, lr.to_date, lr.status ,lt.name, lr.reason, lr.no_of_days, lr.created_at , lr.cc
       FROM leave_request lr
       LEFT JOIN leave_type lt ON lr.leave_type = lt.id
       WHERE lr.id = ?
@@ -883,7 +883,7 @@ exports.leaveDetail = async (req, res, next) => {
       });
     }
 
-    const { from_date, to_date, status, name, reason, no_of_days, created_at } =
+    const { from_date, to_date, status, name, reason, no_of_days, created_at, cc } =
       leaveRequest[0];
 
     // Calculate number of Sundays between from_date and to_date
@@ -956,6 +956,7 @@ exports.leaveDetail = async (req, res, next) => {
         upcoming_leave: upcomingLeaveDate
           ? getFutureRelativeTime(upcomingLeaveDate)
           : null,
+        cc: cc,
       },
     });
   } catch (error) {

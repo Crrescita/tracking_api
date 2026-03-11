@@ -385,7 +385,7 @@ exports.respondToRequest = async (req, res) => {
     const requestId = req.params.id;
 
     // fetch request
-    const reqRows = await sqlModel.select("requests", ["id","type","status","current_version"], { id: requestId });
+    const reqRows = await sqlModel.select("requests", ["id","type","status","current_version","emp_id"], { id: requestId });
     if (!reqRows || reqRows.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
 
     const reqRow = reqRows[0];
@@ -539,6 +539,36 @@ const followUpDateTime = followUpDate
       }
     }
 
+      const emp_id = reqRow.emp_id;
+  console.log("Employee ID for notification:", emp_id);
+// console.log(reimbursement)
+    const [empRow] = await sqlModel.select(
+      "employees",
+      ["id", "name", "fcm_token"],
+      { id: emp_id }
+    );
+console.log("Employee row:", empRow);
+    if (empRow?.fcm_token) {
+
+     const title = `Request has new response`;
+
+      const body =
+       `Request is ready `
+
+      await adminMessaging.messaging().send({
+        token: empRow.fcm_token,
+        notification: {
+          title,
+          body,
+        },
+        data: {
+          type: "REQUEST_STATUS",
+          request_id: requestId.toString(),
+          status: "ready",
+        },
+      });
+    }
+
     return res.status(200).send({ status: true, message: "Response uploaded", version: newVersion });
   } catch (error) {
     console.error(error);
@@ -555,7 +585,7 @@ exports.updateStatus = async (req, res) => {
 console.log("Updating status:", requestId, status);
      const rows = await sqlModel.select(
       "requests",
-      ["status"],
+      ["status" , "emp_id"],
       { id: requestId }
     );
 
@@ -589,6 +619,37 @@ console.log("Updating status:", requestId, status);
   null,                // version
   `Status changed to ${status}`
 );
+
+
+  const emp_id = rows[0].emp_id;
+  console.log("Employee ID for notification:", emp_id);
+// console.log(reimbursement)
+    const [empRow] = await sqlModel.select(
+      "employees",
+      ["id", "name", "fcm_token"],
+      { id: emp_id }
+    );
+console.log("Employee row:", empRow);
+    if (empRow?.fcm_token) {
+
+     const title = `Request ${status == "approved" ? "Approved" : "Rejected"}`;
+
+      const body =
+       `Status changed to ${status}`
+
+      await adminMessaging.messaging().send({
+        token: empRow.fcm_token,
+        notification: {
+          title,
+          body,
+        },
+        data: {
+          type: "REQUEST_STATUS",
+          request_id: requestId.toString(),
+          status: status,
+        },
+      });
+    }
 
     return res.status(200).send({ status: true, message: "Status updated" });
   } catch (error) {
