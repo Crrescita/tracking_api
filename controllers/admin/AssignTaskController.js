@@ -458,21 +458,41 @@ exports.assignTask = async (req, res, next) => {
   );
 
   if (empRow?.fcm_token) {
-    try {
-      await admin.messaging().send({
-        token: empRow.fcm_token,
-        notification: {
-          title: "New Task Assigned",
-          body: `You have been assigned a new task: ${insert.task_title}`,
-        },
-        data: {
-          type: "TASK_ASSIGNED",
+
+     const title =
+            "New Task Assigned";
+    
+          const body =
+            `You have been assigned a new task: ${insert.task_title}`;
+    
+          await admin.messaging().send({
+            token: empRow.fcm_token,
+            notification: {
+              title,
+              body,
+            },
+            data: {
+              type: "TASK_ASSIGNED",
           task_id: taskId.toString(),
-        },
-      });
-    } catch (err) {
-      console.error("FCM error:", err.message);
-    }
+            },
+          });
+
+
+    // try {
+    //   await admin.messaging().send({
+    //     token: empRow.fcm_token,
+    //     notification: {
+    //       title: "New Task Assigned",
+    //       body: `You have been assigned a new task: ${insert.task_title}`,
+    //     },
+    //     data: {
+    //       type: "TASK_ASSIGNED",
+    //       task_id: taskId.toString(),
+    //     },
+    //   });
+    // } catch (err) {
+    //   console.error("FCM error:", err.message);
+    // }
   }
 
         // Create personal chat (admin ↔ emp)
