@@ -459,7 +459,7 @@ exports.assignTask = async (req, res, next) => {
 
   if (empRow?.fcm_token) {
     try {
-      await adminMessaging.messaging().send({
+      await admin.messaging().send({
         token: empRow.fcm_token,
         notification: {
           title: "New Task Assigned",
