@@ -118,29 +118,28 @@
             style="max-width: 200px"
           />
         </div>
-        <h2 class="card-title">Leave Request Notification</h2>
-        <p class="card-text">An employee has requested leave.</p>
-        <p class="card-text">
-          Please review the details below and take the necessary action.
-        </p>
+        <h2 class="card-title">Hello <%= name %>,</h2>
+        <p class="card-text">Your request has a response from our team.</p>
+     <p class="card-text">
+ <b>Response:</b>
+</p>
 
-        <p class="normal-text">
-          <strong>Employee Leave Request Details:</strong><br />
-          Name: <%= name %><br />
-          From: <%= from_date %><br />
-          To: <%= to_date %><br />
-          No of days (Excluding Sunday and Company Hoilday's): <%
-          no_of_days%><br />
-          Leave Type: <%= leave_type %><br />
-          Reson:<%= reason %>
-        </p>
+<% if(admin_response){ %>
 
-        <p class="normal-text">
-          Kindly process this leave request as per your company's leave policy.
-          If you need more information, please contact the employee directly or
-          reply to this email.
-        </p>
+  <p class="card-text"><%= admin_response.response || "Response added by admin." %></p>
 
+  <% if(admin_response.file_url){ %>
+    <p class="card-text">
+      Attachment:
+      <a href="<%= admin_response.file_url %>">Download File</a>
+    </p>
+  <% } %>
+
+<% } else { %>
+
+  <p class="card-text">No response has been added yet.</p>
+
+<% } %>
         <div class="footer">
           <p>© 2026 Crrescita.</p>
           <p>All Rights Reserved.</p>

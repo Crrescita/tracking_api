@@ -129,6 +129,27 @@ async function sendLeaveRequestToCompany(data) {
   }
 }
 
+async function sendSharedRequestToUser(data) {
+  try {
+
+    const htmlFile = "./views/shareRequest.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    let info = await transporter.sendMail({
+      to: data.email,
+      subject: `Request Update #${data.request_id}`,
+      html: compiledHtml,
+    });
+
+    console.log("Message sent:", info.messageId);
+
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
 module.exports = {
   sendEmailToEmp,
   sendEmailToCompany,
@@ -136,4 +157,5 @@ module.exports = {
   forgotPasswordCode,
   passwordUpdated,
   sendLeaveRequestToCompany,
+  sendSharedRequestToUser
 };

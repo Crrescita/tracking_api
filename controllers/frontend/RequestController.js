@@ -5,7 +5,7 @@ const sqlModel = require("../../config/db");
 const { uploadLocalFileToS3 } = require("../../config/s3");
 const adminMessaging = require("../../firebase"); // your firebase setup (same as leave controller)
 const { getCurrentDateTime } = require("../../config/datetime"); // assume you have or create similar helper
-
+const sendMail = require("../../mail/nodemailer"); // your nodemailer setup
 function fixMulterRelativePath(relPath) {
   if (relPath.startsWith("public/")) return relPath;
   if (relPath.startsWith("images/")) return "public/" + relPath;
@@ -649,9 +649,48 @@ exports.shareRequest = async (req, res) => {
 
     if (saveData.error) {
        return res.status(200).send({ status: false, error: error.message });
-    }else{
-       return res.status(200).send({ status: true, message: "Detail submitted successfully!", });
     }
+
+      const [latestResp] = await sqlModel.customQuery(
+      `
+      SELECT rr.*, u.username AS admin_name
+      FROM request_responses rr
+      LEFT JOIN users u ON u.id = rr.responded_by
+      WHERE rr.request_id = ?
+      ORDER BY rr.version DESC
+      LIMIT 1
+      `,
+      [request_id]
+    );
+
+    let responseData = null;
+
+    if (latestResp) {
+      responseData = {
+        ...latestResp,
+        file_url: latestResp.file_path
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${latestResp.file_path}`
+          : null
+      };
+    }
+
+    /* -------- SEND EMAIL -------- */
+
+    await sendMail.sendSharedRequestToUser({
+      name,
+      email,
+      request_id,
+      admin_response: responseData
+    });
+
+    return res.status(200).send({
+      status: true,
+      message: "Detail submitted successfully & email sent!"
+    });
+    
+    // else{
+    //    return res.status(200).send({ status: true, message: "Detail submitted successfully!", });
+    // }
 
   } catch (error) {
     console.error("Submit Error:", error);
