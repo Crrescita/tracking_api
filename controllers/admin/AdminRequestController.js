@@ -509,35 +509,63 @@ const followUpDateTime = followUpDate
     // await addHistory(requestId, adminUser.id, "response_uploaded", prevStatus, "responded", newVersion, req.body.admin_note || "Admin responded");
 
     // send FCM notifications to company users (same pattern)
-    const companyId = adminUser.company_id || null;
-    if (companyId) {
-      const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: companyId });
-      if (tokens && tokens.length > 0) {
-        const messageContent = `Request #${requestId} has a new response.`;
-        const notificationPromises = tokens.map(({ fcm_token }) => {
-          return adminMessaging.messaging().send({
-            notification: {
-              title: "Request Responded",
-              body: messageContent,
-            },
-            token: fcm_token,
-          });
-        });
+    // const companyId = adminUser.company_id || null;
+    // if (companyId) {
+    //   const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: companyId });
+    //   if (tokens && tokens.length > 0) {
+    //     const messageContent = `Request #${requestId} has a new response.`;
+    //     const notificationPromises = tokens.map(({ fcm_token }) => {
+    //       return adminMessaging.messaging().send({
+    //         notification: {
+    //           title: "Request Responded",
+    //           body: messageContent,
+    //         },
+    //         token: fcm_token,
+    //       });
+    //     });
 
-        try {
-          await Promise.all(notificationPromises);
-          await sqlModel.insert("notification", {
-            company_id: companyId,
-            title: "Request Responded",
-            body: messageContent,
-            status: "unread",
-            timestamp: getCurrentDateTime(),
-          });
-        } catch (e) {
-          console.error("FCM admin error", e.message);
-        }
-      }
-    }
+    //     try {
+    //       await Promise.all(notificationPromises);
+    //       await sqlModel.insert("notification", {
+    //         company_id: companyId,
+    //         title: "Request Responded",
+    //         body: messageContent,
+    //         status: "unread",
+    //         timestamp: getCurrentDateTime(),
+    //       });
+    //     } catch (e) {
+    //       console.error("FCM admin error", e.message);
+    //     }
+    //   }
+    // }
+
+
+    const notificationMessages = {
+  credit_note: {
+    title: "Credit Note Ready",
+    body: `Your credit note request is ready.`,
+  },
+  invoice: {
+    title: "Invoice Generated",
+    body: `Your invoice request has been processed.`,
+  },
+  quotation: {
+    title: "Quotation Ready",
+    body: `Your quotation request is available now.`,
+  },
+  statement: {
+    title: "Account Statement Ready",
+    body: `Your statement request has been prepared.`,
+  },
+  stock_status: {
+    title: "Stock Status Updated",
+    body: `Your stock status request is ready.`,
+  },
+  default: {
+    title: "Request Update",
+    body: `Your request has been processed.`,
+  },
+};
 
       const emp_id = reqRow.emp_id;
   console.log("Employee ID for notification:", emp_id);
@@ -550,10 +578,16 @@ const followUpDateTime = followUpDate
 console.log("Employee row:", empRow);
     if (empRow?.fcm_token) {
 
-     const title = `Request has new response`;
+      const message =
+  notificationMessages[reqRow.type] || notificationMessages.default;
+console.log("Notification message:", message);
+const title = message.title;
+const body = message.body;
 
-      const body =
-       `Request is ready `
+    //  const title = `Request has new response`;
+
+    //   const body =
+    //    `Request is ready `
 
       await adminMessaging.messaging().send({
         token: empRow.fcm_token,
