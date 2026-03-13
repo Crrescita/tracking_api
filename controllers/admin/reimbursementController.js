@@ -45,7 +45,7 @@ exports.getReimbursementDashboard = async (req, res) => {
 
     // Total reimbursed amount
     const totalAmount = await sqlModel.customQuery(
-      `SELECT IFNULL(SUM(amount),0) AS total_amount
+      `SELECT IFNULL(SUM(total_amount),0) AS total_amount
        FROM reimbursements
        WHERE company_id = ? AND status = 'approved'`,
       [company_id]
@@ -56,7 +56,7 @@ exports.getReimbursementDashboard = async (req, res) => {
     const query = `
       SELECT 
         r.id,
-        r.amount,
+        r.total_amount AS amount,
         r.status,
         r.applied_date,
         r.created_at,
