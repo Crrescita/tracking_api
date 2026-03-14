@@ -423,7 +423,6 @@ exports.createLeaveRequest = async (req, res, next) => {
       { id: insert.leave_type }
     );
 
-  
     if (!leaveTypeData) {
       return res.status(200).send({
         status: false,
@@ -450,10 +449,9 @@ exports.createLeaveRequest = async (req, res, next) => {
       leaveRecordValues
     );
 
-    const totalUsedDays = leaveRecord?.totalUsedDays || 0;
+    const totalUsedDays = Number(leaveRecord?.totalUsedDays) || 0;
     const availableLeaveDays = totalLeaveDays - totalUsedDays;
 
-    // Check if the requested number of days exceeds the available leave days
     if (totalUsedDays >= totalLeaveDays) {
       return res.status(200).send({
         status: false,
@@ -486,22 +484,49 @@ exports.createLeaveRequest = async (req, res, next) => {
       });
     }
 
-    // Check if the employee has already requested leave for the same dates
+    // Block if new dates overlap any rejected or expired leave
+    const overlapRejectedOrExpiredQuery = `
+      SELECT id, status
+      FROM leave_request
+      WHERE emp_id = ?
+      AND status IN ('Reject', 'Expired')
+      AND from_date <= ?
+      AND to_date >= ?
+    `;
+
+    const overlapRejectedOrExpiredParams = [
+      employee.id,
+      insert.to_date,
+      insert.from_date,
+    ];
+
+    const overlapRejectedOrExpired = await sqlModel.customQuery(
+      overlapRejectedOrExpiredQuery,
+      overlapRejectedOrExpiredParams
+    );
+
+    if (overlapRejectedOrExpired.length > 0) {
+      return res.status(200).send({
+        status: false,
+        message:
+          "Leave request cannot be applied for dates where a previous leave was rejected or has expired.",
+      });
+    }
+
+    // Overlap: existing.from_date <= new.to_date AND existing.to_date >= new.from_date; exclude current request when updating
     const overlappingLeaveQuery = `
       SELECT id
       FROM leave_request
       WHERE emp_id = ?
       AND status != 'Cancelled'
-      AND ((from_date BETWEEN ? AND ?) OR (to_date BETWEEN ? AND ?))
+      AND from_date <= ?
+      AND to_date >= ?
+      ${leaveRequestId ? "AND id != ?" : ""}
     `;
 
-    const overlappingLeaveValues = [
-      employee.id,
-      insert.from_date,
-      insert.to_date,
-      insert.from_date,
-      insert.to_date,
-    ];
+    const overlappingLeaveValues = leaveRequestId
+      ? [employee.id, insert.to_date, insert.from_date, leaveRequestId]
+      : [employee.id, insert.to_date, insert.from_date];
 
     const existingLeaveRequests = await sqlModel.customQuery(
       overlappingLeaveQuery,
@@ -531,7 +556,10 @@ exports.createLeaveRequest = async (req, res, next) => {
       toDate,
     ]);
 
-    const holidayDates = holidays.map((holiday) => holiday.date);
+    const holidayDates = holidays.map((h) => {
+      const d = h.date;
+      return typeof d === "string" ? d.split("T")[0] : (d && d.toISOString ? d.toISOString().split("T")[0] : String(d));
+    });
 
     // Loop through each day and count if it's not a Sunday or holiday
     while (currentDate <= toDate) {
@@ -543,13 +571,21 @@ exports.createLeaveRequest = async (req, res, next) => {
         no_of_days++;
       }
 
-      currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    insert.no_of_days = no_of_days; // Insert the calculated number of days
+    insert.no_of_days = no_of_days;
+
+    if (totalUsedDays + no_of_days > totalLeaveDays) {
+      return res.status(200).send({
+        status: false,
+        message:
+          "Requested leave days exceed your available balance for this leave type.",
+      });
+    }
 
     let saveData;
-  if (leaveRequestId) {
+    if (leaveRequestId) {
       const [existing] = await sqlModel.select(
         "leave_request",
         ["id", "status", "from_date"],
@@ -580,8 +616,7 @@ exports.createLeaveRequest = async (req, res, next) => {
         insert,
         { id: leaveRequestId }
       );
-    }
-else {
+    } else {
       saveData = await sqlModel.insert("leave_request", insert);
 
       // Handling CC emails
@@ -595,42 +630,35 @@ else {
         from_date: insert.from_date,
         to_date: insert.to_date,
         no_of_days: insert.no_of_days,
-        // leave_type: insert.leave_type,
         leave_type: leaveTypeData.name,
         reason: insert.reason,
       };
 
       sendMail.sendLeaveRequestToCompany(emailData);
 
+      const messageContent = `Leave request from ${employee.name}.`;
+
       const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], {
         user_id: employee.company_id,
       });
 
-      if (tokens.length === 0) {
-        return res.status(200).send({
-          status: false,
-          message: "No FCM tokens found for the company",
-        });
+      if (tokens.length > 0) {
+        const notificationPromises = tokens.map(({ fcm_token }) =>
+          admin.messaging().send({
+            notification: {
+              title: "New Leave Request",
+              body: messageContent,
+              image: employee.image
+                ? `${process.env.BASE_URL}${employee.image}`
+                : "",
+            },
+            token: fcm_token,
+          })
+        );
+        await Promise.all(notificationPromises).catch((err) =>
+          console.error("FCM send error:", err?.message || err)
+        );
       }
-
-      const messageContent = `Leave request from ${employee.name}.`;
-
-      // Create a notification promise for each token
-      const notificationPromises = tokens.map(({ fcm_token }) => {
-        return admin.messaging().send({
-          notification: {
-            title: "New Leave Request",
-            body: messageContent,
-            image: employee.image
-              ? `${process.env.BASE_URL}${employee.image}`
-              : "",
-          },
-          token: fcm_token,
-        });
-      });
-
-      // Execute all notification sends in parallel
-      await Promise.all(notificationPromises);
 
       const insertNotification = {
         company_id: employee.company_id,
@@ -640,38 +668,11 @@ else {
         status: "unread",
         timestamp: getCurrentDateTime(),
       };
-      console.log(insertNotification);
       await sqlModel.insert("notification", insertNotification);
-
-      // admin
-      //   .messaging()
-      //   .send(message)
-      //   .then(() => {
-      //     res.status(200).send({
-      //       status: true,
-      //       message: "Notification sent successfully.",
-      //     });
-      //   })
-      //   .catch((error) => {
-      //     console.error("Error sending FCM notification:", error);
-      //     res
-      //       .status(500)
-      //       .send({ status: false, message: "Notification failed" });
-      //   });
-
-      // try {
-      //   await admin.messaging().send(message);
-      // } catch (error) {
-      //   console.error("Error sending notification:", error);
-      // }
     }
 
-    if (saveData.error) {
-      return res.status(200).send(saveData);
-    } else {
-      const msg = leaveRequestId ? "Data Updated" : "Data Saved";
-      return res.status(200).send({ status: true, message: msg });
-    }
+    const msg = leaveRequestId ? "Data Updated" : "Data Saved";
+    return res.status(200).send({ status: true, message: msg });
   } catch (error) {
     res.status(200).send({ status: false, error: error.message });
   }
