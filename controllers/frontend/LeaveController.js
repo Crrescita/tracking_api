@@ -484,41 +484,16 @@ exports.createLeaveRequest = async (req, res, next) => {
       });
     }
 
-    // Block if new dates overlap any rejected or expired leave
-    const overlapRejectedOrExpiredQuery = `
-      SELECT id, status
-      FROM leave_request
-      WHERE emp_id = ?
-      AND status IN ('Reject', 'Expired')
-      AND from_date <= ?
-      AND to_date >= ?
-    `;
+    // No need to block if new dates overlap any rejected or expired leave
+    // (removed restriction to allow employee to re-apply on the same dates)
 
-    const overlapRejectedOrExpiredParams = [
-      employee.id,
-      insert.to_date,
-      insert.from_date,
-    ];
-
-    const overlapRejectedOrExpired = await sqlModel.customQuery(
-      overlapRejectedOrExpiredQuery,
-      overlapRejectedOrExpiredParams
-    );
-
-    if (overlapRejectedOrExpired.length > 0) {
-      return res.status(200).send({
-        status: false,
-        message:
-          "Leave request cannot be applied for dates where a previous leave was rejected or has expired.",
-      });
-    }
-
-    // Overlap: existing.from_date <= new.to_date AND existing.to_date >= new.from_date; exclude current request when updating
+    // Overlap: existing.from_date <= new.to_date AND existing.to_date >= new.from_date; 
+    // Only block for requests which are not Cancelled, Reject, or Expired
     const overlappingLeaveQuery = `
       SELECT id
       FROM leave_request
       WHERE emp_id = ?
-      AND status != 'Cancelled'
+      AND status NOT IN ('Cancelled', 'Reject', 'Expired')
       AND from_date <= ?
       AND to_date >= ?
       ${leaveRequestId ? "AND id != ?" : ""}
