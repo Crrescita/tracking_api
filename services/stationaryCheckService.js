@@ -1,6 +1,7 @@
 const admin = require("../firebase");
 const { getAddressFromLatLng } = require("../utils/mapboxReverseGeocode");
 const sqlModel = require("../config/db");
+const { getCurrentDateTime } = require("../config/datetime");
 
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -35,6 +36,7 @@ exports.checkStationaryEmployees = async () => {
     // `);
 console.log(`Found ${employees.length} employees with tracking data in the last hour.`);
     for (const emp of employees) {
+      try {
       const { emp_id, company_id } = emp;
 
     //   const history = await sqlModel.customQuery(
@@ -156,6 +158,9 @@ console.log(`Created visit ${visitId} for employee ${emp_id} at address: ${addre
                 address:address.toString(),
               },
         });
+      }
+      } catch (empErr) {
+        console.error(`Stationary check failed for emp_id ${emp?.emp_id}:`, empErr?.message || empErr);
       }
     }
   } catch (err) {
