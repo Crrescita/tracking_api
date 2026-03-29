@@ -153,7 +153,7 @@ exports.getAssignTask = async (req, res, next) => {
       }
     }
 
-    const tasks = await sqlModel.select("assign_task", {}, whereClause, "ORDER BY updated_at ASC");
+    const tasks = await sqlModel.select("assign_task", {}, whereClause, "ORDER BY updated_at DESC");
 
     if (tasks.error) return res.status(500).send(tasks);
     if (tasks.length === 0) return res.status(200).send({ status: false, message: "No data found" });
