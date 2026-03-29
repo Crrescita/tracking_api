@@ -153,7 +153,7 @@ exports.getAssignTask = async (req, res, next) => {
       }
     }
 
-    const tasks = await sqlModel.select("assign_task", {}, whereClause, "ORDER BY start_date ASC");
+    const tasks = await sqlModel.select("assign_task", {}, whereClause, "ORDER BY updated_at ASC");
 
     if (tasks.error) return res.status(500).send(tasks);
     if (tasks.length === 0) return res.status(200).send({ status: false, message: "No data found" });
@@ -414,6 +414,7 @@ exports.assignTask = async (req, res, next) => {
       // Task creation (when no task id is provided)
       insert.task_id = generateTaskID();
       insert.created_at = getCurrentDateTime();
+      insert.updated_at = getCurrentDateTime();
 
       const query = `SELECT id, name, mobile FROM employees WHERE id IN (${empIds.map(() => "?").join(",")})`;
       const employees = await sqlModel.customQuery(query, empIds);
