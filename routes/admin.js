@@ -475,6 +475,7 @@ router.post(
   AdminRequestController.deleteRequestMultiple
 );
 
+router.delete("/deleteRequestResponse/:id", AdminRequestController.deleteRequestResponse);
 
 router.put("/updateRequestStatus/:id", AdminRequestController.updateStatus);
 router.get("/request/:id/history", AdminRequestController.getHistory);

@@ -343,10 +343,11 @@ delete request.attachment_file;
         rh.created_at,
         u.name AS action_by_name,
         rr.admin_note,
-        rr.file_path AS response_file_path
+        rr.file_path AS response_file_path,
+        rr.id as reqresid
       FROM request_history rh
       LEFT JOIN company u ON u.id = rh.action_by
-      LEFT JOIN request_responses rr ON rh.request_response_id = rr.id
+      LEFT JOIN request_responses rr ON rh.request_id = rr.request_id
       WHERE rh.request_id = ?
       ORDER BY rh.version ASC, rh.created_at ASC
       `,
@@ -576,33 +577,67 @@ const followUpDateTime = followUpDate
       { id: emp_id }
     );
 console.log("Employee row:", empRow);
-    if (empRow?.fcm_token) {
 
-      const message =
-  notificationMessages[reqRow.type] || notificationMessages.default;
-console.log("Notification message:", message);
-const title = message.title;
-const body = message.body;
+//     if (empRow?.fcm_token) {
 
-    //  const title = `Request has new response`;
+//       const message =
+//   notificationMessages[reqRow.type] || notificationMessages.default;
+// console.log("Notification message:", message);
+// const title = message.title;
+// const body = message.body;
 
-    //   const body =
-    //    `Request is ready `
+//     //  const title = `Request has new response`;
 
-      await adminMessaging.messaging().send({
-        token: empRow.fcm_token,
-        notification: {
-          title,
-          body,
-        },
-        data: {
-          type: "REQUEST_STATUS",
-          request_id: requestId.toString(),
-          status: "ready",
-        },
-      });
+//     //   const body =
+//     //    `Request is ready `
+
+//       await adminMessaging.messaging().send({
+//         token: empRow.fcm_token,
+//         notification: {
+//           title,
+//           body,
+//         },
+//         data: {
+//           type: "REQUEST_STATUS",
+//           request_id: requestId.toString(),
+//           status: "ready",
+//         },
+//       });
+//     }
+
+if (empRow?.fcm_token) {
+  try {
+    const message =
+      notificationMessages[reqRow.type] || notificationMessages.default;
+
+    await adminMessaging.messaging().send({
+      token: empRow.fcm_token,
+      notification: {
+        title: message.title,
+        body: message.body,
+      },
+      data: {
+        type: "REQUEST_STATUS",
+        request_id: requestId.toString(),
+        status: "ready",
+      },
+    });
+  } catch (err) {
+    console.error("FCM Error:", err.message);
+
+    // ✅ Handle invalid token case
+    if (err.code === "messaging/registration-token-not-registered") {
+      console.log("Removing invalid FCM token");
+
+      await sqlModel.update(
+        "employees",
+        { fcm_token: null },
+        { id: emp_id }
+      );
     }
 
+  }
+}
     return res.status(200).send({ status: true, message: "Response uploaded", version: newVersion });
   } catch (error) {
     console.error(error);
@@ -845,6 +880,50 @@ exports.deleteRequest = async (req, res) => {
   }
 };
 
+
+exports.deleteRequestResponse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        status: false,
+        message: "id is required",
+      });
+    }
+
+    // check exists
+    const exists = await sqlModel.select(
+      "request_responses",
+      ["id"],
+      { id }
+    );
+
+    if (!exists || exists.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "Request not found",
+      });
+    }
+
+    // delete child records first (important)
+    await sqlModel.execute(
+      `DELETE FROM request_responses WHERE id = ?`,
+      [id]
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Deleted successfully",
+    });
+  } catch (error) {
+    console.error("deleteRequest error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Failed to delete request",
+    });
+  }
+};
 
 exports.deleteRequestMultiple = async (req, res) => {
   try {
