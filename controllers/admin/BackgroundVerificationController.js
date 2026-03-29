@@ -31,17 +31,32 @@ exports.getBackgroundVerification = async (req, res, next) => {
         item.aadhaar_file = item.aadhaar_file
           ? `${process.env.BASE_URL}${item.aadhaar_file}`
           : "";
+          item.aadhaar_file_back = item.aadhaar_file_back
+          ? `${process.env.BASE_URL}${item.aadhaar_file_back}`
+          : "";
         item.pan_file = item.pan_file
           ? `${process.env.BASE_URL}${item.pan_file}`
+          : "";
+          item.pan_file_back = item.pan_file_back
+          ? `${process.env.BASE_URL}${item.pan_file_back}`
           : "";
         item.driving_license_file = item.driving_license_file
           ? `${process.env.BASE_URL}${item.driving_license_file}`
           : "";
+          item.driving_license_file_back = item.driving_license_file_back
+          ? `${process.env.BASE_URL}${item.driving_license_file_back}`
+          : ""; 
         item.voter_file = item.voter_file
           ? `${process.env.BASE_URL}${item.voter_file}`
           : "";
+          item.voter_file_back = item.voter_file_back
+          ? `${process.env.BASE_URL}${item.voter_file_back}`
+          : "";
         item.uan_file = item.uan_file
           ? `${process.env.BASE_URL}${item.uan_file}`
+          : "";
+          item.uan_file_back = item.uan_file_back
+          ? `${process.env.BASE_URL}${item.uan_file_back}`
           : "";
         return item;
       })

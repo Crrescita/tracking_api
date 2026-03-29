@@ -53,36 +53,78 @@ exports.getReimbursementDashboard = async (req, res) => {
 
     /* -------- Recent 5 reimbursements -------- */
 
-    const query = `
-      SELECT 
-        r.id,
-        r.total_amount AS amount,
-        r.status,
-        r.applied_date,
-        r.created_at,
-        rt.name AS reimbursement_type,
-        e.name AS employee_name,
-        CASE
-          WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
-          ELSE e.image
-        END AS image,
-        de.name AS designation_name,
-        GROUP_CONCAT(ra.file_path) AS attachments
-      FROM reimbursements r
-      LEFT JOIN reimbursement_types rt 
-        ON rt.id = r.reimbursement_type_id
-      LEFT JOIN employees e
-        ON e.id = r.emp_id
-      LEFT JOIN reimbursement_attachments ra
-        ON ra.reimbursement_id = r.id
-      LEFT JOIN designation de 
-        ON e.designation = de.id
-      WHERE r.company_id = ?
-      GROUP BY r.id
-      ORDER BY r.created_at DESC
+    // const query = `
+    //   SELECT 
+    //     r.id,
+    //     r.total_amount AS amount,
+    //     r.status,
+    //     r.applied_date,
+    //     r.created_at,
+    //     rt.name AS reimbursement_type,
+    //     e.name AS employee_name,
+    //     CASE
+    //       WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+    //       ELSE e.image
+    //     END AS image,
+    //     de.name AS designation_name,
+    //     GROUP_CONCAT(ra.file_path) AS attachments
+    //   FROM reimbursements r
+    //   LEFT JOIN reimbursement_types rt 
+    //     ON rt.id = r.reimbursement_type_id
+    //   LEFT JOIN employees e
+    //     ON e.id = r.emp_id
+    //   LEFT JOIN reimbursement_attachments ra
+    //     ON ra.reimbursement_id = r.id
+    //   LEFT JOIN designation de 
+    //     ON e.designation = de.id
+    //   WHERE r.company_id = ?
+    //   GROUP BY r.id
+    //   ORDER BY r.created_at DESC
  
+    // `;
+    const query = `
+    SELECT 
+      r.id,
+      r.total_amount AS amount,
+      r.status,
+      r.applied_date,
+      r.created_at,
+      rt.name AS reimbursement_type,
+      e.name AS employee_name,
+      CASE
+        WHEN e.image IS NOT NULL THEN CONCAT(?, e.image)
+        ELSE e.image
+      END AS image,
+      de.name AS designation_name,
+    
+      JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'id', ra.id,
+          'file_path', ra.file_path,
+          'reimbursement_name', ra.reimbursement_name,
+          'amount', ra.amount
+        )
+      ) AS attachments
+    
+    FROM reimbursements r
+    
+    LEFT JOIN reimbursement_types rt 
+      ON rt.id = r.reimbursement_type_id
+    
+    LEFT JOIN employees e
+      ON e.id = r.emp_id
+    
+    LEFT JOIN reimbursement_attachments ra
+      ON ra.reimbursement_id = r.id
+    
+    LEFT JOIN designation de 
+      ON e.designation = de.id
+    
+    WHERE r.company_id = ?
+    
+    GROUP BY r.id
+    ORDER BY r.created_at DESC
     `;
-
     const recent = await sqlModel.customQuery(query, [
       process.env.BASE_URL,
       company_id,
@@ -90,11 +132,24 @@ exports.getReimbursementDashboard = async (req, res) => {
 
     console.log("SQL:", query);
 
+    // const formattedRecent = recent.map(r => ({
+    //   ...r,
+    //   attachments: r.attachments
+    //     ? r.attachments.split(",").map(file => buildS3Url(file))
+    //     : [],
+    // }));
+
     const formattedRecent = recent.map(r => ({
       ...r,
-      attachments: r.attachments
-        ? r.attachments.split(",").map(file => buildS3Url(file))
-        : [],
+      attachments: (Array.isArray(r.attachments)
+        ? r.attachments
+        : r.attachments
+        ? JSON.parse(r.attachments)
+        : []
+      ).map(a => ({
+        ...a,
+        file_url: a.file_path ? buildS3Url(a.file_path) : null
+      }))
     }));
 
     return res.status(200).send({
@@ -122,25 +177,6 @@ exports.updateReimbursementStatus = async (req, res) => {
   try {
     const reimbursement_id = req.params.id;
 
-    // const token = req.headers.authorization?.split(" ")[1];
-    // if (!token)
-    //   return res.status(200).send({
-    //     status: false,
-    //     message: "Token is required",
-    //   });
-
-    // const [admin] = await sqlModel.select(
-    //   "employees",
-    //   ["id", "company_id", "name"],
-    //   { api_token: token }
-    // );
-
-    // if (!admin)
-    //   return res.status(200).send({
-    //     status: false,
-    //     message: "Admin not found",
-    //   });
-
     const { status } = req.body;
 
     if (!reimbursement_id || !status) {
@@ -160,7 +196,7 @@ exports.updateReimbursementStatus = async (req, res) => {
     // Check reimbursement belongs to company
     const [reimbursement] = await sqlModel.select(
       "reimbursements",
-      ["id", "company_id", "status", "emp_id", "amount"],
+      ["id", "company_id", "status", "emp_id", "total_amount"],
       { id: reimbursement_id }
     );
 
@@ -170,18 +206,7 @@ exports.updateReimbursementStatus = async (req, res) => {
         message: "Reimbursement not found",
       });
 
-    // if (reimbursement.company_id !== admin.company_id)
-    //   return res.status(200).send({
-    //     status: false,
-    //     message: "Unauthorized access",
-    //   });
-
-    // if (reimbursement.status !== "pending") {
-    //   return res.status(200).send({
-    //     status: false,
-    //     message: "Only pending reimbursement can be updated",
-    //   });
-    // }
+ 
 
     // Update status
     await sqlModel.update(
