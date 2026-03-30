@@ -1,6 +1,21 @@
 const sqlModel = require("../../config/db");
 const deleteOldFile = require("../../middleware/deleteImage");
 
+const buildPublicUrl = (filePath) => {
+  if (!filePath) return "";
+
+
+  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+    return filePath;
+  }
+
+  if (filePath.startsWith("employee-verification/")) {
+    return buildS3Url(filePath);
+  }
+
+  return `${process.env.BASE_URL}${filePath}`;
+};
+
 exports.getBackgroundVerification = async (req, res, next) => {
   try {
     // const id = req.params?.id || "";
@@ -27,36 +42,36 @@ exports.getBackgroundVerification = async (req, res, next) => {
 
     const result = await Promise.all(
       data.map(async (item) => {
-       
+      //  `${process.env.BASE_URL}${item.aadhaar_file}`
         item.aadhaar_file = item.aadhaar_file
-          ? `${process.env.BASE_URL}${item.aadhaar_file}`
+          ? buildPublicUrl(item.aadhaar_file)
           : "";
           item.aadhaar_file_back = item.aadhaar_file_back
-          ? `${process.env.BASE_URL}${item.aadhaar_file_back}`
+          ? buildPublicUrl(item.aadhaar_file_back)
           : "";
         item.pan_file = item.pan_file
-          ? `${process.env.BASE_URL}${item.pan_file}`
+          ? buildPublicUrl(item.pan_file)
           : "";
           item.pan_file_back = item.pan_file_back
-          ? `${process.env.BASE_URL}${item.pan_file_back}`
+          ? buildPublicUrl(item.pan_file_back)
           : "";
         item.driving_license_file = item.driving_license_file
-          ? `${process.env.BASE_URL}${item.driving_license_file}`
+          ? buildPublicUrl(item.driving_license_file)
           : "";
           item.driving_license_file_back = item.driving_license_file_back
-          ? `${process.env.BASE_URL}${item.driving_license_file_back}`
+          ? buildPublicUrl(item.driving_license_file_back)
           : ""; 
         item.voter_file = item.voter_file
-          ? `${process.env.BASE_URL}${item.voter_file}`
+          ? buildPublicUrl(item.voter_file)
           : "";
           item.voter_file_back = item.voter_file_back
-          ? `${process.env.BASE_URL}${item.voter_file_back}`
+          ? buildPublicUrl(item.voter_file_back)
           : "";
         item.uan_file = item.uan_file
-          ? `${process.env.BASE_URL}${item.uan_file}`
+          ? buildPublicUrl(item.uan_file)
           : "";
           item.uan_file_back = item.uan_file_back
-          ? `${process.env.BASE_URL}${item.uan_file_back}`
+          ? buildPublicUrl(item.uan_file_back)
           : "";
         return item;
       })
