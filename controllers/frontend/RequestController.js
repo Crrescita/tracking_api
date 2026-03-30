@@ -6,6 +6,7 @@ const { uploadLocalFileToS3 } = require("../../config/s3");
 const adminMessaging = require("../../firebase"); // your firebase setup (same as leave controller)
 const { getCurrentDateTime } = require("../../config/datetime"); // assume you have or create similar helper
 const sendMail = require("../../mail/nodemailer"); // your nodemailer setup
+
 function fixMulterRelativePath(relPath) {
   if (relPath.startsWith("public/")) return relPath;
   if (relPath.startsWith("images/")) return "public/" + relPath;
@@ -67,6 +68,7 @@ exports.createRequest = async (req, res) => {
 
     const request_id = saveData.insertId;
     let attachment_id=0;
+    const uploadedFilesForEmail = [];
     // If multer saved files locally, multerConfig pushes paths to req.fileFullPath (array of 'images/<folder>/<file>')
     if (
           req.fileFullPath &&
@@ -74,7 +76,7 @@ exports.createRequest = async (req, res) => {
           req.fileFullPath.length > 0
         ) {
           const uploadedRecords = [];
-
+       
           for (const relPath of req.fileFullPath) {
             // 🔥 Fix multer path (add `public/` prefix)
             const fixed = fixMulterRelativePath(relPath);
@@ -94,6 +96,8 @@ exports.createRequest = async (req, res) => {
                 created_at: getCurrentDateTime(),
               });
               attachment_id = result.insertId;
+
+              uploadedFilesForEmail.push(`https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`);
               // delete local file
               fs.unlinkSync(localAbsolute);
 
@@ -138,6 +142,30 @@ exports.createRequest = async (req, res) => {
       }
     }
 
+
+    // 🔽 GET COMPANY EMAIL
+const [company] = await sqlModel.select(
+  "company",
+  ["email", "name"],
+  { id: user.company_id }
+);
+
+if (company?.email) {
+  try {
+    console.log(uploadedFilesForEmail)
+    await sendMail.sendreqCreated({
+      email: company.email,
+      request_id,
+      employee_name: user.name,
+      type: insert.type,
+      title: insert.title,
+      description: insert.description,
+      attachments: uploadedFilesForEmail, // ✅ MULTIPLE FILES
+    });
+  } catch (e) {
+    console.error("Email send failed:", e.message);
+  }
+}
     return res.status(200).send({ status: true, message: "Request created", request_id });
   } catch (error) {
     console.error(error);

@@ -5,10 +5,10 @@ const ejs = require("ejs");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    // user: "palsudhanshu13@gmail.com",
-    // pass: "ulmh uaht rlss ojoi",
-    user: "contact@crrescita.com",
-    pass: "zfhh oxft akyi huxy",
+    user: "palsudhanshu13@gmail.com",
+    pass: "ulmh uaht rlss ojoi",
+    // user: "contact@crrescita.com",
+    // pass: "zfhh oxft akyi huxy",
   },
 });
 
@@ -150,6 +150,183 @@ async function sendSharedRequestToUser(data) {
   }
 }
 
+async function sendreqCreated(data) {
+  try {
+    const htmlFile = "./views/requestCreated.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: `New ${data.type} Request #${data.request_id}`,
+      html: compiledHtml,
+    };
+
+    // ✅ Multiple attachments support
+    if (data.attachments && data.attachments.length > 0) {
+      mailOptions.attachments = data.attachments.map((fileUrl) => ({
+        filename: fileUrl.split("/").pop(),
+        path: fileUrl,
+      }));
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Request email sent:", info.messageId);
+  } catch (error) {
+    console.error(" Email error:", error.message);
+  }
+}
+
+async function sendmailadminres(data) {
+  try {
+    const htmlFile = data.template || "./views/requestResponse.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: data.subject,
+      html: compiledHtml,
+    };
+
+    // ✅ MULTIPLE attachments
+    if (data.attachments && data.attachments.length > 0) {
+      mailOptions.attachments = data.attachments.map((fileUrl) => ({
+        filename: fileUrl.split("/").pop(),
+        path: fileUrl,
+      }));
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("✅ Response email sent:", info.messageId);
+  } catch (error) {
+    console.error("❌ Email error:", error.message);
+  }
+}
+
+async function sendLeaveStatusUpdate(data) {
+  try {
+    const htmlFile = "./views/leaveStatusUpdate.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: `Leave Request ${data.status}`,
+      html: compiledHtml,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Leave email sent:", info.messageId);
+  } catch (error) {
+    console.error("Email error:", error.message);
+  }
+}
+
+async function sendReimbursementCreated(data) {
+  try {
+    const htmlFile = "./views/reimbursementCreated.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: `New Reimbursement Request #${data.reimbursement_id}`,
+      html: compiledHtml,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Reimbursement email sent:", info.messageId);
+  } catch (error) {
+    console.error("Email error:", error.message);
+  }
+}
+
+async function sendReimbursementStatusUpdate(data) {
+  try {
+    const htmlFile = "./views/reimbursementStatusUpdate.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject:
+        data.status === "approved"
+          ? "Reimbursement Approved"
+          : "Reimbursement Rejected",
+      html: compiledHtml,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Reimbursement status email sent:", info.messageId);
+  } catch (error) {
+    console.error("Email error:", error.message);
+  }
+}
+
+async function sendTaskAssignedEmail(data) {
+  try {
+    const htmlFile = "./views/taskAssigned.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: `New Task Assigned: ${data.task_title}`,
+      html: compiledHtml,
+    };
+
+    // ✅ CC emails
+    if (data.cc && data.cc.length > 0) {
+      mailOptions.cc = data.cc;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log(" Task email sent:", info.messageId);
+  } catch (error) {
+    console.error("❌Email error:", error.message);
+  }
+}
+
+async function sendTaskStatusUpdate(data) {
+  try {
+    const htmlFile = "./views/taskStatusUpdate.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: `Task Update: ${data.task_title}`,
+      html: compiledHtml,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log(" Task status email sent:", info.messageId);
+  } catch (error) {
+    console.error(" Email error:", error.message);
+  }
+}
 module.exports = {
   sendEmailToEmp,
   sendEmailToCompany,
@@ -157,5 +334,12 @@ module.exports = {
   forgotPasswordCode,
   passwordUpdated,
   sendLeaveRequestToCompany,
-  sendSharedRequestToUser
+  sendSharedRequestToUser,
+  sendreqCreated,
+  sendmailadminres,
+  sendLeaveStatusUpdate,
+  sendReimbursementCreated,
+  sendReimbursementStatusUpdate,
+  sendTaskAssignedEmail,
+  sendTaskStatusUpdate
 };

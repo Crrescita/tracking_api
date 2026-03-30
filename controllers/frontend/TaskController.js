@@ -5,6 +5,7 @@ const sqlModel = require("../../config/db");
 const { uploadLocalFileToS3 } = require("../../config/s3");
 // const adminMessaging = require("../../firebase"); 
 const { getCurrentDateTime } = require("../../config/datetime");
+const sendMail = require("../../mail/nodemailer"); 
 
 const admin = require("../../firebase");
 exports.getEmployeeTask = async (req, res) => {
@@ -486,13 +487,19 @@ console.log("Task found:", task);
       { user_id: companyId }
     );
 
+    const [company] = await sqlModel.select(
+      "company",
+      ["email", "name"],
+      { id: companyId }
+    );
+    const message =
+    status === "Completed"
+      ? `✅ ${user.name} completed task "${task.task_title}"`
+      : status === "Cancelled"
+        ? `❌ ${user.name} cancelled task "${task.task_title}"`
+        : `🔔 ${user.name} started task "${task.task_title}"`;
     if (adminTokens.length) {
-      const message =
-        status === "Completed"
-          ? `✅ ${user.name} completed task "${task.task_title}"`
-          : status === "Cancelled"
-            ? `❌ ${user.name} cancelled task "${task.task_title}"`
-            : `🔔 ${user.name} started task "${task.task_title}"`;
+    
 
       const sendPromises = adminTokens.map(async ({ id, fcm_token }) => {
         try {
@@ -531,6 +538,23 @@ console.log("Task found:", task);
         status: "unread",
         timestamp: getCurrentDateTime(),
       });
+    }
+
+    if (company?.email) {
+      try {
+        await sendMail.sendTaskStatusUpdate({
+          email: company.email,
+          company_name: company.name,
+          employee_name: user.name,
+          task_title: task.task_title,
+          status,
+          message,
+          task_id,
+          comment: comment?.text || null,
+        });
+      } catch (e) {
+        console.error("Email send failed:", e.message);
+      }
     }
 
     return res.status(200).send({
