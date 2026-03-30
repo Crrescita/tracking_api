@@ -15,7 +15,10 @@ const buildPublicUrl = (filePath) => {
 
   return `${process.env.BASE_URL}${filePath}`;
 };
-
+const buildS3Url = (key) => {
+  if (!key) return null;
+  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
+};
 exports.getBackgroundVerification = async (req, res, next) => {
   try {
     // const id = req.params?.id || "";
