@@ -5,7 +5,7 @@ const sqlModel = require("../../config/db");
 const { uploadLocalFileToS3 } = require("../../config/s3");
 const adminMessaging = require("../../firebase");
 const { getCurrentDateTime } = require("../../config/datetime");
-
+const sendMail = require("../../mail/nodemailer"); 
 // helper to convert s3 key -> full url
 const buildS3Url = (key) => {
   if (!key) return null;
@@ -405,7 +405,7 @@ const [lastResp] = await sqlModel.execute(
 
 
     let uploadedKey = lastResp?.file_path || null;
-
+    const uploadedFilesForEmail = [];
     if (req.fileFullPath && req.fileFullPath.length > 0) {
       uploadedKey = null;
 
@@ -418,7 +418,7 @@ const [lastResp] = await sqlModel.execute(
           const { key } = await uploadLocalFileToS3(localAbs, keyPrefix);
 
           uploadedKey = uploadedKey || key;
-
+          uploadedFilesForEmail.push(`https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`);
           // await sqlModel.insert("request_attachments", {
           //   request_id: requestId,
           //   file_path: relPath,
@@ -432,35 +432,7 @@ const [lastResp] = await sqlModel.execute(
         }
       }
     }
-    // let uploadedKey = null;
-    // if (req.fileFullPath && req.fileFullPath.length > 0) {
-    //   // admin used same multer; files are in req.fileFullPath
-    //   // upload each (we'll only save the first as primary response file_path)
-    //   for (const relPath of req.fileFullPath) {
-    //     const projectRoot = path.resolve(__dirname, "..", "..");
-    //     const localAbs = path.join(projectRoot, "public", relPath);
-    //     try {
-    //       const keyPrefix = `${reqRow.type}/${requestId}/v${newVersion}`;
-    //       const { key, url } = await uploadLocalFileToS3(localAbs, keyPrefix);
-
-    //       // store each attachment in request_responses_attachments (optional) OR store primary path in request_responses
-    //       uploadedKey = uploadedKey || key;
-
-    //       // save response attachment record
-    //       await sqlModel.insert("request_attachments", {
-    //         request_id: requestId,
-    //         // version: newVersion,
-    //         file_path: relPath,
-    //         file_type: path.extname(localAbs).replace(".", ""),
-    //         created_at: getCurrentDateTime(),
-    //       });
-
-    //       fs.unlinkSync(localAbs);
-    //     } catch (e) {
-    //       console.error("admin S3 upload failed", e.message);
-    //     }
-    //   }
-    // }
+ 
 
     // save response row
     const insertResp = {
@@ -507,39 +479,6 @@ const followUpDateTime = followUpDate
                       req.body.admin_note || "Admin responded"
                     );
 
-    // await addHistory(requestId, adminUser.id, "response_uploaded", prevStatus, "responded", newVersion, req.body.admin_note || "Admin responded");
-
-    // send FCM notifications to company users (same pattern)
-    // const companyId = adminUser.company_id || null;
-    // if (companyId) {
-    //   const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: companyId });
-    //   if (tokens && tokens.length > 0) {
-    //     const messageContent = `Request #${requestId} has a new response.`;
-    //     const notificationPromises = tokens.map(({ fcm_token }) => {
-    //       return adminMessaging.messaging().send({
-    //         notification: {
-    //           title: "Request Responded",
-    //           body: messageContent,
-    //         },
-    //         token: fcm_token,
-    //       });
-    //     });
-
-    //     try {
-    //       await Promise.all(notificationPromises);
-    //       await sqlModel.insert("notification", {
-    //         company_id: companyId,
-    //         title: "Request Responded",
-    //         body: messageContent,
-    //         status: "unread",
-    //         timestamp: getCurrentDateTime(),
-    //       });
-    //     } catch (e) {
-    //       console.error("FCM admin error", e.message);
-    //     }
-    //   }
-    // }
-
 
     const notificationMessages = {
   credit_note: {
@@ -573,7 +512,7 @@ const followUpDateTime = followUpDate
 // console.log(reimbursement)
     const [empRow] = await sqlModel.select(
       "employees",
-      ["id", "name", "fcm_token"],
+      ["id", "name", "fcm_token", "email"],
       { id: emp_id }
     );
 console.log("Employee row:", empRow);
@@ -636,6 +575,23 @@ if (empRow?.fcm_token) {
       );
     }
 
+  }
+}
+console.log(uploadedFilesForEmail)
+if (empRow?.email) {
+  try {
+    await sendMail.sendmailadminres({
+      email: empRow.email,
+      template: "./views/requestResponse.ejs",
+      subject: `Your ${reqRow.type} Request is Ready`,
+      request_id: requestId,
+      employee_name: empRow.name,
+      type: reqRow.type,
+      admin_note: req.body.admin_note,
+      attachments: uploadedFilesForEmail, // ✅ MULTIPLE FILES
+    });
+  } catch (e) {
+    console.error("Email send failed:", e.message);
   }
 }
     return res.status(200).send({ status: true, message: "Response uploaded", version: newVersion });

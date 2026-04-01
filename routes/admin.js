@@ -183,10 +183,13 @@ router
   router
   .route("/backgroundVerification")
   .get(BackgroundVerificationController.getBackgroundVerification)
-  .post(
-    upload.fields([{ name: "documentFile", maxCount: 1 }]),
-    BackgroundVerificationController.insertBackgroundVerification
-  );
+  // .post(
+  //   upload.fields([{ name: "documentFile", maxCount: 1 }]),
+  //   BackgroundVerificationController.insertBackgroundVerification
+  // );
+
+router.post("/backgroundVerification", upload.fields([{ name: "documentFile", maxCount: 1 }, { name: "documentFile2", maxCount: 1 }]), BackgroundVerificationController.insertBackgroundVerification);
+
 
 
 router.post(

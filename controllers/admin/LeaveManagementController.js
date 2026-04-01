@@ -1,5 +1,5 @@
 const sqlModel = require("../../config/db");
-
+const sendMail = require("../../mail/nodemailer"); 
 const createSlug = (title) => {
   return title
     .toString()
@@ -596,6 +596,43 @@ exports.updateLeaveRequestStatus = async (req, res, next) => {
         await sqlModel.insert("leave_record", leaveRecordData);
       }
     }
+
+    const empId = leaveRecord[0].emp_id;
+
+const [empDetails] = await sqlModel.select(
+  "employees",
+  ["id", "name", "email"],
+  { id: empId }
+);
+
+let leaveTypeName = leaveRecord[0].leave_type;
+
+// If leave_type is an ID → fetch name
+const [leaveTypeRow] = await sqlModel.select(
+  "leave_type", // ✅ your table name
+  ["name"],     // or "leave_type_name" depending on DB
+  { id: leaveRecord[0].leave_type }
+);
+
+if (leaveTypeRow?.name) {
+  leaveTypeName = leaveTypeRow.name;
+}
+
+if (empDetails?.email) {
+  try {
+    await sendMail.sendLeaveStatusUpdate({
+      email: empDetails.email,
+      employee_name: empDetails.name,
+      status,
+      admin_reason,
+      from_date: leaveRecord[0].from_date,
+      to_date: leaveRecord[0].to_date,
+      leave_type: leaveTypeName,
+    });
+  } catch (e) {
+    console.error("Email send failed:", e.message);
+  }
+}
 
     return res.status(200).send({ status: true, message: "Data Updated" });
   } catch (error) {

@@ -3,6 +3,7 @@ const sendWhatsapp = require("../../mail/whatsappMessage");
 const admin = require("../../firebase");
 const cron = require("node-cron");
 // const {  getCurrentDateTime } = require("../../config/until");
+const sendMail = require("../../mail/nodemailer"); 
 
 const generateTaskID = () => {
   const prefix = "TMS";
@@ -311,6 +312,10 @@ exports.assignTask = async (req, res, next) => {
     const id = req.params.id || "";
     let insert = { ...req.body };
 
+    const ccEmails = req.body.cc
+    ? req.body.cc.split(",").map(e => e.trim()).filter(Boolean)
+    : [];
+
     const empIds = insert.emp_id.split(",").map(emp => Number(emp.trim()));
 
     if (id) {
@@ -416,7 +421,7 @@ exports.assignTask = async (req, res, next) => {
       insert.created_at = getCurrentDateTime();
       insert.updated_at = getCurrentDateTime();
 
-      const query = `SELECT id, name, mobile FROM employees WHERE id IN (${empIds.map(() => "?").join(",")})`;
+      const query = `SELECT id, name, mobile, email FROM employees WHERE id IN (${empIds.map(() => "?").join(",")})`;
       const employees = await sqlModel.customQuery(query, empIds);
 
       if (!employees || employees.length === 0) {
@@ -494,6 +499,22 @@ exports.assignTask = async (req, res, next) => {
     // } catch (err) {
     //   console.error("FCM error:", err.message);
     // }
+  }
+
+  if (emp.email) {
+    try {
+      await sendMail.sendTaskAssignedEmail({
+        email: emp.email,
+        cc: ccEmails, // ✅ CC support
+        employee_name: emp.name,
+        task_title: insert.task_title,
+        task_id: insert.task_id,
+        start_date: formatDate(insert.start_date),
+        end_date: formatDate(insert.end_date),
+      });
+    } catch (e) {
+      console.error("Email send failed:", e.message);
+    }
   }
 
         // Create personal chat (admin ↔ emp)

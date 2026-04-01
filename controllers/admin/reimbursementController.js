@@ -1,5 +1,7 @@
 const sqlModel = require("../../config/db");
 const admin = require("../../firebase");
+const sendMail = require("../../mail/nodemailer"); 
+
 const buildS3Url = (key) => {
   if (!key) return null;
   return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
@@ -196,7 +198,7 @@ exports.updateReimbursementStatus = async (req, res) => {
     // Check reimbursement belongs to company
     const [reimbursement] = await sqlModel.select(
       "reimbursements",
-      ["id", "company_id", "status", "emp_id", "total_amount"],
+      ["id", "company_id", "status", "emp_id", "total_amount", "reimbursement_type_id"],
       { id: reimbursement_id }
     );
 
@@ -224,7 +226,7 @@ exports.updateReimbursementStatus = async (req, res) => {
 // console.log(reimbursement)
     const [empRow] = await sqlModel.select(
       "employees",
-      ["id", "name", "fcm_token"],
+      ["id", "name", "fcm_token" , "email"],
       { id: emp_id }
     );
 
@@ -253,6 +255,33 @@ exports.updateReimbursementStatus = async (req, res) => {
         },
       });
     }
+
+    let reimbursementTypeName = reimbursement.reimbursement_type_id;
+
+const [typeRow] = await sqlModel.select(
+  "reimbursement_types",
+  ["name"],
+  { id: reimbursement.reimbursement_type_id }
+);
+
+if (typeRow?.name) {
+  reimbursementTypeName = typeRow.name;
+}
+
+if (empRow?.email) {
+  try {
+    await sendMail.sendReimbursementStatusUpdate({
+      email: empRow.email,
+      employee_name: empRow.name,
+      status,
+      amount: reimbursement.total_amount,
+      type: reimbursementTypeName,
+      reimbursement_id,
+    });
+  } catch (e) {
+    console.error("Email send failed:", e.message);
+  }
+}
 
     return res.status(200).send({
       status: true,
