@@ -3,6 +3,11 @@ const { getAddressFromLatLng } = require("../utils/mapboxReverseGeocode");
 const sqlModel = require("../config/db");
 const { getCurrentDateTime } = require("../config/datetime");
 
+const THRESHOLD_MINUTES = parseInt(process.env.STATIONARY_THRESHOLD || 60);
+const ALLOWED_RADIUS = parseInt(process.env.LOCATION_RADIUS || 50);
+const MAX_GAP_MINUTES = 20;
+
+/* ---------------- Distance ---------------- */
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const toRad = (v) => (v * Math.PI) / 180;
@@ -13,157 +18,225 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-exports.checkStationaryEmployees = async () => {
-  try {
-    console.log("⏱ Running stationary check...");
 
-    /* -------- get employees who tracked in last hour -------- */
-    const employees = await sqlModel.customQuery(`
-      SELECT DISTINCT emp_id, company_id
-      FROM emp_tracking
-      WHERE created_at >= NOW() - INTERVAL 1 HOUR
-    `);
-
-    //  const employees = await sqlModel.customQuery(`
-    //   SELECT DISTINCT emp_id, company_id
-    //   FROM emp_tracking
-    //   WHERE emp_id = 36
-    // `);
-console.log(`Found ${employees.length} employees with tracking data in the last hour.`);
-    for (const emp of employees) {
-      try {
-      const { emp_id, company_id } = emp;
-
-    //   const history = await sqlModel.customQuery(
-    //     `
-    //     SELECT latitude, longitude, datetime_mobile
-    //     FROM emp_tracking
-    //     WHERE emp_id = ?
-    //       AND company_id = ?
-    //       AND datetime_mobile >= NOW() - INTERVAL 1 HOUR
-    //     ORDER BY datetime_mobile ASC
-    //   `,
-    //     [emp_id, company_id]
-    //   );
-
-    const history = await sqlModel.customQuery(
-  `
-  SELECT latitude, longitude, datetime_mobile
-  FROM emp_tracking
-  WHERE emp_id = ?
-    AND company_id = ?
-    AND datetime_mobile >= NOW() - INTERVAL 1 HOUR
-    AND latitude IS NOT NULL
-    AND longitude IS NOT NULL
-    AND latitude != 0
-    AND longitude != 0
-  ORDER BY datetime_mobile ASC
-`,
-  [emp_id, company_id]
-);
-
-
-      const validHistory = history.filter(
-  (p) => parseFloat(p.latitude) !== 0 && parseFloat(p.longitude) !== 0
-);
-
-if (validHistory.length < 5) {
-  console.log("Skipping due to invalid GPS");
-  continue;
+/* ---------------- Helper: Group by emp ---------------- */
+function groupByEmployee(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const key = `${row.emp_id}_${row.company_id}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(row);
+  }
+  return map;
 }
 
-console.log(`Employee ${emp_id} has ${history.length} tracking points in the last hour.`);
-      if (!history || history.length < 5) continue;
+/* ---------------- Main ---------------- */
+exports.checkStationaryEmployees = async () => {
+  try {
+    console.log("⏱ Running optimized stationary check...");
 
-      const baseLat = parseFloat(validHistory[0].latitude);
-      const baseLng = parseFloat(validHistory[0].longitude);
+    /* -------- STEP 1: Fetch ALL relevant tracking -------- */
+    const trackingRows = await sqlModel.customQuery(`
+      SELECT emp_id, company_id, latitude, longitude, datetime_mobile
+      FROM emp_tracking
+      WHERE datetime_mobile >= NOW() - INTERVAL 2 HOUR
+        AND latitude IS NOT NULL
+        AND longitude IS NOT NULL
+        AND latitude != 0
+        AND longitude != 0
+      ORDER BY emp_id, datetime_mobile ASC
+    `);
 
-      const ALLOWED_RADIUS = 30;
+    if (!trackingRows.length) {
+      console.log("No tracking data found");
+      return;
+    }
 
-      const isStationary = validHistory.every((p) => {
-        return (
-          getDistanceInMeters(
-            baseLat,
-            baseLng,
+    /* -------- STEP 2: Group by employee -------- */
+    const grouped = groupByEmployee(trackingRows);
+
+    /* -------- STEP 3: Fetch all active visits in one go -------- */
+    const activeVisits = await sqlModel.customQuery(`
+      SELECT *
+      FROM visits
+      WHERE status = 'active'
+    `);
+
+    const activeVisitMap = new Map();
+    activeVisits.forEach(v => {
+      activeVisitMap.set(`${v.emp_id}_${v.company_id}`, v);
+    });
+
+    /* -------- STEP 4: Process each employee -------- */
+    for (const [key, history] of grouped.entries()) {
+      try {
+        const [emp_id, company_id] = key.split("_");
+
+        if (history.length < 5) continue;
+
+        /* -------- GAP CHECK -------- */
+        let hasLargeGap = false;
+        for (let i = 1; i < history.length; i++) {
+          const prev = new Date(history[i - 1].datetime_mobile);
+          const curr = new Date(history[i].datetime_mobile);
+
+          const gap = (curr - prev) / (1000 * 60);
+          if (gap > MAX_GAP_MINUTES) {
+            hasLargeGap = true;
+            break;
+          }
+        }
+        if (hasLargeGap) continue;
+
+        /* -------- CENTROID -------- */
+        let sumLat = 0, sumLng = 0;
+        history.forEach(p => {
+          sumLat += parseFloat(p.latitude);
+          sumLng += parseFloat(p.longitude);
+        });
+
+        const centerLat = sumLat / history.length;
+        const centerLng = sumLng / history.length;
+
+        /* -------- STATIONARY CHECK -------- */
+        const isStationary = history.every(p => {
+          return getDistanceInMeters(
+            centerLat,
+            centerLng,
             parseFloat(p.latitude),
             parseFloat(p.longitude)
-          ) <= ALLOWED_RADIUS
-        );
-      });
-
-      const start = new Date(history[0].datetime_mobile.replace(" ", "T"));
-      const end = new Date(
-        history[history.length - 1].datetime_mobile.replace(" ", "T")
-      );
-
-      const duration = (end - start) / (1000 * 60);
-console.log(`Employee ${emp_id} stationary: ${isStationary}, duration: ${duration.toFixed(2)} minutes`);
-      if (!isStationary || duration < 60) continue;
-// if (duration < 1) continue;  // only 1 minute for test
-
-      /* -------- check existing visit -------- */
-      const [existingVisit] = await sqlModel.customQuery(
-        `
-        SELECT id FROM visits
-        WHERE emp_id = ?
-          AND company_id = ?
-          AND status = 'pending'
-        LIMIT 1
-      `,
-        [emp_id, company_id]
-      );
-
-    //   if (existingVisit) continue;
-console.log(baseLat ,baseLng )
-      /* -------- insert visit -------- */
-      const address = await getAddressFromLatLng(baseLat, baseLng);
-
-      const visitResult = await sqlModel.insert("visits", {
-        emp_id,
-        company_id,
-        latitude: baseLat,
-        longitude: baseLng,
-        address,
-        status: "pending",
-        created_at: getCurrentDateTime(),
-      });
-
-      const visitId = visitResult.insertId;
-console.log(`Created visit ${visitId} for employee ${emp_id} at address: ${address} `, visitResult);
-      /* -------- send FCM -------- */
-      const [empRow] = await sqlModel.select(
-        "employees",
-        ["fcm_token"],
-        { id: emp_id }
-      );
-
-      if (empRow?.fcm_token) {
-        await admin.messaging().send({
-          token: empRow.fcm_token,
-          notification: {
-            title: "Visit Required",
-            body:
-              "You have been at the same location for over 1 hour. Please create a visit.",
-          },
-          data: {
-                type: "VISIT_PENDING",
-                visit_id: visitId.toString(),
-                latitude: baseLat.toString(),
-                longitude: baseLng.toString(),
-                address:address.toString(),
-              },
+          ) <= ALLOWED_RADIUS;
         });
-      }
+
+        if (!isStationary) continue;
+
+        /* -------- DURATION -------- */
+        const start = new Date(history[0].datetime_mobile);
+        const end = new Date(history[history.length - 1].datetime_mobile);
+        const duration = (end - start) / (1000 * 60);
+
+        if (duration < THRESHOLD_MINUTES) continue;
+
+        /* -------- EXISTING VISIT -------- */
+        const activeVisit = activeVisitMap.get(key);
+
+        let isSameLocation = false;
+
+        if (activeVisit) {
+          const dist = getDistanceInMeters(
+            centerLat,
+            centerLng,
+            parseFloat(activeVisit.latitude),
+            parseFloat(activeVisit.longitude)
+          );
+
+          isSameLocation = dist <= ALLOWED_RADIUS;
+        }
+
+        /* ===================================================== */
+        /* =============== DECISION ENGINE ====================== */
+        /* ===================================================== */
+
+        /* -------- CASE 1: NO ACTIVE VISIT -------- */
+        if (!activeVisit) {
+          const address = await getAddressFromLatLng(centerLat, centerLng);
+
+          const visitResult = await sqlModel.insert("visits", {
+            emp_id,
+            company_id,
+            latitude: centerLat,
+            longitude: centerLng,
+            address,
+            status: "active",
+            from_time: start,
+            to_time: end,
+            duration_minutes: Math.floor(duration),
+            created_at: getCurrentDateTime(),
+          });
+
+          console.log(`✅ New visit created for emp ${emp_id}`);
+
+          /* -------- Notification -------- */
+          const [empRow] = await sqlModel.select(
+            "employees",
+            ["fcm_token"],
+            { id: emp_id }
+          );
+
+          if (empRow?.fcm_token) {
+            await admin.messaging().send({
+              token: empRow.fcm_token,
+              notification: {
+                title: "Visit Required",
+                body: "You have been at same location for long duration.",
+              },
+              data: {
+                type: "VISIT_CREATED",
+                "screen": "visit_log_list",
+                "source": "visit_reminder",
+                "title": "Visit log reminder",
+                "body": "You've been at this location for over" + duration + " minutes.",
+                visit_id: visitResult.insertId.toString(),
+              },
+            });
+          }
+
+          continue;
+        }
+
+        /* -------- CASE 2: SAME LOCATION → UPDATE -------- */
+        if (isSameLocation) {
+          await sqlModel.update(
+            "visits",
+            {
+              to_time: end,
+              duration_minutes: Math.floor(duration),
+            },
+            { id: activeVisit.id }
+          );
+
+          console.log(`🔄 Updated visit for emp ${emp_id}`);
+          continue;
+        }
+
+        /* -------- CASE 3: LOCATION CHANGED -------- */
+        await sqlModel.update(
+          "visits",
+          {
+            status: "completed",
+            to_time: end,
+          },
+          { id: activeVisit.id }
+        );
+
+        const address = await getAddressFromLatLng(centerLat, centerLng);
+
+        const visitResult = await sqlModel.insert("visits", {
+          emp_id,
+          company_id,
+          latitude: centerLat,
+          longitude: centerLng,
+          address,
+          status: "active",
+          from_time: start,
+          to_time: end,
+          duration_minutes: Math.floor(duration),
+          created_at: getCurrentDateTime(),
+        });
+
+        console.log(`📍 Location changed → new visit for emp ${emp_id}`);
+
       } catch (empErr) {
-        console.error(`Stationary check failed for emp_id ${emp?.emp_id}:`, empErr?.message || empErr);
+        console.error(`❌ Employee failed ${key}`, empErr.message);
       }
     }
+
   } catch (err) {
-    console.error("Stationary cron error:", err);
+    console.error("❌ Stationary cron error:", err);
   }
 };

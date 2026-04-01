@@ -5,10 +5,21 @@ require("./middleware/validation");
 const cron = require("node-cron");
 const { checkStationaryEmployees } = require("./services/stationaryCheckService");
 
-// every 1 hour
+let isRunning = false;
+
 cron.schedule("0 * * * *", async () => {
-  console.log("⏱ Running stationary cron...");
-  await checkStationaryEmployees();
+  if (isRunning) {
+    console.log("⚠️ Previous job still running, skipping...");
+    return;
+  }
+
+  isRunning = true;
+
+  try {
+    await checkStationaryEmployees();
+  } finally {
+    isRunning = false;
+  }
 });
 
 
