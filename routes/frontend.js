@@ -76,6 +76,7 @@ router.get("/getWelcomePage", PageController.getWelcomePage);
 router.post("/insert-app-version", VersionController.manageVersionInsert);
 
 router.post("/sendNotification", FirebaseController.sendNotification);
+router.post("/sendPush", FirebaseController.sendPushNotificationHandler);
 
 router.post("/sendLiveLocation", FirebaseController.receiveLocationData);
 router.use(verifyToken);

@@ -14,14 +14,14 @@ function fixMulterRelativePath(relPath) {
 }
 
 function buildLocalAbsolutePath(relPath) {
-    if (relPath.startsWith("public/")) {
+  if (relPath.startsWith("public/")) {
     return path.join(process.cwd(), relPath);
   }
 
   return path.join(process.cwd(), "public", relPath);
 }
 
-async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message,title, description,request_attachment_id=0) {
+async function addHistory(request_id, action_by, action_type, from_status, to_status, version, message, title, description, request_attachment_id = 0) {
   await sqlModel.insert("request_history", {
     request_id,
     action_by,
@@ -53,7 +53,7 @@ exports.createRequest = async (req, res) => {
     const insert = {
       emp_id: user.id,
       type: req.body.type, // expected: 'quotation'|'invoice'|...
-      company_id:user.company_id,
+      company_id: user.company_id,
       title: req.body.title || null,
       description: req.body.description || null,
       priority: req.body.priority || "medium",
@@ -67,51 +67,51 @@ exports.createRequest = async (req, res) => {
     if (saveData.error) return res.status(200).send(saveData);
 
     const request_id = saveData.insertId;
-    let attachment_id=0;
+    let attachment_id = 0;
     const uploadedFilesForEmail = [];
     // If multer saved files locally, multerConfig pushes paths to req.fileFullPath (array of 'images/<folder>/<file>')
     if (
-          req.fileFullPath &&
-          Array.isArray(req.fileFullPath) &&
-          req.fileFullPath.length > 0
-        ) {
-          const uploadedRecords = [];
-       
-          for (const relPath of req.fileFullPath) {
-            // 🔥 Fix multer path (add `public/` prefix)
-            const fixed = fixMulterRelativePath(relPath);
+      req.fileFullPath &&
+      Array.isArray(req.fileFullPath) &&
+      req.fileFullPath.length > 0
+    ) {
+      const uploadedRecords = [];
 
-            // 🔥 Convert to absolute local path
-            const localAbsolute = buildLocalAbsolutePath(fixed);
+      for (const relPath of req.fileFullPath) {
+        // 🔥 Fix multer path (add `public/` prefix)
+        const fixed = fixMulterRelativePath(relPath);
 
-            try {
-              const keyPrefix = `${insert.type}/${request_id}/v0`;
+        // 🔥 Convert to absolute local path
+        const localAbsolute = buildLocalAbsolutePath(fixed);
 
-              const { key, url } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
+        try {
+          const keyPrefix = `${insert.type}/${request_id}/v0`;
 
-              const result =await sqlModel.insert("request_attachments", {
-                request_id,
-                file_path: key, // store S3 key (best practice)
-                file_type: path.extname(localAbsolute).replace(".", ""),
-                created_at: getCurrentDateTime(),
-              });
-              attachment_id = result.insertId;
+          const { key, url } = await uploadLocalFileToS3(localAbsolute, keyPrefix);
 
-              uploadedFilesForEmail.push(`https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`);
-              // delete local file
-              fs.unlinkSync(localAbsolute);
+          const result = await sqlModel.insert("request_attachments", {
+            request_id,
+            file_path: key, // store S3 key (best practice)
+            file_type: path.extname(localAbsolute).replace(".", ""),
+            created_at: getCurrentDateTime(),
+          });
+          attachment_id = result.insertId;
 
-              uploadedRecords.push({ key, url });
-              
-   
-            } catch (e) {
-              console.error("S3 upload failed for", relPath, e.message);
-            }
-          }
+          uploadedFilesForEmail.push(`https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`);
+          // delete local file
+          fs.unlinkSync(localAbsolute);
+
+          uploadedRecords.push({ key, url });
+
+
+        } catch (e) {
+          console.error("S3 upload failed for", relPath, e.message);
         }
+      }
+    }
 
     // history
-    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "Request created request", req.body.title, req.body.description, attachment_id );
+    await addHistory(request_id, user.id, "request_created", null, "requested", 0, "Request created request", req.body.title, req.body.description, attachment_id);
 
     // notify company admins (FCM) similar to leave flow
     const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
@@ -144,28 +144,28 @@ exports.createRequest = async (req, res) => {
 
 
     // 🔽 GET COMPANY EMAIL
-const [company] = await sqlModel.select(
-  "company",
-  ["email", "name"],
-  { id: user.company_id }
-);
+    const [company] = await sqlModel.select(
+      "company",
+      ["email", "name"],
+      { id: user.company_id }
+    );
 
-if (company?.email) {
-  try {
-    console.log(uploadedFilesForEmail)
-    await sendMail.sendreqCreated({
-      email: company.email,
-      request_id,
-      employee_name: user.name,
-      type: insert.type,
-      title: insert.title,
-      description: insert.description,
-      attachments: uploadedFilesForEmail, // ✅ MULTIPLE FILES
-    });
-  } catch (e) {
-    console.error("Email send failed:", e.message);
-  }
-}
+    if (company?.email) {
+      try {
+        console.log(uploadedFilesForEmail)
+        await sendMail.sendreqCreated({
+          email: company.email,
+          request_id,
+          employee_name: user.name,
+          type: insert.type,
+          title: insert.title,
+          description: insert.description,
+          attachments: uploadedFilesForEmail, // ✅ MULTIPLE FILES
+        });
+      } catch (e) {
+        console.error("Email send failed:", e.message);
+      }
+    }
     return res.status(200).send({ status: true, message: "Request created", request_id });
   } catch (error) {
     console.error(error);
@@ -293,9 +293,8 @@ exports.getRequestsByEmployee = async (req, res) => {
       r.attachments = attachments.map((a) => ({
         ...a,
         file_url: a.file_path
-          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
-              process.env.AWS_REGION || "ap-south-1"
-            }.amazonaws.com/${a.file_path}`
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"
+          }.amazonaws.com/${a.file_path}`
           : null,
       }));
 
@@ -314,13 +313,12 @@ exports.getRequestsByEmployee = async (req, res) => {
 
       r.admin_response = latestResp
         ? {
-            ...latestResp,
-            file_url: latestResp.file_path
-              ? `https://${process.env.AWS_S3_BUCKET}.s3.${
-                  process.env.AWS_REGION || "ap-south-1"
-                }.amazonaws.com/${latestResp.file_path}`
-              : null,
-          }
+          ...latestResp,
+          file_url: latestResp.file_path
+            ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"
+            }.amazonaws.com/${latestResp.file_path}`
+            : null,
+        }
         : null;
     }
 
@@ -404,7 +402,7 @@ exports.getRequestsByEmployee = async (req, res) => {
 //     const history = await sqlModel.select("request_history", "*", {
 //       request_id: requestId
 //     });
- 
+
 //     r.history = history.map((a) => ({
 //       ...a,
 //       type:r.type,
@@ -452,9 +450,8 @@ exports.getRequestDetail = async (req, res) => {
       attachmentMap[a.id] = {
         ...a,
         file_url: a.file_path
-          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
-              process.env.AWS_REGION || "ap-south-1"
-            }.amazonaws.com/${a.file_path}`
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"
+          }.amazonaws.com/${a.file_path}`
           : null,
       };
     });
@@ -471,9 +468,8 @@ exports.getRequestDetail = async (req, res) => {
       responseMap[rr.id] = {
         ...rr,
         file_url: rr.file_path
-          ? `https://${process.env.AWS_S3_BUCKET}.s3.${
-              process.env.AWS_REGION || "ap-south-1"
-            }.amazonaws.com/${rr.file_path}`
+          ? `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"
+          }.amazonaws.com/${rr.file_path}`
           : null,
       };
     });
@@ -496,7 +492,7 @@ exports.getRequestDetail = async (req, res) => {
 
       request_attachment:
         h.request_attachment_id &&
-        attachmentMap[h.request_attachment_id]
+          attachmentMap[h.request_attachment_id]
           ? attachmentMap[h.request_attachment_id]
           : {},
 
@@ -530,7 +526,7 @@ exports.modifyRequest = async (req, res) => {
     if (!user) return res.status(200).send({ status: false, message: "User not found" });
 
     const requestId = req.params.id;
-    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version","title","description"], { id: requestId, emp_id: user.id });
+    const [existing] = await sqlModel.select("requests", ["status", "type", "current_version", "title", "description"], { id: requestId, emp_id: user.id });
     if (!existing || existing.length === 0) return res.status(200).send({ status: false, message: "Request not found" });
     console.dir("requests requests");
     console.log(existing);
@@ -550,8 +546,8 @@ exports.modifyRequest = async (req, res) => {
       title: req.body.title,
       description: req.body.description,
       priority: req.body.priority || reqRow.priority,
-      status: newStatus, 
-      current_version:reqRow.current_version+1,
+      status: newStatus,
+      current_version: reqRow.current_version + 1,
       updated_at: getCurrentDateTime(),
     };
 
@@ -567,7 +563,7 @@ exports.modifyRequest = async (req, res) => {
     // If files uploaded, upload them to S3 under same version (v0 user uploads or create new user-modification folder)
     console.log("req.fileFullPath");
     console.log(req.fileFullPath);
-    let attachment_id=0;
+    let attachment_id = 0;
     if (req.fileFullPath && req.fileFullPath.length > 0) {
       for (const relPath of req.fileFullPath) {
 
@@ -592,12 +588,12 @@ exports.modifyRequest = async (req, res) => {
           console.error("S3 upload failed →", err.message);
         }
       }
-    }else{
+    } else {
       console.dir("Image not found")
     }
     //**Update history only when attachment updated */
-    if(attachment_id){
-    await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version+1), "requested updated",reqRow.title,reqRow.description,attachment_id);
+    if (attachment_id) {
+      await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version + 1), "requested updated", reqRow.title, reqRow.description, attachment_id);
     }
     return res.status(200).send({ status: true, message: "Request updated" });
   } catch (error) {
@@ -629,7 +625,7 @@ exports.deleteRequest = async (req, res) => {
     await sqlModel.delete("request_responses", { request_id: requestId });
     await sqlModel.delete("request_history", { request_id: requestId });
 
-    await addHistory(requestId, user.id, "request_deleted", status, null, null, "User deleted request",title,description);
+    await addHistory(requestId, user.id, "request_deleted", status, null, null, "User deleted request", title, description);
 
     return res.status(200).send({ status: true, message: "Request deleted" });
   } catch (error) {
@@ -656,30 +652,30 @@ exports.deleteAttachment = async (req, res) => {
     const status = existing[0].status;
     if (status !== "requested") return res.status(200).send({ status: false, message: "Only pending requests can be deleted" });
 
-    await sqlModel.delete("request_attachments", {id:requestId});
+    await sqlModel.delete("request_attachments", { id: requestId });
 
     return res.status(200).send({ status: true, message: "Request deleted" });
-  }catch(error){
+  } catch (error) {
     console.error(error);
     return res.status(200).send({ status: false, error: error.message });
   }
 }
 
 exports.shareRequest = async (req, res) => {
-    try {
+  try {
     const { name, email, mobile, request_id } = req.body;
 
     if (!name || !email || !mobile || !request_id) {
       return res.status(400).json({ message: "All fields are required!" });
     }
-    
-    const saveData = await sqlModel.insert("share_requests_logs", {name:name,email:email,mobile:mobile, request_id:request_id});
+
+    const saveData = await sqlModel.insert("share_requests_logs", { name: name, email: email, mobile: mobile, request_id: request_id });
 
     if (saveData.error) {
-       return res.status(200).send({ status: false, error: error.message });
+      return res.status(200).send({ status: false, error: error.message });
     }
 
-      const [latestResp] = await sqlModel.customQuery(
+    const [latestResp] = await sqlModel.customQuery(
       `
       SELECT rr.*, u.username AS admin_name
       FROM request_responses rr
@@ -715,7 +711,7 @@ exports.shareRequest = async (req, res) => {
       status: true,
       message: "Detail submitted successfully & email sent!"
     });
-    
+
     // else{
     //    return res.status(200).send({ status: true, message: "Detail submitted successfully!", });
     // }
@@ -727,12 +723,12 @@ exports.shareRequest = async (req, res) => {
 }
 
 exports.getfollowup = async (req, res) => {
-     try {
-          return res.status(200).send({ status: true, data:[{'label':"1 Day", 'value':"1_day"},{'label':"2 Day", 'value':"2_day"},{'label':"3 Day", 'value':"3_day"},{'label':"Closed", 'value':"Closed"}] ,message: "Detail submitted successfully!", });
-     }catch(err){
-        console.error("Submit Error:", error);
-        return res.status(500).json({ message: "Server error", error });
-     }
+  try {
+    return res.status(200).send({ status: true, data: [{ 'label': "1 Day", 'value': "1_day" }, { 'label': "2 Day", 'value': "2_day" }, { 'label': "3 Day", 'value': "3_day" }, { 'label': "Closed", 'value': "Closed" }], message: "Detail submitted successfully!", });
+  } catch (err) {
+    console.error("Submit Error:", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
 }
 
 
@@ -762,7 +758,7 @@ exports.getfollowup = async (req, res) => {
 
 //     }
 //     await sqlModel.update("requests", updateData, { id: requestId });
-    
+
 //     if(reqRow.status !== 'requested'){
 //       await addHistory(requestId, user.id, "request_modified", reqRow.status, reqRow.status, (reqRow.current_version), "status updated",reqRow.title,reqRow.description);
 //     }
@@ -785,71 +781,71 @@ exports.getRequestMenuData = async (req, res) => {
       });
     }
     const REQUEST_TYPE_CONFIG = {
-                                    quotation: [
-                                      {
-                                        id: "raise_request",
-                                        type: "quotation",
-                                        title: "Raise a Request",
-                                      },
-                                      {
-                                        id: "submitted_requests",
-                                        type: "quotation",
-                                        title: "Submitted Quotations",
-                                      },
-                                    ],
+      quotation: [
+        {
+          id: "raise_request",
+          type: "quotation",
+          title: "Raise a Request",
+        },
+        {
+          id: "submitted_requests",
+          type: "quotation",
+          title: "Submitted Quotations",
+        },
+      ],
 
-                                    invoice: [
-                                      {
-                                        id: "raise_invoice",
-                                        type: "invoice",
-                                        title: "Raise Invoice",
-                                      },
-                                      {
-                                        id: "submitted_invoices",
-                                        type: "invoice",
-                                        title: "Submitted Invoices",
-                                      },
-                                    ],
+      invoice: [
+        {
+          id: "raise_invoice",
+          type: "invoice",
+          title: "Raise Invoice",
+        },
+        {
+          id: "submitted_invoices",
+          type: "invoice",
+          title: "Submitted Invoices",
+        },
+      ],
 
-                                    statement: [
-                                      {
-                                        id: "account_statement",
-                                        type: "statement",
-                                        title: "Account Statement",
-                                      },
-                                      {
-                                        id: "download_statement",
-                                        type: "statement",
-                                        title: "Download Statement",
-                                      },
-                                    ],
+      statement: [
+        {
+          id: "account_statement",
+          type: "statement",
+          title: "Account Statement",
+        },
+        {
+          id: "download_statement",
+          type: "statement",
+          title: "Download Statement",
+        },
+      ],
 
-                                    credit_note: [
-                                      {
-                                        id: "raise_credit_note",
-                                        type: "credit_note",
-                                        title: "Raise Credit Note",
-                                      },
-                                      {
-                                        id: "submitted_credit_notes",
-                                        type: "credit_note",
-                                        title: "Submitted Credit Notes",
-                                      },
-                                    ],
+      credit_note: [
+        {
+          id: "raise_credit_note",
+          type: "credit_note",
+          title: "Raise Credit Note",
+        },
+        {
+          id: "submitted_credit_notes",
+          type: "credit_note",
+          title: "Submitted Credit Notes",
+        },
+      ],
 
-                                    stock_status: [
-                                      {
-                                        id: "current_stock",
-                                        type: "stock_status",
-                                        title: "Current Stock",
-                                      },
-                                      {
-                                        id: "stock_history",
-                                        type: "stock_status",
-                                        title: "Stock History",
-                                      },
-                                    ],
-        };
+      stock_status: [
+        {
+          id: "current_stock",
+          type: "stock_status",
+          title: "Current Stock",
+        },
+        {
+          id: "stock_history",
+          type: "stock_status",
+          title: "Stock History",
+        },
+      ],
+    };
 
     const data = REQUEST_TYPE_CONFIG[type];
 
@@ -1063,21 +1059,21 @@ exports.insertVisitorLog = async (req, res) => {
       return res.status(401).send({ status: false, message: "Invalid token" });
     }
 
-   const insert = {
-  emp_id: user.id,
-  company_id: user.company_id,
-  business_name: req.body.business_name || null,
-  business_address: req.body.business_address || null,
-  concerned_person: req.body.concerned_person || null,
-  mobile: req.body.mobile || null,
-  email: req.body.email || null,
-  visit_date: req.body.visit_date || null,
-  from_time: req.body.from_time || null,
-  to_time: req.body.to_time || null,
-  remark: req.body.remark || null,
-  created_at: getCurrentDateTime(),
-  updated_at: getCurrentDateTime(),
-};
+    const insert = {
+      emp_id: user.id,
+      company_id: user.company_id,
+      business_name: req.body.business_name || null,
+      business_address: req.body.business_address || null,
+      concerned_person: req.body.concerned_person || null,
+      mobile: req.body.mobile || null,
+      email: req.body.email || null,
+      visit_date: req.body.visit_date || null,
+      from_time: req.body.from_time || null,
+      to_time: req.body.to_time || null,
+      remark: req.body.remark || null,
+      created_at: getCurrentDateTime(),
+      updated_at: getCurrentDateTime(),
+    };
 
 
     const saveData = await sqlModel.insert("visits", insert);
@@ -1087,7 +1083,7 @@ exports.insertVisitorLog = async (req, res) => {
 
     const visit_id = saveData.insertId;
 
-   
+
     if (Array.isArray(req.fileFullPath) && req.fileFullPath.length > 0) {
       for (const relPath of req.fileFullPath) {
         try {
@@ -1111,7 +1107,7 @@ exports.insertVisitorLog = async (req, res) => {
       }
     }
 
-     // notify company admins (FCM) similar to leave flow
+    // notify company admins (FCM) similar to leave flow
     const tokens = await sqlModel.select("fcm_tokens", ["fcm_token"], { user_id: user.company_id });
     if (tokens.length > 0) {
       const messageContent = `New ${insert.type} request from ${user.name}`;
@@ -1179,6 +1175,11 @@ exports.getVisitList = async (req, res) => {
     let where = `WHERE emp_id = ?`;
     const whereValues = [user.id];
 
+    if (req.query.status) {
+      where += ` AND status = ?`;
+      whereValues.push(req.query.status);
+    }
+
     if (req.query.from_date && req.query.to_date) {
       where += ` AND visit_date BETWEEN ? AND ?`;
       whereValues.push(req.query.from_date, req.query.to_date);
@@ -1188,13 +1189,15 @@ exports.getVisitList = async (req, res) => {
       SELECT 
         id,
         business_name,
-        business_address,
+        COALESCE(business_address, address) AS business_address,
         concerned_person,
         mobile,
         email,
+        CONCAT(UPPER(LEFT(status, 1)), LOWER(SUBSTRING(status, 2))) AS status,
         visit_date,
         from_time,
         to_time,
+        address,
         remark,
         created_at
       FROM visits

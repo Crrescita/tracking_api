@@ -337,3 +337,79 @@ exports.receiveLocationData = async (req, res) => {
       .send({ status: false, message: "Failed to process location data" });
   }
 };
+
+// ─── Reusable Push Notification Helper ───────────────────────────────────────
+// Usage (internal):
+//   const { sendPushNotification } = require("./FirebaseController");
+//   await sendPushNotification({ message: { token: "...", data: { title: "...", body: "...", screen: "..." } } });
+
+const sendPushNotification = async (payload) => {
+  const { message } = payload;
+
+  if (!message || !message.token || !message.data) {
+    throw new Error("Invalid payload: message.token and message.data are required");
+  }
+
+  // FCM requires all data values to be strings
+  const stringifiedData = {};
+  for (const [key, value] of Object.entries(message.data)) {
+    stringifiedData[key] = String(value);
+  }
+
+  const fcmMessage = {
+    token: message.token,
+    data: stringifiedData,
+    android: {
+      priority: "high",
+      notification: {
+        channel_id: "high_importance_channel",
+        sound: "default",
+      },
+    },
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+          contentAvailable: true,
+        },
+      },
+      headers: {
+        "apns-priority": "10",
+      },
+    },
+  };
+
+  const response = await admin.messaging().send(fcmMessage);
+  return response;
+};
+
+// Route handler – POST /sendPush
+exports.sendPushNotificationHandler = async (req, res) => {
+  try {
+    const payload = req.body;
+
+    if (!payload.message || !payload.message.token || !payload.message.data) {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid payload: message.token and message.data are required",
+      });
+    }
+
+    const response = await sendPushNotification(payload);
+
+    res.status(200).send({
+      status: true,
+      message: "Push notification sent successfully",
+      messageId: response,
+    });
+  } catch (error) {
+    console.error("Error sending push notification:", error);
+    res.status(500).send({
+      status: false,
+      message: error.message || "Failed to send push notification",
+    });
+  }
+};
+
+// Export helper for internal use (services, cron jobs, etc.)
+exports.sendPushNotification = sendPushNotification;

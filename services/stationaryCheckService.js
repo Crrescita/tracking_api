@@ -151,6 +151,7 @@ exports.checkStationaryEmployees = async () => {
             company_id,
             latitude: centerLat,
             longitude: centerLng,
+            business_address: address,
             address,
             status: "active",
             from_time: start,
@@ -181,7 +182,7 @@ exports.checkStationaryEmployees = async () => {
                 "source": "visit_reminder",
                 "title": "Visit log reminder",
                 "body": "You've been at this location for over" + duration + " minutes.",
-                visit_id: visitResult.insertId.toString(),
+                "visitId": visitResult.insertId.toString(),
               },
             });
           }
@@ -208,7 +209,7 @@ exports.checkStationaryEmployees = async () => {
         await sqlModel.update(
           "visits",
           {
-            status: "completed",
+            status: "pending",
             to_time: end,
           },
           { id: activeVisit.id }
