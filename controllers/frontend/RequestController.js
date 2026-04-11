@@ -4,13 +4,20 @@ const fs = require("fs");
 const sqlModel = require("../../config/db");
 const { uploadLocalFileToS3 } = require("../../config/s3");
 const adminMessaging = require("../../firebase"); // your firebase setup (same as leave controller)
-const { getCurrentDateTime } = require("../../config/datetime"); // assume you have or create similar helper
+const { getCurrentDateTime, getCurrentDate } = require("../../config/datetime"); // assume you have or create similar helper
 const sendMail = require("../../mail/nodemailer"); // your nodemailer setup
 
 function fixMulterRelativePath(relPath) {
   if (relPath.startsWith("public/")) return relPath;
   if (relPath.startsWith("images/")) return "public/" + relPath;
   return relPath;
+}
+
+function formatDateTimeForMySQL(date, time) {
+  if (!date || !time) return null;
+  // Ensure time is in HH:mm:ss format. If it's just HH:mm, add :00
+  const fullTime = time.split(':').length === 2 ? `${time}:00` : time;
+  return `${date} ${fullTime}`;
 }
 
 function buildLocalAbsolutePath(relPath) {
@@ -1059,6 +1066,8 @@ exports.insertVisitorLog = async (req, res) => {
       return res.status(401).send({ status: false, message: "Invalid token" });
     }
 
+    const visitDate = req.body.visit_date || getCurrentDate();
+
     const insert = {
       emp_id: user.id,
       company_id: user.company_id,
@@ -1067,9 +1076,9 @@ exports.insertVisitorLog = async (req, res) => {
       concerned_person: req.body.concerned_person || null,
       mobile: req.body.mobile || null,
       email: req.body.email || null,
-      visit_date: req.body.visit_date || null,
-      from_time: req.body.from_time || null,
-      to_time: req.body.to_time || null,
+      visit_date: visitDate,
+      from_time: formatDateTimeForMySQL(visitDate, req.body.from_time),
+      to_time: formatDateTimeForMySQL(visitDate, req.body.to_time),
       remark: req.body.remark || null,
       created_at: getCurrentDateTime(),
       updated_at: getCurrentDateTime(),
@@ -1336,24 +1345,30 @@ exports.updateVisitLog = async (req, res) => {
       return res.status(401).send({ status: false, message: "Invalid token" });
     }
 
-    const visits = await sqlModel.customQuery(
-      `SELECT id FROM visits WHERE id = ? AND emp_id = ?`,
+    const [existingVisit] = await sqlModel.customQuery(
+      `SELECT id, visit_date FROM visits WHERE id = ? AND emp_id = ?`,
       [visit_id, user.id]
     );
 
-    console.log("visits:", visits);
-
-    if (!visits.length) {
+    if (!existingVisit) {
       return res.status(404).send({
         status: false,
         message: "Visit not found",
       });
     }
-    /* ---------- SIMPLE UPDATE (LIKE INSERT) ---------- */
-    const updateData = {
-      ...req.body,
-      updated_at: getCurrentDateTime(),
-    };
+
+    /* ---------- PREPARE UPDATE DATA ---------- */
+    const updateData = { ...req.body };
+    const visitDate = updateData.visit_date || existingVisit.visit_date;
+
+    if (updateData.from_time) {
+      updateData.from_time = formatDateTimeForMySQL(visitDate, updateData.from_time);
+    }
+    if (updateData.to_time) {
+      updateData.to_time = formatDateTimeForMySQL(visitDate, updateData.to_time);
+    }
+
+    updateData.updated_at = getCurrentDateTime();
 
     console.log(updateData)
 
