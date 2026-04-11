@@ -35,7 +35,7 @@ function formatDateTimeForMySQL(dateStr, timeStr) {
   // Otherwise use the provided dateStr.
   let finalDate = "";
   const dateInTimeMatch = timeStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  
+
   if (dateInTimeMatch) {
     finalDate = `${dateInTimeMatch[1]}-${dateInTimeMatch[2].padStart(2, "0")}-${dateInTimeMatch[3].padStart(2, "0")}`;
   } else if (dateStr) {
@@ -1105,6 +1105,7 @@ exports.insertVisitorLog = async (req, res) => {
       mobile: req.body.mobile || null,
       email: req.body.email || null,
       visit_date: visitDate,
+      status: "completed",
       from_time: formatDateTimeForMySQL(visitDate, req.body.from_time),
       to_time: formatDateTimeForMySQL(visitDate, req.body.to_time),
       remark: req.body.remark || null,
