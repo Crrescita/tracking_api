@@ -3,7 +3,7 @@ const sendWhatsapp = require("../../mail/whatsappMessage");
 const admin = require("../../firebase");
 const cron = require("node-cron");
 // const {  getCurrentDateTime } = require("../../config/until");
-const sendMail = require("../../mail/nodemailer"); 
+const sendMail = require("../../mail/nodemailer");
 
 const generateTaskID = () => {
   const prefix = "TMS";
@@ -313,8 +313,8 @@ exports.assignTask = async (req, res, next) => {
     let insert = { ...req.body };
 
     const ccEmails = req.body.cc
-    ? req.body.cc.split(",").map(e => e.trim()).filter(Boolean)
-    : [];
+      ? req.body.cc.split(",").map(e => e.trim()).filter(Boolean)
+      : [];
 
     const empIds = insert.emp_id.split(",").map(emp => Number(emp.trim()));
 
@@ -362,7 +362,7 @@ exports.assignTask = async (req, res, next) => {
           }
 
           if (message) {
-            const empDetail = await sqlModel.select("employees", ["name", "mobile"], { id: empId });
+            const empDetail = await sqlModel.select("employees", ["name", "mobile", "email", "fcm_token"], { id: empId });
 
             if (empDetail && empDetail.length > 0) {
               await sendWhatsapp.taskReminderUpdate({
@@ -377,6 +377,42 @@ exports.assignTask = async (req, res, next) => {
                 message: message,
                 mobile: empDetail[0].mobile,
               });
+
+              // Send email with CC on task update
+              if (empDetail[0].email) {
+                try {
+                  await sendMail.sendTaskAssignedEmail({
+                    email: empDetail[0].email,
+                    cc: ccEmails,
+                    employee_name: empDetail[0].name,
+                    task_title: insert.task_title,
+                    task_id: oldTask.task_id,
+                    start_date: formatDate(insert.start_date),
+                    end_date: formatDate(insert.end_date),
+                  });
+                } catch (e) {
+                  console.error("Email send failed (update):", e.message);
+                }
+              }
+
+              // Send FCM notification on task update
+              if (empDetail[0].fcm_token) {
+                try {
+                  await admin.messaging().send({
+                    token: empDetail[0].fcm_token,
+                    notification: {
+                      title: "Task Updated",
+                      body: `Task "${insert.task_title}" has been updated.`,
+                    },
+                    data: {
+                      type: "TASK_ASSIGNED",
+                      task_id: id.toString(),
+                    },
+                  });
+                } catch (err) {
+                  console.error("FCM error (update):", err.message);
+                }
+              }
             }
           }
 
@@ -458,19 +494,19 @@ exports.assignTask = async (req, res, next) => {
         });
 
         const [empRow] = await sqlModel.select(
-    "employees",
-    ["fcm_token"],
-    { id: emp.id }
-  );
+          "employees",
+          ["fcm_token"],
+          { id: emp.id }
+        );
 
-  if (empRow?.fcm_token) {
+        if (empRow?.fcm_token) {
 
-     const title =
+          const title =
             "New Task Assigned";
-    
+
           const body =
             `You have been assigned a new task: ${insert.task_title}`;
-    
+
           await admin.messaging().send({
             token: empRow.fcm_token,
             notification: {
@@ -479,43 +515,43 @@ exports.assignTask = async (req, res, next) => {
             },
             data: {
               type: "TASK_ASSIGNED",
-          task_id: taskId.toString(),
+              task_id: taskId.toString(),
             },
           });
 
 
-    // try {
-    //   await admin.messaging().send({
-    //     token: empRow.fcm_token,
-    //     notification: {
-    //       title: "New Task Assigned",
-    //       body: `You have been assigned a new task: ${insert.task_title}`,
-    //     },
-    //     data: {
-    //       type: "TASK_ASSIGNED",
-    //       task_id: taskId.toString(),
-    //     },
-    //   });
-    // } catch (err) {
-    //   console.error("FCM error:", err.message);
-    // }
-  }
+          // try {
+          //   await admin.messaging().send({
+          //     token: empRow.fcm_token,
+          //     notification: {
+          //       title: "New Task Assigned",
+          //       body: `You have been assigned a new task: ${insert.task_title}`,
+          //     },
+          //     data: {
+          //       type: "TASK_ASSIGNED",
+          //       task_id: taskId.toString(),
+          //     },
+          //   });
+          // } catch (err) {
+          //   console.error("FCM error:", err.message);
+          // }
+        }
 
-  if (emp.email) {
-    try {
-      await sendMail.sendTaskAssignedEmail({
-        email: emp.email,
-        cc: ccEmails, // ✅ CC support
-        employee_name: emp.name,
-        task_title: insert.task_title,
-        task_id: insert.task_id,
-        start_date: formatDate(insert.start_date),
-        end_date: formatDate(insert.end_date),
-      });
-    } catch (e) {
-      console.error("Email send failed:", e.message);
-    }
-  }
+        if (emp.email) {
+          try {
+            await sendMail.sendTaskAssignedEmail({
+              email: emp.email,
+              cc: ccEmails, // ✅ CC support
+              employee_name: emp.name,
+              task_title: insert.task_title,
+              task_id: insert.task_id,
+              start_date: formatDate(insert.start_date),
+              end_date: formatDate(insert.end_date),
+            });
+          } catch (e) {
+            console.error("Email send failed:", e.message);
+          }
+        }
 
         // Create personal chat (admin ↔ emp)
         await sqlModel.insert("task_chats", {

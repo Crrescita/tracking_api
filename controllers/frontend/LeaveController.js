@@ -314,6 +314,7 @@ exports.getLeaveDetail = async (req, res) => {
         lr.id,
         lr.from_date,
         lr.to_date,
+        lr.cc,
         lr.reason,
         lr.status AS db_status,
         lt.name AS leave_type
@@ -362,6 +363,7 @@ exports.getLeaveDetail = async (req, res) => {
       status: true,
       data: {
         id: leave.id,
+        cc: leave.cc,
         leave_type: leave.leave_type,
         status: ui_status,
         remark: leave.reason,

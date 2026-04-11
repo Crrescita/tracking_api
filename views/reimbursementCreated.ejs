@@ -1,113 +1,129 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Employee Account</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      background-color: #f5f5f5;
+      background-color: #f0f2f5;
       margin: 0;
       padding: 0;
     }
 
-    .logo {
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
-
     .container {
-      max-width: 700px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 16px;
     }
 
     .card {
       background-color: #ffffff;
-      border: 1px solid #655252;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
     }
 
-    .card-title {
-      font-size: 24px;
-      font-weight: bold;
-      color: #655252;
+    .header {
+      background: linear-gradient(135deg, #303f9f, #3f51b5);
+      padding: 24px 20px;
       text-align: center;
-      margin-top: 5px;
-      margin-bottom: 20px;
     }
 
-    .normal-text {
-      font-size: 16px;
-      color: #655252;
-      margin-top: 5px;
+    .header img {
+      max-width: 160px;
+      height: auto;
+      margin-bottom: 16px;
     }
 
-    .card-text {
-      font-size: 16px;
-      color: #666666;
-      text-align: center;
-      margin-bottom: 15px;
-      margin-top: 15px;
+    .header h2 {
+      color: #ffffff;
+      font-size: 22px;
+      margin: 0;
+      font-weight: 600;
     }
 
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff !important;
-      border-radius: 5px;
-      border: none;
+    .header .badge {
       display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-top: 8px;
     }
 
-    .btn-primary:hover {
-      background-color: #833b3b;
+    .body-content {
+      padding: 24px 24px 16px;
+    }
+
+    .greeting {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .info-message {
+      background-color: #e8eaf6;
+      border-left: 4px solid #3f51b5;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1a237e;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    .detail-table tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .detail-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #555;
+      vertical-align: top;
+    }
+
+    .detail-table td:first-child {
+      font-weight: 600;
+      color: #333;
+      width: 35%;
+      white-space: nowrap;
+    }
+
+    .action-banner {
+      background-color: #ffe082;
+      border: 1px solid #ffca28;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #7f6d00;
     }
 
     .footer {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #0a051e;
-      text-align: center;
       background-color: #0a051e;
-      border-radius: 0 0 10px 10px;
-      color: white;
-      margin-bottom: 15px;
-      padding: 15px;
+      text-align: center;
+      padding: 16px 20px;
+      font-size: 12px;
     }
 
     .footer p {
-      margin: 5px 0;
-    }
-
-    img {
-      max-width: 200px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-
-    .center {
-      text-align: center;
-      justify-content: center;
-    }
-
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff;
-      border-radius: 5px;
-      border: none;
-      display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
+      margin: 3px 0;
+      color: #bbb;
     }
   </style>
 </head>
@@ -115,31 +131,46 @@
 <body>
   <div class="container">
     <div class="card">
-      <div class="center logo">
+      <div class="header">
         <img src="https://trackingapi.crrescita.com/images/company/logo2024-10-11T12-03-49.507Z-abpallogo.jpeg"
-          alt="A B Pal" style="max-width: 200px" />
+          alt="T.E.L" />
+        <h2>New Reimbursement Request</h2>
+        <span class="badge">Reference #<%= reimbursement_id %></span>
       </div>
-      <h2 class="card-title">New Reimbursement Request</h2>
-      <p class="card-text">Hello Admin,</p>
 
-      <p class="normal-text">
-        <strong>A new reimbursement request has been submitted.:</strong><br />
-        Employee Name: <%= employee_name %><br />
-          Type: <%= type %><br />
-            Amount: <%= amount %><br />
-              Applied Date: <%= applied_date %><br />
+      <div class="body-content">
+        <p class="greeting">Hello Admin,</p>
 
-      </p>
+        <div class="info-message">
+          <strong><%= employee_name %></strong> has submitted a new reimbursement request. Please review the details below.
+        </div>
 
+        <table class="detail-table">
+          <tr>
+            <td>👤 Employee Name</td>
+            <td><strong><%= employee_name %></strong></td>
+          </tr>
+          <tr>
+            <td>📁 Type</td>
+            <td><%= type %></td>
+          </tr>
+          <tr>
+            <td>💵 Total Amount</td>
+            <td style="color:#2e7d32; font-weight:600;">₹ <%= amount %></td>
+          </tr>
+          <tr>
+            <td>📅 Applied Date</td>
+            <td><%= applied_date %></td>
+          </tr>
+        </table>
 
-
-      <p class="normal-text">
-        Please review the request.
-      </p>
+        <div class="action-banner">
+          ⚠️ <strong>Action Required:</strong> Please log in to the admin panel to review and process this request.
+        </div>
+      </div>
 
       <div class="footer">
-        <p>© 2026 Crrescita.</p>
-        <p>All Rights Reserved.</p>
+        <p>&copy; 2026 Crrescita. All Rights Reserved.</p>
       </div>
     </div>
   </div>

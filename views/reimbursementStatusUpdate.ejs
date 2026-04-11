@@ -1,113 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Employee Account</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      background-color: #f5f5f5;
+      background-color: #f0f2f5;
       margin: 0;
       padding: 0;
     }
 
-    .logo {
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
-
     .container {
-      max-width: 700px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 16px;
     }
 
     .card {
       background-color: #ffffff;
-      border: 1px solid #655252;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
     }
 
-    .card-title {
-      font-size: 24px;
-      font-weight: bold;
-      color: #655252;
+    .header {
+      padding: 24px 20px;
       text-align: center;
-      margin-top: 5px;
+    }
+
+    .header img {
+      max-width: 160px;
+      height: auto;
+      margin-bottom: 16px;
+    }
+
+    .header h2 {
+      color: #ffffff;
+      font-size: 22px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .header .badge {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .header-approved {
+      background: linear-gradient(135deg, #2e7d32, #4caf50);
+    }
+
+    .header-rejected {
+      background: linear-gradient(135deg, #c62828, #ef5350);
+    }
+
+    .header-default {
+      background: linear-gradient(135deg, #607d8b, #90a4ae);
+    }
+
+    .body-content {
+      padding: 24px 24px 16px;
+    }
+
+    .greeting {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .status-banner {
+      text-align: center;
+      padding: 16px;
+      border-radius: 8px;
       margin-bottom: 20px;
     }
 
-    .normal-text {
-      font-size: 16px;
-      color: #655252;
-      margin-top: 5px;
+    .status-banner .status-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 4px;
     }
 
-    .card-text {
+    .status-banner .status-text {
       font-size: 16px;
-      color: #666666;
+      font-weight: 600;
+    }
+
+    .status-approved {
+      background-color: #e8f5e9;
+      border: 1px solid #a5d6a7;
+    }
+
+    .status-approved .status-text {
+      color: #2e7d32;
+    }
+
+    .status-rejected {
+      background-color: #fce4ec;
+      border: 1px solid #ef9a9a;
+    }
+
+    .status-rejected .status-text {
+      color: #c62828;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    .detail-table tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .detail-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #555;
+      vertical-align: top;
+    }
+
+    .detail-table td:first-child {
+      font-weight: 600;
+      color: #333;
+      width: 35%;
+      white-space: nowrap;
+    }
+
+    .info-note {
       text-align: center;
-      margin-bottom: 15px;
-      margin-top: 15px;
-    }
-
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff !important;
-      border-radius: 5px;
-      border: none;
-      display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
-    }
-
-    .btn-primary:hover {
-      background-color: #833b3b;
+      padding: 14px;
+      background-color: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #555;
     }
 
     .footer {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #0a051e;
-      text-align: center;
       background-color: #0a051e;
-      border-radius: 0 0 10px 10px;
-      color: white;
-      margin-bottom: 15px;
-      padding: 15px;
+      text-align: center;
+      padding: 16px 20px;
+      font-size: 12px;
     }
 
     .footer p {
-      margin: 5px 0;
-    }
-
-    img {
-      max-width: 200px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-
-    .center {
-      text-align: center;
-      justify-content: center;
-    }
-
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff;
-      border-radius: 5px;
-      border: none;
-      display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
+      margin: 3px 0;
+      color: #bbb;
     }
   </style>
 </head>
@@ -115,25 +168,62 @@
 <body>
   <div class="container">
     <div class="card">
-      <div class="center logo">
+      <!-- Dynamic Header -->
+      <% if (status.toLowerCase() === 'approved') { %>
+        <div class="header header-approved">
+      <% } else if (status.toLowerCase() === 'rejected') { %>
+        <div class="header header-rejected">
+      <% } else { %>
+        <div class="header header-default">
+      <% } %>
         <img src="https://trackingapi.crrescita.com/images/company/logo2024-10-11T12-03-49.507Z-abpallogo.jpeg"
-          alt="A B Pal" style="max-width: 200px" />
+          alt="T.E.L" />
+        <h2>Reimbursement Update</h2>
+        <span class="badge">Reference #<%= reimbursement_id %></span>
       </div>
-      <h2 class="card-title">Reimbursement Update</h2>
-      <p class="card-text">Hello <%= employee_name %>,</p>
 
-      <p class="normal-text">
-        <strong>Your reimbursement request has been reviewed.</strong><br />
-        Employee Name: <%= employee_name %><br />
-          Type: <%= type %><br />
-            Amount: <%= amount %><br />
-              Status: <%= status.toUpperCase() %><br />
+      <div class="body-content">
+        <p class="greeting">Hello <strong><%= employee_name %></strong>,</p>
 
-      </p>
+        <!-- Status Banner -->
+        <% if (status.toLowerCase() === 'approved') { %>
+          <div class="status-banner status-approved">
+            <span class="status-icon">✅</span>
+            <span class="status-text">Your Request has been Approved</span>
+          </div>
+        <% } else if (status.toLowerCase() === 'rejected') { %>
+          <div class="status-banner status-rejected">
+            <span class="status-icon">❌</span>
+            <span class="status-text">Your Request has been Rejected</span>
+          </div>
+        <% } %>
+
+        <table class="detail-table">
+          <tr>
+            <td>📁 Type</td>
+            <td><%= type %></td>
+          </tr>
+          <tr>
+            <td>💵 Amount</td>
+            <td style="font-weight:600; color: <%= status.toLowerCase() === 'approved' ? '#2e7d32' : '#c62828' %>;">
+              ₹ <%= amount %>
+            </td>
+          </tr>
+          <tr>
+            <td>📊 Status</td>
+            <td style="text-transform: capitalize; font-weight:600; color: <%= status.toLowerCase() === 'approved' ? '#2e7d32' : '#c62828' %>;">
+              <%= status %>
+            </td>
+          </tr>
+        </table>
+
+        <div class="info-note">
+          📱 Please check the <strong>T.E.L App</strong> for more detailed information and further steps.
+        </div>
+      </div>
 
       <div class="footer">
-        <p>© 2026 Crrescita.</p>
-        <p>All Rights Reserved.</p>
+        <p>&copy; 2026 Crrescita. All Rights Reserved.</p>
       </div>
     </div>
   </div>

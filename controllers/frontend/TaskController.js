@@ -5,7 +5,7 @@ const sqlModel = require("../../config/db");
 const { uploadLocalFileToS3 } = require("../../config/s3");
 // const adminMessaging = require("../../firebase"); 
 const { getCurrentDateTime } = require("../../config/datetime");
-const sendMail = require("../../mail/nodemailer"); 
+const sendMail = require("../../mail/nodemailer");
 
 const admin = require("../../firebase");
 exports.getEmployeeTask = async (req, res) => {
@@ -64,7 +64,7 @@ exports.getEmployeeTask = async (req, res) => {
       SELECT *
       FROM assign_task
       WHERE ${where}
-      ORDER BY end_date ASC
+      ORDER BY id DESC
       `,
       params
     );
@@ -358,7 +358,7 @@ exports.updateTaskStatus = async (req, res) => {
       ["id", "emp_id", "company_id", "task_title", "status"],
       { id: task_id, company_id: companyId }
     );
-console.log("Task found:", task);
+    console.log("Task found:", task);
     if (!task) {
       return res.status(404).send({
         status: false,
@@ -493,13 +493,13 @@ console.log("Task found:", task);
       { id: companyId }
     );
     const message =
-    status === "Completed"
-      ? `✅ ${user.name} completed task "${task.task_title}"`
-      : status === "Cancelled"
-        ? `❌ ${user.name} cancelled task "${task.task_title}"`
-        : `🔔 ${user.name} started task "${task.task_title}"`;
+      status === "Completed"
+        ? `✅ ${user.name} completed task "${task.task_title}"`
+        : status === "Cancelled"
+          ? `❌ ${user.name} cancelled task "${task.task_title}"`
+          : `🔔 ${user.name} started task "${task.task_title}"`;
     if (adminTokens.length) {
-    
+
 
       const sendPromises = adminTokens.map(async ({ id, fcm_token }) => {
         try {
