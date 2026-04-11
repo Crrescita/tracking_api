@@ -13,11 +13,38 @@ function fixMulterRelativePath(relPath) {
   return relPath;
 }
 
-function formatDateTimeForMySQL(date, time) {
-  if (!date || !time) return null;
-  // Ensure time is in HH:mm:ss format. If it's just HH:mm, add :00
-  const fullTime = time.split(':').length === 2 ? `${time}:00` : time;
-  return `${date} ${fullTime}`;
+function formatDateTimeForMySQL(dateStr, timeStr) {
+  if (!timeStr) return null;
+
+  // 1. Try to parse time and AM/PM
+  const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+  if (!timeMatch) return null;
+
+  let hours = parseInt(timeMatch[1]);
+  const minutes = timeMatch[2];
+  const seconds = timeMatch[3] || "00";
+  const ampm = (timeMatch[4] || "").toUpperCase();
+
+  if (ampm === "PM" && hours < 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+
+  const cleanHours = String(hours).padStart(2, "0");
+
+  // 2. Handle the Date
+  // If timeStr already contains a year (like "2026/04/12 02:00 AM"), use that. 
+  // Otherwise use the provided dateStr.
+  let finalDate = "";
+  const dateInTimeMatch = timeStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  
+  if (dateInTimeMatch) {
+    finalDate = `${dateInTimeMatch[1]}-${dateInTimeMatch[2].padStart(2, "0")}-${dateInTimeMatch[3].padStart(2, "0")}`;
+  } else if (dateStr) {
+    finalDate = dateStr.replace(/\//g, "-");
+  } else {
+    finalDate = getCurrentDate();
+  }
+
+  return `${finalDate} ${cleanHours}:${minutes}:${seconds}`;
 }
 
 function buildLocalAbsolutePath(relPath) {
@@ -1066,7 +1093,8 @@ exports.insertVisitorLog = async (req, res) => {
       return res.status(401).send({ status: false, message: "Invalid token" });
     }
 
-    const visitDate = req.body.visit_date || getCurrentDate();
+    let visitDate = req.body.visit_date || getCurrentDate();
+    visitDate = visitDate.replace(/\//g, "-");
 
     const insert = {
       emp_id: user.id,
