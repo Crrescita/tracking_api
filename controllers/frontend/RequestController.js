@@ -13,6 +13,16 @@ function fixMulterRelativePath(relPath) {
   return relPath;
 }
 
+// Extracts YYYY-MM-DD from any date format (ISO, slashed, standard)
+function cleanDateForMySQL(raw) {
+  if (!raw) return getCurrentDate();
+  const str = String(raw);
+  // Match YYYY-MM-DD or YYYY/MM/DD anywhere in the string
+  const m = str.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  return getCurrentDate();
+}
+
 function formatDateTimeForMySQL(dateStr, timeStr) {
   if (!timeStr) return null;
 
@@ -31,17 +41,15 @@ function formatDateTimeForMySQL(dateStr, timeStr) {
   const cleanHours = String(hours).padStart(2, "0");
 
   // 2. Handle the Date
-  // If timeStr already contains a year (like "2026/04/12 02:00 AM"), use that. 
+  // If timeStr already contains a date (like "2026/04/12 02:00 AM"), use that.
   // Otherwise use the provided dateStr.
-  let finalDate = "";
-  const dateInTimeMatch = timeStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  const dateInTimeMatch = timeStr.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+  let finalDate;
 
   if (dateInTimeMatch) {
     finalDate = `${dateInTimeMatch[1]}-${dateInTimeMatch[2].padStart(2, "0")}-${dateInTimeMatch[3].padStart(2, "0")}`;
-  } else if (dateStr) {
-    finalDate = dateStr.replace(/\//g, "-");
   } else {
-    finalDate = getCurrentDate();
+    finalDate = cleanDateForMySQL(dateStr);
   }
 
   return `${finalDate} ${cleanHours}:${minutes}:${seconds}`;
@@ -1093,8 +1101,7 @@ exports.insertVisitorLog = async (req, res) => {
       return res.status(401).send({ status: false, message: "Invalid token" });
     }
 
-    let visitDate = req.body.visit_date || getCurrentDate();
-    visitDate = visitDate.replace(/\//g, "-");
+    const visitDate = cleanDateForMySQL(req.body.visit_date);
 
     const insert = {
       emp_id: user.id,
@@ -1409,10 +1416,10 @@ exports.updateVisitLog = async (req, res) => {
       }
     });
 
-    const visitDateForFormatting = updateData.visit_date || existingVisit.visit_date;
+    const visitDateForFormatting = cleanDateForMySQL(updateData.visit_date || existingVisit.visit_date);
 
     if (updateData.visit_date) {
-      updateData.visit_date = updateData.visit_date.replace(/\//g, "-");
+      updateData.visit_date = cleanDateForMySQL(updateData.visit_date);
     }
 
     if (updateData.from_time) {
