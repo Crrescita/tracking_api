@@ -26,7 +26,7 @@ cron.schedule("* * * * *", async () => {
 // Follow-up reminder — runs daily at 3:00 PM IST
 let isFollowupRunning = false;
 
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 15 * * *", async () => {
   if (isFollowupRunning) {
     console.log("⚠️ Previous followup job still running, skipping...");
     return;
