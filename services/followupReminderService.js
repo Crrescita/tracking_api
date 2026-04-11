@@ -38,7 +38,7 @@ exports.checkFollowupReminders = async () => {
         AND r.nextFollowup != 'Pending'
         AND r.nextFollowup != 'Closed'
         AND r.nextFollowup_date IS NOT NULL 
-        AND e.emp_id = 36
+        AND e.id = 36
     `);
 
     if (!requests.length) {

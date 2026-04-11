@@ -206,6 +206,7 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
       JOIN leave_type lt ON lt.id = lr.leave_type
       WHERE lr.emp_id = ?
         AND lr.company_id = ?
+        AND lr.status != 'Cancelled'
       ORDER BY lr.created_at DESC
     `;
 
@@ -253,9 +254,9 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
     /* ---------------- FILTER BY UI STATUS ---------------- */
     const filtered = status
       ? mapped.filter(
-          (item) =>
-            item.status.toLowerCase() === status.toLowerCase()
-        )
+        (item) =>
+          item.status.toLowerCase() === status.toLowerCase()
+      )
       : mapped;
 
     /* ---------------- PAGINATION ---------------- */
@@ -264,7 +265,7 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
 
     return res.status(200).send({
       status: true,
-        pagination: {
+      pagination: {
         total,
         page: pageNum,
         limit: limitNum,
@@ -273,7 +274,7 @@ exports.getEmployeeLeaveRequests = async (req, res) => {
         has_prev: pageNum > 1,
       },
       data: paginatedData,
-    
+
     });
   } catch (error) {
     return res.status(200).send({
