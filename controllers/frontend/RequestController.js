@@ -1387,21 +1387,44 @@ exports.updateVisitLog = async (req, res) => {
     }
 
     /* ---------- PREPARE UPDATE DATA ---------- */
-    const updateData = { ...req.body };
-    const visitDate = updateData.visit_date || existingVisit.visit_date;
+    const rawData = req.body;
+    const allowedFields = [
+      "business_name",
+      "business_address",
+      "concerned_person",
+      "mobile",
+      "email",
+      "visit_date",
+      "from_time",
+      "to_time",
+      "remark",
+      "address",
+      "status"
+    ];
+
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (rawData[field] !== undefined) {
+        updateData[field] = rawData[field];
+      }
+    });
+
+    const visitDateForFormatting = updateData.visit_date || existingVisit.visit_date;
+
+    if (updateData.visit_date) {
+      updateData.visit_date = updateData.visit_date.replace(/\//g, "-");
+    }
 
     if (updateData.from_time) {
-      updateData.from_time = formatDateTimeForMySQL(visitDate, updateData.from_time);
+      updateData.from_time = formatDateTimeForMySQL(visitDateForFormatting, updateData.from_time);
     }
     if (updateData.to_time) {
-      updateData.to_time = formatDateTimeForMySQL(visitDate, updateData.to_time);
+      updateData.to_time = formatDateTimeForMySQL(visitDateForFormatting, updateData.to_time);
     }
 
     updateData.updated_at = getCurrentDateTime();
 
-    console.log(updateData)
-
-    if (!Object.keys(updateData).length) {
+    if (Object.keys(updateData).length <= 1) { // only updated_at
       return res.status(400).send({
         status: false,
         message: "Nothing to update",
