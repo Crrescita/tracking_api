@@ -1,151 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Employee Account</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        background-color: #f5f5f5;
-        margin: 0;
-        padding: 0;
-      }
-      .logo {
-        margin-top: 10px;
-        margin-bottom: 20px;
-      }
+<html>
 
-      .container {
-        max-width: 700px;
-        margin: 0 auto;
-        padding: 20px;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
 
-      .card {
-        background-color: #ffffff;
-        border: 1px solid #655252;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
 
-      .card-title {
-        font-size: 24px;
-        font-weight: bold;
-        color: #655252;
-        text-align: center;
-        margin-top: 5px;
-        margin-bottom: 20px;
-      }
+    .card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
 
-      .normal-text {
-        font-size: 16px;
-        color: #655252;
-        margin-top: 5px;
-      }
+    .header {
+      background: linear-gradient(135deg, #6a1b9a, #ab47bc);
+      padding: 24px 20px;
+      text-align: center;
+    }
 
-      .card-text {
-        font-size: 16px;
-        color: #666666;
-        text-align: center;
-        margin-bottom: 15px;
-        margin-top: 15px;
-      }
+    .header img {
+      max-width: 160px;
+      height: auto;
+      margin-bottom: 16px;
+    }
 
-      .btn-primary {
-        background-color: #945455;
-        color: #ffffff !important;
-        border-radius: 5px;
-        border: none;
-        display: inline-block;
-        font-size: 16px;
-        padding: 10px 20px;
-        text-decoration: none;
-      }
+    .header h2 {
+      color: #ffffff;
+      font-size: 22px;
+      margin: 0;
+      font-weight: 600;
+    }
 
-      .btn-primary:hover {
-        background-color: #833b3b;
-      }
+    .header .badge {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
 
-      .footer {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #0a051e;
-        text-align: center;
-        background-color: #0a051e;
-        border-radius: 0 0 10px 10px;
-        color: white;
-        margin-bottom: 15px;
-        padding: 15px;
-      }
+    .body-content {
+      padding: 24px 24px 16px;
+    }
 
-      .footer p {
-        margin: 5px 0;
-      }
+    .greeting {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
 
-      img {
-        max-width: 200px;
-        height: auto;
-        display: block;
-        margin: 0 auto;
-      }
-      .center {
-        text-align: center;
-        justify-content: center;
-      }
-      .btn-primary {
-        background-color: #945455;
-        color: #ffffff;
-        border-radius: 5px;
-        border: none;
-        display: inline-block;
-        font-size: 16px;
-        padding: 10px 20px;
-        text-decoration: none;
-      }
-    </style>
-  </head>
+    .info-message {
+      background-color: #f3e5f5;
+      border-left: 4px solid #6a1b9a;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #4a148c;
+    }
 
-  <body>
-    <div class="container">
-      <div class="card">
-        <div class="center logo">
-          <img
-            src="https://emptracking.crrescita.com/assets/images/logo.png"
-            alt="crrescita"
-            style="max-width: 200px"
-          />
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    .detail-table tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .detail-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #555;
+      vertical-align: top;
+    }
+
+    .detail-table td:first-child {
+      font-weight: 600;
+      color: #333;
+      width: 40%;
+      white-space: nowrap;
+    }
+
+    .reason-box {
+      background-color: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 8px 0 16px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .days-highlight {
+      display: inline-block;
+      background-color: #e8eaf6;
+      color: #283593;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .action-note {
+      text-align: center;
+      padding: 16px;
+      background-color: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #7b6e1f;
+    }
+
+    .footer {
+      background-color: #0a051e;
+      text-align: center;
+      padding: 16px 20px;
+      font-size: 12px;
+    }
+
+    .footer p {
+      margin: 3px 0;
+      color: #bbb;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <img src="https://trackingapi.crrescita.com/images/company/logo2024-10-11T12-03-49.507Z-abpallogo.jpeg"
+          alt="T.E.L" />
+        <h2>🗓️ New Leave Request</h2>
+        <span class="badge"><%= leave_type %></span>
+      </div>
+
+      <div class="body-content">
+        <p class="greeting">Hello Admin,</p>
+
+        <div class="info-message">
+          <strong><%= name %></strong> has submitted a leave request. Please review the details below and take the necessary action.
         </div>
-        <h2 class="card-title">Leave Request Notification</h2>
-        <p class="card-text">An employee has requested leave.</p>
-        <p class="card-text">
-          Please review the details below and take the necessary action.
-        </p>
 
-        <p class="normal-text">
-          <strong>Employee Leave Request Details:</strong><br />
-          Name: <%= name %><br />
-          From: <%= from_date %><br />
-          To: <%= to_date %><br />
-          No of days (Excluding Sunday and Company Hoilday's): <%
-          no_of_days%><br />
-          Leave Type: <%= leave_type %><br />
-          Reson:<%= reason %>
-        </p>
+        <table class="detail-table">
+          <tr>
+            <td>👤 Employee</td>
+            <td><strong><%= name %></strong></td>
+          </tr>
+          <tr>
+            <td>📋 Leave Type</td>
+            <td><%= leave_type %></td>
+          </tr>
+          <tr>
+            <td>📅 From</td>
+            <td><%= from_date %></td>
+          </tr>
+          <tr>
+            <td>📅 To</td>
+            <td><%= to_date %></td>
+          </tr>
+          <tr>
+            <td>📊 No. of Days</td>
+            <td>
+              <span class="days-highlight"><%= no_of_days %> day<%= no_of_days > 1 ? 's' : '' %></span>
+              <br />
+              <span style="font-size: 11px; color: #999; margin-top: 4px; display: inline-block;">
+                Excluding Sundays & Company Holidays
+              </span>
+            </td>
+          </tr>
+        </table>
 
-        <p class="normal-text">
-          Kindly process this leave request as per your company's leave policy.
-          If you need more information, please contact the employee directly or
-          reply to this email.
-        </p>
+        <% if (reason) { %>
+          <p style="font-size:14px; font-weight:600; color:#333; margin-bottom:4px;">💬 Reason:</p>
+          <div class="reason-box"><%= reason %></div>
+        <% } %>
 
-        <div class="footer">
-          <p>© 2026 Crrescita.</p>
-          <p>All Rights Reserved.</p>
+        <div class="action-note">
+          ⚡ <strong>Action Required:</strong> Please process this leave request as per your company's leave policy.
         </div>
       </div>
+
+      <div class="footer">
+        <p>&copy; 2026 Crrescita. All Rights Reserved.</p>
+      </div>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>

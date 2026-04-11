@@ -158,7 +158,7 @@ async function sendreqCreated(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: `New ${data.type} Request #${data.request_id}`,
       html: compiledHtml,
@@ -188,7 +188,7 @@ async function sendmailadminres(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: data.subject,
       html: compiledHtml,
@@ -218,7 +218,7 @@ async function sendLeaveStatusUpdate(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: `Leave Request ${data.status}`,
       html: compiledHtml,
@@ -240,7 +240,7 @@ async function sendReimbursementCreated(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: `New Reimbursement Request #${data.reimbursement_id}`,
       html: compiledHtml,
@@ -262,7 +262,7 @@ async function sendReimbursementStatusUpdate(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject:
         data.status === "approved"
@@ -287,7 +287,7 @@ async function sendTaskAssignedEmail(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: `New Task Assigned: ${data.task_title}`,
       html: compiledHtml,
@@ -314,7 +314,7 @@ async function sendTaskStatusUpdate(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: `Task Update: ${data.task_title}`,
       html: compiledHtml,
@@ -336,7 +336,7 @@ async function sendFollowupReminder(data) {
     const compiledHtml = ejs.render(htmlTemplate, data);
 
     const mailOptions = {
-      from: `"CRRESCITA" <contact@crrescita.com>`,
+      from: `"T.E.L" <contact@crrescita.com>`,
       to: data.email,
       subject: `Follow-Up Reminder: ${data.type} Request #${data.request_id}`,
       html: compiledHtml,
