@@ -358,6 +358,10 @@ const sendPushNotification = async (payload) => {
 
   const fcmMessage = {
     token: message.token,
+    notification: {
+      title: stringifiedData.title || "",
+      body: stringifiedData.body || "",
+    },
     data: stringifiedData,
     android: {
       priority: "high",
