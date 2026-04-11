@@ -185,6 +185,7 @@ router.get("/getVistorLogDetail/:visit_id", RequestsController.getVisitDetails);
 router.put("/updateVistorLog/:visit_id", upload.none(), RequestsController.updateVisitLog);
 
 router.post("/remindLater", RequestsController.remindVisitLater);
+router.post("/updateRemindMeFlag", RequestsController.updateRemindMeFlag);
 
 // task
 router.get("/getAlltasks", TaskController.getEmployeeTask);

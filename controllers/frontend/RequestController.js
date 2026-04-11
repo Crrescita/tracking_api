@@ -1509,5 +1509,67 @@ exports.remindVisitLater = async (req, res) => {
   }
 };
 
+exports.updateRemindMeFlag = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({
+        status: false,
+        message: "Authorization token required",
+      });
+    }
 
+    const [employee] = await sqlModel.select(
+      "employees",
+      ["id"],
+      { api_token: token }
+    );
 
+    if (!employee) {
+      return res.status(404).json({
+        status: false,
+        message: "Employee not found",
+      });
+    }
+
+    const { visit_id } = req.body;
+
+    if (!visit_id) {
+      return res.status(400).json({
+        status: false,
+        message: "visit_id is required",
+      });
+    }
+
+    // Check visit exists and belongs to this employee
+    const [visit] = await sqlModel.customQuery(
+      `SELECT id, remind_me FROM visits WHERE id = ? AND emp_id = ?`,
+      [visit_id, employee.id]
+    );
+
+    if (!visit) {
+      return res.status(404).json({
+        status: false,
+        message: "Visit not found",
+      });
+    }
+
+    // Increment remind_me count
+    await sqlModel.customQuery(
+      `UPDATE visits SET remind_me = COALESCE(remind_me, 0) + 1, updated_at = ? WHERE id = ?`,
+      [getCurrentDateTime(), visit_id]
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Remind me count updated",
+      remind_me: (visit.remind_me || 0) + 1,
+    });
+  } catch (err) {
+    console.error("updateRemindMeFlag error:", err);
+    return res.status(500).json({
+      status: false,
+      message: "Something went wrong",
+    });
+  }
+};
