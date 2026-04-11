@@ -3,7 +3,7 @@ const { getAddressFromLatLng } = require("../utils/mapboxReverseGeocode");
 const sqlModel = require("../config/db");
 const { getCurrentDateTime } = require("../config/datetime");
 
-const THRESHOLD_MINUTES = parseInt(process.env.STATIONARY_THRESHOLD || 60);
+const THRESHOLD_MINUTES = parseInt(process.env.STATIONARY_THRESHOLD || 1);
 const ALLOWED_RADIUS = parseInt(process.env.LOCATION_RADIUS || 50);
 const MAX_GAP_MINUTES = 20;
 
@@ -170,19 +170,40 @@ exports.checkStationaryEmployees = async () => {
           );
 
           if (empRow?.fcm_token) {
+            const notifTitle = "Visit Log Reminder";
+            const notifBody = `You've been at this location for over ${Math.floor(duration)} minutes. Please fill visit log.`;
+
             await admin.messaging().send({
               token: empRow.fcm_token,
               notification: {
-                title: "Visit Required",
-                body: "You have been at same location for long duration.",
+                title: notifTitle,
+                body: notifBody,
               },
               data: {
                 type: "VISIT_CREATED",
-                "screen": "visit_log_list",
-                "source": "visit_reminder",
-                "title": "Visit log reminder",
-                "body": "You've been at this location for over" + duration + " minutes.",
-                "visitId": visitResult.insertId.toString(),
+                screen: "visit_log_list",
+                source: "visit_reminder",
+                title: notifTitle,
+                body: notifBody,
+                visitId: visitResult.insertId.toString(),
+              },
+              android: {
+                priority: "high",
+                notification: {
+                  channel_id: "high_importance_channel",
+                  sound: "default",
+                },
+              },
+              apns: {
+                payload: {
+                  aps: {
+                    sound: "default",
+                    contentAvailable: true,
+                  },
+                },
+                headers: {
+                  "apns-priority": "10",
+                },
               },
             });
           }

@@ -7,7 +7,7 @@ const { checkStationaryEmployees } = require("./services/stationaryCheckService"
 
 let isRunning = false;
 
-cron.schedule("0 * * * *", async () => {
+cron.schedule("* * * * *", async () => {
   if (isRunning) {
     console.log("⚠️ Previous job still running, skipping...");
     return;
