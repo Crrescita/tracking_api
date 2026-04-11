@@ -3,7 +3,7 @@ const { getCurrentDateTime } = require("../../config/datetime");
 const path = require("path");
 const fs = require("fs");
 const { uploadLocalFileToS3, deleteFileFromS3 } = require("../../config/s3");
-const sendMail = require("../../mail/nodemailer"); 
+const sendMail = require("../../mail/nodemailer");
 
 const getCurrentDate = () => {
     const currentDate = new Date();
@@ -138,7 +138,7 @@ exports.createReimbursement = async (req, res) => {
 
         const [user] = await sqlModel.select(
             "employees",
-            ["id", "company_id" ,"name"],
+            ["id", "company_id", "name"],
             { api_token: token }
         );
 
@@ -159,36 +159,36 @@ exports.createReimbursement = async (req, res) => {
 
         let reimbursementTypeName = req.body.reimbursement_type_id;
 
-// fetch name from table
-const [typeRow] = await sqlModel.select(
-  "reimbursement_types",
-  ["name"], // adjust if column name different
-  { id: req.body.reimbursement_type_id }
-);
+        // fetch name from table
+        const [typeRow] = await sqlModel.select(
+            "reimbursement_types",
+            ["name"], // adjust if column name different
+            { id: req.body.reimbursement_type_id }
+        );
 
-if (typeRow?.name) {
-  reimbursementTypeName = typeRow.name;
-}
-const [company] = await sqlModel.select(
-    "company",
-    ["email", "name"],
-    { id: user.company_id }
-  );
+        if (typeRow?.name) {
+            reimbursementTypeName = typeRow.name;
+        }
+        const [company] = await sqlModel.select(
+            "company",
+            ["email", "name"],
+            { id: user.company_id }
+        );
 
-  if (company?.email) {
-    try {
-      await sendMail.sendReimbursementCreated({
-        email: company.email,
-        reimbursement_id: result.insertId,
-        employee_name: user.name,
-        type: reimbursementTypeName,
-        amount: req.body.total_amount,
-        applied_date: insert.applied_date,
-      });
-    } catch (e) {
-      console.error("Email send failed:", e.message);
-    }
-  }
+        if (company?.email) {
+            try {
+                await sendMail.sendReimbursementCreated({
+                    email: company.email,
+                    reimbursement_id: result.insertId,
+                    employee_name: user.name,
+                    type: reimbursementTypeName,
+                    amount: req.body.total_amount,
+                    applied_date: insert.applied_date,
+                });
+            } catch (e) {
+                console.error("Email send failed:", e.message);
+            }
+        }
 
         return res.status(200).send({
             status: true,
@@ -282,12 +282,12 @@ exports.addReimbursementAttachment = async (req, res) => {
             );
 
             // update total amount
-            await sqlModel.customQuery(
-                `UPDATE reimbursements
-         SET total_amount = total_amount + ?
-         WHERE id = ?`,
-                [parseFloat(amount), reimbursement_id]
-            );
+            //     await sqlModel.customQuery(
+            //         `UPDATE reimbursements
+            //  SET total_amount = total_amount + ?
+            //  WHERE id = ?`,
+            //         [parseFloat(amount), reimbursement_id]
+            //     );
 
             // delete local uploaded file
             if (fs.existsSync(localAbsolute)) {

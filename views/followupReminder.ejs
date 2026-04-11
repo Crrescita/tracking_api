@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8" />
   <style>
@@ -10,6 +11,7 @@
       margin: 0;
       padding: 0;
     }
+
     .logo {
       margin-top: 10px;
       margin-bottom: 20px;
@@ -108,61 +110,72 @@
       display: block;
       margin: 0 auto;
     }
+
     .center {
       text-align: center;
       justify-content: center;
     }
   </style>
 </head>
+
 <body>
 
-    <div class="container">
-        <div class="card">
-          <div class="center logo">
-            <img
-              src="https://emptracking.crrescita.com/assets/images/logo.png"
-              alt="crrescita"
-              style="max-width: 200px"
-            />
-          </div>
-          <h2 class="card-title">⏰ Follow-Up Reminder</h2>
-          <p class="card-text">
-            Hi <strong><%= employee_name %></strong>, your follow-up date has expired for the following request.
-          </p>
-
-          <table class="detail-table">
-            <tr>
-              <td>Request ID</td>
-              <td>#<%= request_id %></td>
-            </tr>
-            <tr>
-              <td>Request Type</td>
-              <td><%= type %></td>
-            </tr>
-            <tr>
-              <td>Title</td>
-              <td><%= title %></td>
-            </tr>
-            <tr>
-              <td>Follow-Up Date</td>
-              <td><%= followup_date %></td>
-            </tr>
-            <tr>
-              <td>Previous Follow-Up</td>
-              <td><%= previous_followup %></td>
-            </tr>
-          </table>
-
-          <div class="highlight">
-            <p><strong>Action Required</strong></p>
-            <p>Please update the follow-up date in the <strong>T.E.L App</strong> at your earliest convenience.</p>
-          </div>
-
-          <div class="footer">
-            <p>&copy; 2026 Crrescita.</p>
-            <p>All Rights Reserved.</p>
-          </div>
-        </div>
+  <div class="container">
+    <div class="card">
+      <div class="center logo">
+        <img src="https://trackingapi.crrescita.com/images/company/logo2024-10-11T12-03-49.507Z-abpallogo.jpeg"
+          alt="A B Pal" style="max-width: 200px" />
       </div>
+      <h2 class="card-title">⏰ Follow-Up Reminder</h2>
+      <p class="card-text">
+        Hi <strong>
+          <%= employee_name %>
+        </strong>, your follow-up date has expired for the following request.
+      </p>
+
+      <table class="detail-table">
+        <tr>
+          <td>Request ID</td>
+          <td>#<%= request_id %>
+          </td>
+        </tr>
+        <tr>
+          <td>Request Type</td>
+          <td>
+            <%= type %>
+          </td>
+        </tr>
+        <tr>
+          <td>Title</td>
+          <td>
+            <%= title %>
+          </td>
+        </tr>
+        <tr>
+          <td>Follow-Up Date</td>
+          <td>
+            <%= followup_date %>
+          </td>
+        </tr>
+        <tr>
+          <td>Previous Follow-Up</td>
+          <td>
+            <%= previous_followup %>
+          </td>
+        </tr>
+      </table>
+
+      <div class="highlight">
+        <p><strong>Action Required</strong></p>
+        <p>Please update the follow-up date in the <strong>T.E.L App</strong> at your earliest convenience.</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; 2026 Crrescita.</p>
+        <p>All Rights Reserved.</p>
+      </div>
+    </div>
+  </div>
 </body>
+
 </html>

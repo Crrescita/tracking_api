@@ -3,25 +3,244 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Payslip</title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payslip - <%= monthLabel %>
+  </title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
+      font-family: 'Segoe UI', Arial, sans-serif;
       font-size: 13px;
+      color: #333;
+      background-color: #f0f2f5;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    /* ---- HEADER ---- */
+    .payslip-header {
+      background: linear-gradient(135deg, #1a237e, #3949ab);
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .payslip-header img {
+      max-height: 70px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 4px;
+    }
+
+    .company-info {
+      flex: 1;
+      color: #fff;
+    }
+
+    .company-info h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .company-info p {
+      font-size: 12px;
+      opacity: 0.85;
+      margin: 1px 0;
+    }
+
+    /* ---- MONTH BANNER ---- */
+    .month-banner {
+      background: #e8eaf6;
+      text-align: center;
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a237e;
+      border-bottom: 2px solid #c5cae9;
+    }
+
+    /* ---- EMPLOYEE DETAILS ---- */
+    .emp-details {
+      padding: 20px 28px;
+      display: flex;
+      gap: 20px;
+    }
+
+    .emp-col {
+      flex: 1;
+    }
+
+    .emp-row {
+      display: flex;
+      padding: 6px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .emp-row:last-child {
+      border-bottom: none;
+    }
+
+    .emp-label {
+      font-weight: 600;
+      color: #555;
+      width: 130px;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    .emp-value {
+      color: #222;
+      font-size: 12px;
+    }
+
+    /* ---- TABLES ---- */
+    .section {
+      padding: 0 28px;
+      margin-bottom: 16px;
     }
 
     table {
+      width: 100%;
+      border-collapse: collapse;
       page-break-inside: avoid;
     }
 
-    tr {
-      page-break-inside: avoid;
+    table th,
+    table td {
+      padding: 9px 14px;
+      font-size: 13px;
+      text-align: left;
+      border: 1px solid #e0e0e0;
     }
 
-    .bg-light {
-      background-color: #f8f9fa !important;
+    table th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .text-end {
+      text-align: right;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    /* ---- SUMMARY ROW ---- */
+    .summary-header th {
+      background: #e8eaf6;
+      color: #1a237e;
+      font-size: 13px;
+    }
+
+    .total-row td,
+    .total-row th {
+      background-color: #f5f5f5;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* ---- NET PAY BOX ---- */
+    .net-pay-box {
+      margin: 0 28px 20px;
+      background: linear-gradient(135deg, #1b5e20, #388e3c);
+      border-radius: 10px;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+
+    .net-pay-box .label {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .net-pay-box .amount {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .net-pay-words {
+      margin: 0 28px 20px;
+      background: #e8f5e9;
+      border-left: 4px solid #388e3c;
+      padding: 10px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 12px;
+      color: #1b5e20;
+    }
+
+    /* ---- CTC SECTION ---- */
+    .ctc-header th {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    .ctc-total td,
+    .ctc-total th {
+      background: #fff3e0;
+      color: #e65100;
+      font-weight: 700;
+    }
+
+    .sub-item td:first-child {
+      padding-left: 30px;
+      color: #777;
+    }
+
+    /* ---- GROSS SALARY ---- */
+    .gross-row td,
+    .gross-row th {
+      background: #e3f2fd;
+      font-weight: 700;
+      color: #0d47a1;
+      font-size: 14px;
+    }
+
+    /* ---- FOOTER ---- */
+    .payslip-footer {
+      background: #0a051e;
+      text-align: center;
+      padding: 14px;
+      color: #999;
+      font-size: 11px;
+    }
+
+    /* ---- PRINT ---- */
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .container {
+        box-shadow: none;
+        margin: 0;
+        border-radius: 0;
+      }
+
+      .payslip-footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -29,213 +248,234 @@
 <body>
   <div class="container">
 
-    <!-- LOGO -->
-    <div class="text-center mb-2">
-      <img src="https://telindia.s3.ap-south-1.amazonaws.com/employee-verification/36/pan/1769406182776_documentFile2026-01-26T05-43-02.771Z-payslip-header.png" style="max-height:90px">
+    <!-- HEADER -->
+    <div class="payslip-header">
+      <img
+        src="https://telindia.s3.ap-south-1.amazonaws.com/employee-verification/36/pan/1769406182776_documentFile2026-01-26T05-43-02.771Z-payslip-header.png"
+        alt="Company Logo" />
+      <div class="company-info">
+        <h2>
+          <%= company.name %>
+        </h2>
+        <p>
+          <%= company.address %>
+        </p>
+        <p>📞 <%= company.phone %> &nbsp;|&nbsp; ✉️ <%= company.email %>
+        </p>
+        <% if (company.website) { %>
+          <p>🌐 <%= company.website %>
+          </p>
+          <% } %>
+      </div>
     </div>
 
-    <!-- COMPANY DETAILS -->
-    <div class="bg-light text-center py-3">
-      <h6 class="fw-bold">
-        <%= company.name %>
-      </h6>
-      <h6>
-        <%= company.address %>
-      </h6>
-      <h6>Phone: <%= company.phone %>
-      </h6>
-      <h6>Email Id: <%= company.email %>
-      </h6>
-      <h6>Website: <%= company.website %>
-      </h6>
-    </div>
-
-    <div class="bg-light text-center p-2 mt-2">
-      <strong>Pay Slip for <%= monthLabel %></strong>
+    <!-- MONTH BANNER -->
+    <div class="month-banner">
+      📄 Pay Slip for <strong>
+        <%= monthLabel %>
+      </strong>
     </div>
 
     <!-- EMPLOYEE DETAILS -->
-    <div class="row mt-3">
-      <div class="col-6">
-        <p><b>Employee Name:</b>
-          <%= emp.name %>
-        </p>
-        <p><b>Employee Code:</b>
-          <%= emp.code %>
-        </p>
-        <p><b>Work Location:</b>
-          <%= emp.location %>
-        </p>
-        <p><b>Designation:</b>
-          <%= emp.designation %>
-        </p>
-        <p><b>Department:</b>
-          <%= emp.department %>
-        </p>
+    <div class="emp-details">
+      <div class="emp-col">
+        <div class="emp-row">
+          <span class="emp-label">Employee Name</span>
+          <span class="emp-value"><strong>
+              <%= emp.name %>
+            </strong></span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Employee Code</span>
+          <span class="emp-value">
+            <%= emp.code %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Work Location</span>
+          <span class="emp-value">
+            <%= emp.location %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Designation</span>
+          <span class="emp-value">
+            <%= emp.designation %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Department</span>
+          <span class="emp-value">
+            <%= emp.department %>
+          </span>
+        </div>
       </div>
-      <div class="col-6">
-        <p><b>Date of Joining:</b>
-          <%= emp.joining %>
-        </p>
-        <p><b>Aadhar No:</b>
-          <%= emp.aadhar %>
-        </p>
-        <p><b>PAN No:</b>
-          <%= emp.pan %>
-        </p>
-        <p><b>Bank Name:</b>
-          <%= emp.bank %>
-        </p>
-        <p><b>Bank A/c No:</b>
-          <%= emp.account %>
-        </p>
+      <div class="emp-col">
+        <div class="emp-row">
+          <span class="emp-label">Date of Joining</span>
+          <span class="emp-value">
+            <%= emp.joining %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Aadhar No</span>
+          <span class="emp-value">
+            <%= emp.aadhar %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">PAN No</span>
+          <span class="emp-value">
+            <%= emp.pan %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Bank Name</span>
+          <span class="emp-value">
+            <%= emp.bank %>
+          </span>
+        </div>
+        <div class="emp-row">
+          <span class="emp-label">Bank A/C No</span>
+          <span class="emp-value">
+            <%= emp.account %>
+          </span>
+        </div>
       </div>
     </div>
 
-    <!-- EARNINGS / DEDUCTIONS -->
-    <table class="table table-bordered mt-2">
-      <thead class="table-light">
-        <tr>
-          <th>
-            Salary Monthly
-          </th>
-          <th scope="col" class="text-end">
-            <i class="bx bx-rupee"></i>
-           ₹ <%= monthlySalary %>
-
-          </th>
-          <th>
-            Total Paid Days
-          </th>
-          <th scope="col" class="text-end">
-            <%= paidDays %>
-          </th>
-        </tr>
-        <tr>
-          <th>Earnings</th>
-          <th class="text-end">Amount</th>
-          <th>Deductions</th>
-          <th class="text-end">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% maxRows.forEach((_, i)=> { %>
-          <tr>
-            <td>
-              <%= earnings[i]?.name || "" %>
-            </td>
-            <td class="text-end">
-              <%= earnings[i]?.amount ? "₹ " + earnings[i].amount : "Nil" %>
-            </td>
-            <td>
-              <%= deductions[i]?.name || "" %>
-            </td>
-            <td class="text-end">
-               <%= deductions[i]?.amount ? "₹ " + deductions[i].amount : "Nil" %>
-            </td>
+    <!-- EARNINGS & DEDUCTIONS -->
+    <div class="section">
+      <table>
+        <thead>
+          <tr class="summary-header">
+            <th>Monthly Salary</th>
+            <th class="text-end">₹ <%= monthlySalary %>
+            </th>
+            <th>Total Paid Days</th>
+            <th class="text-end">
+              <%= paidDays %>
+            </th>
           </tr>
-          <% }) %>
-      </tbody>
-      <tfoot class="table-light">
-        <tr>
-          <th>Total Earnings</th>
-          <th class="text-end">₹ <%= totalEarnings %>
-          </th>
-          <th>Total Deductions</th>
-          <th class="text-end">₹ <%= totalDeductions %>
-          </th>
-        </tr>
-      </tfoot>
-    </table>
+          <tr>
+            <th>Earnings</th>
+            <th class="text-end">Amount</th>
+            <th>Deductions</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% maxRows.forEach((_, i)=> { %>
+            <tr>
+              <td>
+                <%= earnings[i]?.name || "" %>
+              </td>
+              <td class="text-end">
+                <%= earnings[i]?.amount ? "₹ " + earnings[i].amount : (earnings[i]?.name ? "Nil" : "" ) %>
+              </td>
+              <td>
+                <%= deductions[i]?.name || "" %>
+              </td>
+              <td class="text-end">
+                <%= deductions[i]?.amount ? "₹ " + deductions[i].amount : (deductions[i]?.name ? "Nil" : "" ) %>
+              </td>
+            </tr>
+            <% }) %>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <th>Total Earnings</th>
+            <th class="text-end">₹ <%= totalEarnings %>
+            </th>
+            <th>Total Deductions</th>
+            <th class="text-end">₹ <%= totalDeductions %>
+            </th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
 
     <!-- NET PAY -->
-    <table class="table table-bordered mt-2">
-      <tr class="table-light">
-        <th>Net Pay</th>
-        <th class="text-end">₹ <%= netPay %>
-        </th>
-      </tr>
-      <tr>
-        <th>In Words</th>
-        <th class="text-end">₹ <%= netPayWords %>
-        </th>
-      </tr>
-    </table>
+    <div class="net-pay-box">
+      <span class="label">💰 Net Pay</span>
+      <span class="amount">₹ <%= netPay %></span>
+    </div>
+    <div class="net-pay-words">
+      <strong>In Words:</strong>
+      <%= netPayWords %>
+    </div>
 
     <!-- EMPLOYER CTC -->
-    <table class="table table-bordered mt-2">
-      <thead class="table-light">
-        <tr>
-          <th colspan="3">Employer's Contribution (CTC)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Earning Gross</td>
-          <td></td>
-          <td class="text-end">₹ <%= employerCTC.totalEarning %>
-          </td>
-        </tr>
-        <tr>
-          <th scope="row">Employer's Provident Fund</th>
-          <!-- <td>Employer PF</td> -->
-          <td></td>
-          <td class="text-end">
-            <%= employerCTC.employeerPfAmount ? "₹ " + employerCTC.employeerPfAmount : "Nil" %>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="1" class="ps-4 text-start">
-            &gt; Pension Fund
-          </td>
-          <td class="text-end">Nil</td>
-          <td class="text-end"></td>
-        </tr>
-        <tr>
-          <td colspan="1" class="ps-4 text-start">
-            &gt; Provident Fund
-          </td>
-          <td class="text-end">
-            <%= employerCTC.employeerPfAmount ? "₹ " + employerCTC.employeerPfAmount : "Nil" %>
-          </td>
-          <td class="text-end"></td>
-        </tr>
-
-        <tr>
-          <th scope="row">Employer's State Insurance</th>
-          <!-- <td>Employer's State Insurance</td> -->
-          <td></td>
-          <td class="text-end">
-            <%= employerCTC.employeerEsiAmount ? "₹ " + employerCTC.employeerEsiAmount : "Nil" %>
-          </td>
-        </tr>
-        <tr class="table-light">
-          <th>Total CTC</th>
-          <th></th>
-          <th class="text-end">₹ <%= employerCTC.totalctc %>
-          </th>
-        </tr>
-        <tr>
-          <th>In Words</th>
-          <th colspan="2" class="text-end">₹ <%= ctcWords %>
-          </th>
-        </tr>
-      </tbody>
-    </table>
+    <div class="section">
+      <table>
+        <thead>
+          <tr class="ctc-header">
+            <th colspan="3">Employer's Contribution (CTC)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Earning Gross</td>
+            <td></td>
+            <td class="text-end">₹ <%= employerCTC.totalEarning %>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Employer's Provident Fund</strong></td>
+            <td></td>
+            <td class="text-end">
+              <%= employerCTC.employeerPfAmount ? "₹ " + employerCTC.employeerPfAmount : "Nil" %>
+            </td>
+          </tr>
+          <tr class="sub-item">
+            <td>› Pension Fund</td>
+            <td class="text-end">Nil</td>
+            <td></td>
+          </tr>
+          <tr class="sub-item">
+            <td>› Provident Fund</td>
+            <td class="text-end">
+              <%= employerCTC.employeerPfAmount ? "₹ " + employerCTC.employeerPfAmount : "Nil" %>
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><strong>Employer's State Insurance</strong></td>
+            <td></td>
+            <td class="text-end">
+              <%= employerCTC.employeerEsiAmount ? "₹ " + employerCTC.employeerEsiAmount : "Nil" %>
+            </td>
+          </tr>
+          <tr class="ctc-total">
+            <th>Total CTC</th>
+            <th></th>
+            <th class="text-end">₹ <%= employerCTC.totalctc %>
+            </th>
+          </tr>
+          <tr>
+            <td><strong>In Words</strong></td>
+            <td colspan="2" class="text-end">
+              <%= ctcWords %>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- GROSS SALARY -->
-    <table class="table table-bordered mt-2">
-      <tr class="table-light">
-        <th>Gross Salary</th>
-        <th class="text-end">₹ <%= employerCTC.totalEarning %>
-        </th>
-      </tr>
-    </table>
-
+    <div class="section">
+      <table>
+        <tr class="gross-row">
+          <th>Gross Salary</th>
+          <th class="text-end">₹ <%= employerCTC.totalEarning %>
+          </th>
+        </tr>
+      </table>
+    </div>
 
     <!-- FOOTER -->
-    <div class="bg-light text-center py-2 mt-3">
-      This is a computer-generated document and does not require a signature.
+    <div class="payslip-footer">
+      This is a computer-generated document and does not require a signature. &nbsp;|&nbsp; © 2026 <%= company.name %>
     </div>
 
   </div>

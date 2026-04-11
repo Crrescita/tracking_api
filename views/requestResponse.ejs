@@ -1,154 +1,252 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      background-color: #f5f5f5;
+      background-color: #f0f2f5;
       margin: 0;
       padding: 0;
     }
-    .logo {
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
 
     .container {
-      max-width: 700px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 16px;
     }
 
     .card {
       background-color: #ffffff;
-      border: 1px solid #655252;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
     }
 
-    .card-title {
-      font-size: 24px;
-      font-weight: bold;
-      color: #655252;
+    .header {
+      background: linear-gradient(135deg, #2e7d32, #4caf50);
+      padding: 24px 20px;
       text-align: center;
-      margin-top: 5px;
+    }
+
+    .header img {
+      max-width: 160px;
+      height: auto;
+      margin-bottom: 16px;
+    }
+
+    .header h2 {
+      color: #ffffff;
+      font-size: 22px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .header .badge {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .body-content {
+      padding: 24px 24px 16px;
+    }
+
+    .greeting {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .status-banner {
+      text-align: center;
+      padding: 14px;
+      background-color: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
       margin-bottom: 20px;
     }
 
-    .normal-text {
-      font-size: 16px;
-      color: #655252;
-      margin-top: 5px;
+    .status-banner .status-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 4px;
     }
 
-    .card-text {
+    .status-banner .status-text {
       font-size: 16px;
-      color: #666666;
-      text-align: center;
-      margin-bottom: 15px;
-      margin-top: 15px;
+      font-weight: 600;
+      color: #2e7d32;
     }
 
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff !important;
-      border-radius: 5px;
-      border: none;
+    .status-banner .status-sub {
+      font-size: 13px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    .detail-table tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .detail-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #555;
+      vertical-align: top;
+    }
+
+    .detail-table td:first-child {
+      font-weight: 600;
+      color: #333;
+      width: 35%;
+      white-space: nowrap;
+    }
+
+    .admin-note {
+      background-color: #f3e5f5;
+      border-left: 4px solid #9c27b0;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .admin-note strong {
+      color: #6a1b9a;
+    }
+
+    .attachments {
+      margin: 16px 0;
+      padding: 14px 16px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .attachments-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .attachment-link {
       display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
+      background-color: #e3f2fd;
+      color: #1565c0;
+      padding: 6px 12px;
+      border-radius: 6px;
       text-decoration: none;
+      font-size: 13px;
+      margin: 4px 4px 4px 0;
     }
 
-    .btn-primary:hover {
-      background-color: #833b3b;
+    .info-note {
+      text-align: center;
+      padding: 14px;
+      background-color: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #33691e;
     }
 
     .footer {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #0a051e;
-      text-align: center;
       background-color: #0a051e;
-      border-radius: 0 0 10px 10px;
-      color: white;
-      margin-bottom: 15px;
-      padding: 15px;
+      text-align: center;
+      padding: 16px 20px;
+      color: #999;
+      font-size: 12px;
     }
 
     .footer p {
-      margin: 5px 0;
-    }
-
-    img {
-      max-width: 200px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-    .center {
-      text-align: center;
-      justify-content: center;
-    }
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff;
-      border-radius: 5px;
-      border: none;
-      display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
+      margin: 3px 0;
+      color: #bbb;
     }
   </style>
 </head>
-<body>
 
-    <div class="container">
-        <div class="card">
-          <div class="center logo">
-            <img
-              src="https://emptracking.crrescita.com/assets/images/logo.png"
-              alt="crrescita"
-              style="max-width: 200px"
-            />
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <img src="https://trackingapi.crrescita.com/images/company/logo2024-10-11T12-03-49.507Z-abpallogo.jpeg"
+          alt="A B Pal" />
+        <h2>Your Request is Ready</h2>
+        <span class="badge">Request #<%= request_id %></span>
+      </div>
+
+      <div class="body-content">
+        <p class="greeting">Hello <strong><%= employee_name %></strong>,</p>
+
+        <div class="status-banner">
+          <span class="status-icon">✅</span>
+          <span class="status-text">Request Processed Successfully</span>
+          <p class="status-sub">Your <strong><%= type %></strong> request has been reviewed and is now ready.</p>
+        </div>
+
+        <table class="detail-table">
+          <tr>
+            <td>📋 Request ID</td>
+            <td>#<%= request_id %></td>
+          </tr>
+          <tr>
+            <td>📁 Type</td>
+            <td><%= type %></td>
+          </tr>
+          <tr>
+            <td>📊 Status</td>
+            <td><strong style="color:#2e7d32;">Ready</strong></td>
+          </tr>
+        </table>
+
+        <% if (admin_note) { %>
+          <div class="admin-note">
+            <strong>💬 Admin Note:</strong><br />
+            <%= admin_note %>
           </div>
-          <h2 class="card-title">Request Completed</h2>
-          <p class="card-text">Hello <%= employee_name %></p>
-         
-  
-          <p class="normal-text">
-            <strong>Your request has been processed.</strong><br />
-            Request ID:: <%= request_id %><br />
-            Type: <%= type %><br />
-            Status: Ready<br />
-           
-            
-          </p>
-  
-          <% if (admin_note) { %>
-            <p><b>Admin Note:</b> <%= admin_note %></p>
-          <% } %>
-      
-          <% if (attachments && attachments.length > 0) { %>
-            <p><b>📎 Files Attached</b></p>
+        <% } %>
+
+        <% if (attachments && attachments.length > 0) { %>
+          <div class="attachments">
+            <p class="attachments-title">📎 Files Attached (<%= attachments.length %>)</p>
             <% attachments.forEach(function(file) { %>
-              <p>
-                <a href="<%= file %>" target="_blank">
-                  <%= file.split('/').pop() %>
-                </a>
-              </p>
+              <a href="<%= file %>" target="_blank" class="attachment-link">
+                📄 <%= file.split('/').pop() %>
+              </a>
             <% }) %>
-          <% } %>
-          
-          <div class="footer">
-            <p>© 2026 Crrescita.</p>
-            <p>All Rights Reserved.</p>
           </div>
+        <% } %>
+
+        <div class="info-note">
+          📱 Open the <strong>T.E.L App</strong> to view the complete details and download any attached documents.
         </div>
       </div>
+
+      <div class="footer">
+        <p>&copy; 2026 Crrescita. All Rights Reserved.</p>
+      </div>
+    </div>
+  </div>
 </body>
+
 </html>

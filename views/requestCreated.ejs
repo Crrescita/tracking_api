@@ -1,152 +1,236 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      background-color: #f5f5f5;
+      background-color: #f0f2f5;
       margin: 0;
       padding: 0;
     }
-    .logo {
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
 
     .container {
-      max-width: 700px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 16px;
     }
 
     .card {
       background-color: #ffffff;
-      border: 1px solid #655252;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
     }
 
-    .card-title {
-      font-size: 24px;
-      font-weight: bold;
-      color: #655252;
+    .header {
+      background: linear-gradient(135deg, #945455, #b06a6b);
+      padding: 24px 20px;
       text-align: center;
-      margin-top: 5px;
-      margin-bottom: 20px;
     }
 
-    .normal-text {
-      font-size: 16px;
-      color: #655252;
-      margin-top: 5px;
+    .header img {
+      max-width: 160px;
+      height: auto;
+      margin-bottom: 16px;
     }
 
-    .card-text {
-      font-size: 16px;
-      color: #666666;
-      text-align: center;
-      margin-bottom: 15px;
-      margin-top: 15px;
+    .header h2 {
+      color: #ffffff;
+      font-size: 22px;
+      margin: 0;
+      font-weight: 600;
     }
 
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff !important;
-      border-radius: 5px;
-      border: none;
+    .header .badge {
       display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-top: 8px;
     }
 
-    .btn-primary:hover {
-      background-color: #833b3b;
+    .body-content {
+      padding: 24px 24px 16px;
+    }
+
+    .greeting {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .info-message {
+      background-color: #f8f9fa;
+      border-left: 4px solid #945455;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    .detail-table tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .detail-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #555;
+      vertical-align: top;
+    }
+
+    .detail-table td:first-child {
+      font-weight: 600;
+      color: #333;
+      width: 35%;
+      white-space: nowrap;
+    }
+
+    .detail-table td:first-child::before {
+      margin-right: 6px;
+    }
+
+    .description-box {
+      background-color: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 8px 0 16px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .attachments {
+      margin: 16px 0;
+      padding: 14px 16px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .attachments-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .attachment-link {
+      display: inline-block;
+      background-color: #e8e8e8;
+      color: #945455;
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      margin: 4px 4px 4px 0;
+    }
+
+    .action-note {
+      text-align: center;
+      padding: 16px;
+      background-color: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #7b6e1f;
     }
 
     .footer {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #0a051e;
-      text-align: center;
       background-color: #0a051e;
-      border-radius: 0 0 10px 10px;
-      color: white;
-      margin-bottom: 15px;
-      padding: 15px;
+      text-align: center;
+      padding: 16px 20px;
+      color: #999;
+      font-size: 12px;
     }
 
     .footer p {
-      margin: 5px 0;
-    }
-
-    img {
-      max-width: 200px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-    .center {
-      text-align: center;
-      justify-content: center;
-    }
-    .btn-primary {
-      background-color: #945455;
-      color: #ffffff;
-      border-radius: 5px;
-      border: none;
-      display: inline-block;
-      font-size: 16px;
-      padding: 10px 20px;
-      text-decoration: none;
+      margin: 3px 0;
+      color: #bbb;
     }
   </style>
 </head>
-<body>
 
-    <div class="container">
-        <div class="card">
-          <div class="center logo">
-            <img
-              src="https://emptracking.crrescita.com/assets/images/logo.png"
-              alt="crrescita"
-              style="max-width: 200px"
-            />
-          </div>
-          <h2 class="card-title">New Request Submitted</h2>
-          <p class="card-text">A new request has been submitted.</p>
-          <p class="card-text">
-            Please review the details below and take the necessary action.
-          </p>
-  
-          <p class="normal-text">
-            <strong><%= type || "N/A" %> Request Details:</strong><br />
-            Name: <%= employee_name %><br />
-            Type: <%= type %><br />
-            Title: <%= title %><br />
-            Description: <%
-            description%><br />
-            
-          </p>
-  
-          <% if (attachments && attachments.length > 0) { %>
-            <p class="label">📎 Attached Files:</p>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <img src="https://trackingapi.crrescita.com/images/company/logo2024-10-11T12-03-49.507Z-abpallogo.jpeg"
+          alt="A B Pal" />
+        <h2>New <%= type || "N/A" %> Request</h2>
+        <span class="badge">Request #<%= request_id %></span>
+      </div>
+
+      <div class="body-content">
+        <p class="greeting">Hello Admin,</p>
+
+        <div class="info-message">
+          A new <strong><%= type || "N/A" %></strong> request has been submitted. Please review the details below and take the necessary action.
+        </div>
+
+        <table class="detail-table">
+          <tr>
+            <td>📋 Request ID</td>
+            <td>#<%= request_id %></td>
+          </tr>
+          <tr>
+            <td>👤 Employee</td>
+            <td><%= employee_name %></td>
+          </tr>
+          <tr>
+            <td>📁 Type</td>
+            <td><%= type %></td>
+          </tr>
+          <tr>
+            <td>📝 Title</td>
+            <td><%= title %></td>
+          </tr>
+        </table>
+
+        <% if (description) { %>
+          <p style="font-size:14px; font-weight:600; color:#333; margin-bottom:4px;">📄 Description:</p>
+          <div class="description-box"><%= description %></div>
+        <% } %>
+
+        <% if (attachments && attachments.length > 0) { %>
+          <div class="attachments">
+            <p class="attachments-title">📎 Attached Files (<%= attachments.length %>)</p>
             <% attachments.forEach(function(file) { %>
-              <div class="file">
-                <a href="<%= file %>" target="_blank"><%= file.split('/').pop() %></a>
-              </div>
+              <a href="<%= file %>" target="_blank" class="attachment-link">
+                📄 <%= file.split('/').pop() %>
+              </a>
             <% }) %>
-          <% } %>
-  
-          
-          <div class="footer">
-            <p>© 2026 Crrescita.</p>
-            <p>All Rights Reserved.</p>
           </div>
+        <% } %>
+
+        <div class="action-note">
+          ⚡ <strong>Action Required:</strong> Please review and respond to this request at your earliest convenience.
         </div>
       </div>
+
+      <div class="footer">
+        <p>&copy; 2026 Crrescita. All Rights Reserved.</p>
+      </div>
+    </div>
+  </div>
 </body>
+
 </html>
