@@ -38,9 +38,8 @@ function groupByEmployee(rows) {
 /* ---------------- Main ---------------- */
 exports.checkStationaryEmployees = async () => {
   try {
-    console.log("⏱ Running optimized stationary check...");
+    console.log("⏱ Starting stationary check at:", new Date().toISOString());
 
-    /* -------- STEP 1: Fetch ALL relevant tracking -------- */
     const trackingRows = await sqlModel.customQuery(`
       SELECT emp_id, company_id, latitude, longitude, datetime_mobile
       FROM emp_tracking
@@ -53,18 +52,15 @@ exports.checkStationaryEmployees = async () => {
     `);
 
     if (!trackingRows.length) {
-      console.log("No tracking data found");
+      console.log("ℹ️ No tracking data rows found in the last 2 hours.");
       return;
     }
 
-    /* -------- STEP 2: Group by employee -------- */
     const grouped = groupByEmployee(trackingRows);
+    console.log(`📊 Found tracking data for ${grouped.size} employees.`);
 
-    /* -------- STEP 3: Fetch all active visits in one go -------- */
     const activeVisits = await sqlModel.customQuery(`
-      SELECT *
-      FROM visits
-      WHERE status = 'active'
+      SELECT * FROM visits WHERE status = 'active'
     `);
 
     const activeVisitMap = new Map();
@@ -72,28 +68,30 @@ exports.checkStationaryEmployees = async () => {
       activeVisitMap.set(`${v.emp_id}_${v.company_id}`, v);
     });
 
-    /* -------- STEP 4: Process each employee -------- */
     for (const [key, history] of grouped.entries()) {
+      const [emp_id, company_id] = key.split("_");
+      
       try {
-        const [emp_id, company_id] = key.split("_");
-
-        if (history.length < 5) continue;
+        if (history.length < 5) {
+          console.log(`[SKIP] Emp ${emp_id}: Not enough points (${history.length}/5)`);
+          continue;
+        }
 
         /* -------- GAP CHECK -------- */
         let hasLargeGap = false;
         for (let i = 1; i < history.length; i++) {
           const prev = new Date(history[i - 1].datetime_mobile);
           const curr = new Date(history[i].datetime_mobile);
-
           const gap = (curr - prev) / (1000 * 60);
           if (gap > MAX_GAP_MINUTES) {
             hasLargeGap = true;
+            console.log(`[SKIP] Emp ${emp_id}: Large gap found (${Math.round(gap)} mins)`);
             break;
           }
         }
         if (hasLargeGap) continue;
 
-        /* -------- CENTROID -------- */
+        /* -------- STATIONARY CHECK -------- */
         let sumLat = 0, sumLng = 0;
         history.forEach(p => {
           sumLat += parseFloat(p.latitude);
@@ -103,47 +101,39 @@ exports.checkStationaryEmployees = async () => {
         const centerLat = sumLat / history.length;
         const centerLng = sumLng / history.length;
 
-        /* -------- STATIONARY CHECK -------- */
         const isStationary = history.every(p => {
-          return getDistanceInMeters(
-            centerLat,
-            centerLng,
-            parseFloat(p.latitude),
-            parseFloat(p.longitude)
-          ) <= ALLOWED_RADIUS;
+          const d = getDistanceInMeters(centerLat, centerLng, parseFloat(p.latitude), parseFloat(p.longitude));
+          return d <= ALLOWED_RADIUS;
         });
 
-        if (!isStationary) continue;
+        if (!isStationary) {
+          console.log(`[SKIP] Emp ${emp_id}: User is moving (outside ${ALLOWED_RADIUS}m radius)`);
+          continue;
+        }
 
         /* -------- DURATION -------- */
         const start = new Date(history[0].datetime_mobile);
         const end = new Date(history[history.length - 1].datetime_mobile);
         const duration = (end - start) / (1000 * 60);
 
-        if (duration < THRESHOLD_MINUTES) continue;
+        if (duration < THRESHOLD_MINUTES) {
+          console.log(`[SKIP] Emp ${emp_id}: Duration (${Math.round(duration)} min) is less than threshold (${THRESHOLD_MINUTES} min)`);
+          continue;
+        }
 
-        /* -------- EXISTING VISIT -------- */
+        console.log(`[MATCH] Emp ${emp_id}: Stationary for ${Math.round(duration)} minutes. Checking visit status...`);
+
         const activeVisit = activeVisitMap.get(key);
-
         let isSameLocation = false;
 
         if (activeVisit) {
-          const dist = getDistanceInMeters(
-            centerLat,
-            centerLng,
-            parseFloat(activeVisit.latitude),
-            parseFloat(activeVisit.longitude)
-          );
-
+          const dist = getDistanceInMeters(centerLat, centerLng, parseFloat(activeVisit.latitude), parseFloat(activeVisit.longitude));
           isSameLocation = dist <= ALLOWED_RADIUS;
         }
 
-        /* ===================================================== */
-        /* =============== DECISION ENGINE ====================== */
-        /* ===================================================== */
-
         /* -------- CASE 1: NO ACTIVE VISIT -------- */
         if (!activeVisit) {
+          console.log(`[PROCESS] Emp ${emp_id}: Creating NEW visit record...`);
           const address = await getAddressFromLatLng(centerLat, centerLng);
 
           const visitResult = await sqlModel.insert("visits", {
@@ -160,59 +150,50 @@ exports.checkStationaryEmployees = async () => {
             created_at: getCurrentDateTime(),
           });
 
-          console.log(`✅ New visit created for emp ${emp_id}`);
+          console.log(`✅ New visit created for Emp ${emp_id} (Visit ID: ${visitResult.insertId})`);
 
-          /* -------- Notification -------- */
-          const [empRow] = await sqlModel.select(
-            "employees",
-            ["fcm_token"],
-            { id: emp_id }
-          );
-
+          /* Notification */
+          const [empRow] = await sqlModel.select("employees", ["fcm_token", "name"], { id: emp_id });
+          
           if (empRow?.fcm_token) {
+            console.log(`[NOTIF] Sending FCM notification to ${empRow.name}...`);
             const notifTitle = "Visit Log Reminder";
             const notifBody = `You've been at this location for over ${Math.floor(duration)} minutes. Please fill visit log.`;
 
-            await admin.messaging().send({
-              token: empRow.fcm_token,
-              notification: {
-                title: notifTitle,
-                body: notifBody,
-              },
-              data: {
-                type: "VISIT_CREATED",
-                screen: "visit_log_list",
-                source: "visit_reminder",
-                title: notifTitle,
-                body: notifBody,
-                visitId: visitResult.insertId.toString(),
-              },
-              android: {
-                priority: "high",
-                notification: {
-                  channel_id: "high_importance_channel",
-                  sound: "default",
+            try {
+              const res = await admin.messaging().send({
+                token: empRow.fcm_token,
+                notification: { title: notifTitle, body: notifBody },
+                data: {
+                  type: "VISIT_CREATED",
+                  screen: "visit_log_list",
+                  source: "visit_reminder",
+                  title: notifTitle,
+                  body: notifBody,
+                  visitId: visitResult.insertId.toString(),
                 },
-              },
-              apns: {
-                payload: {
-                  aps: {
-                    sound: "default",
-                    contentAvailable: true,
-                  },
+                android: {
+                  priority: "high",
+                  notification: { channel_id: "high_importance_channel", sound: "default" },
                 },
-                headers: {
-                  "apns-priority": "10",
+                apns: {
+                  payload: { aps: { sound: "default", contentAvailable: true } },
+                  headers: { "apns-priority": "10" },
                 },
-              },
-            });
+              });
+              console.log(`✅ Notification sent successfully to Emp ${emp_id}. MessageID: ${res}`);
+            } catch (notifErr) {
+              console.error(`❌ Notification FAILED for Emp ${emp_id}:`, notifErr.message);
+            }
+          } else {
+            console.log(`⚠️ No FCM token found for Emp ${emp_id}. Skipping notification.`);
           }
-
           continue;
         }
 
         /* -------- CASE 2: SAME LOCATION → UPDATE -------- */
         if (isSameLocation) {
+          console.log(`[PROCESS] Emp ${emp_id}: Still at same location. Updating duration to ${Math.floor(duration)} mins.`);
           await sqlModel.update(
             "visits",
             {
@@ -221,23 +202,14 @@ exports.checkStationaryEmployees = async () => {
             },
             { id: activeVisit.id }
           );
-
-          console.log(`🔄 Updated visit for emp ${emp_id}`);
           continue;
         }
 
         /* -------- CASE 3: LOCATION CHANGED -------- */
-        await sqlModel.update(
-          "visits",
-          {
-            status: "pending",
-            to_time: end,
-          },
-          { id: activeVisit.id }
-        );
+        console.log(`[PROCESS] Emp ${emp_id}: Location changed. Closing old visit and opening new...`);
+        await sqlModel.update("visits", { status: "pending", to_time: end }, { id: activeVisit.id });
 
         const address = await getAddressFromLatLng(centerLat, centerLng);
-
         const visitResult = await sqlModel.insert("visits", {
           emp_id,
           company_id,
@@ -250,15 +222,14 @@ exports.checkStationaryEmployees = async () => {
           duration_minutes: Math.floor(duration),
           created_at: getCurrentDateTime(),
         });
-
-        console.log(`📍 Location changed → new visit for emp ${emp_id}`);
+        console.log(`📍 New visit created for Emp ${emp_id} after location change.`);
 
       } catch (empErr) {
-        console.error(`❌ Employee failed ${key}`, empErr.message);
+        console.error(`❌ Error processing Emp ${key}:`, empErr.message);
       }
     }
 
   } catch (err) {
-    console.error("❌ Stationary cron error:", err);
+    console.error("❌ Stationary cron CRITICAL error:", err);
   }
 };

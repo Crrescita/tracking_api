@@ -758,7 +758,7 @@ exports.shareRequest = async (req, res) => {
 
 exports.getfollowup = async (req, res) => {
   try {
-    return res.status(200).send({ status: true, data: [{ 'label': "1 Day", 'value': "1_day" }, { 'label': "2 Day", 'value': "2_day" }, { 'label': "3 Day", 'value': "3_day" }, { 'label': "Closed", 'value': "Closed" }], message: "Detail submitted successfully!", });
+    return res.status(200).send({ status: true, data: [{ 'label': "1 Day", 'value': "1_day" }, { 'label': "2 Day", 'value': "2_day" }, { 'label': "3 Day", 'value': "3_day" }, { 'label': "Closed", 'value': "Closed" }, { 'label': "Pending", 'value': "Pending" }], message: "Detail submitted successfully!", });
   } catch (err) {
     console.error("Submit Error:", error);
     return res.status(500).json({ message: "Server error", error });
