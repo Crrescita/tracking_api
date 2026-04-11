@@ -4,6 +4,7 @@ require("./config/until");
 require("./middleware/validation");
 const cron = require("node-cron");
 const { checkStationaryEmployees } = require("./services/stationaryCheckService");
+const { checkFollowupReminders } = require("./services/followupReminderService");
 
 let isRunning = false;
 
@@ -20,6 +21,26 @@ cron.schedule("* * * * *", async () => {
   } finally {
     isRunning = false;
   }
+});
+
+// Follow-up reminder — runs daily at 3:00 PM IST
+let isFollowupRunning = false;
+
+cron.schedule("* * * * *", async () => {
+  if (isFollowupRunning) {
+    console.log("⚠️ Previous followup job still running, skipping...");
+    return;
+  }
+
+  isFollowupRunning = true;
+
+  try {
+    await checkFollowupReminders();
+  } finally {
+    isFollowupRunning = false;
+  }
+}, {
+  timezone: "Asia/Kolkata",
 });
 
 

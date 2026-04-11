@@ -327,6 +327,29 @@ async function sendTaskStatusUpdate(data) {
     console.error(" Email error:", error.message);
   }
 }
+
+async function sendFollowupReminder(data) {
+  try {
+    const htmlFile = "./views/followupReminder.ejs";
+    const htmlTemplate = fs.readFileSync(htmlFile, "utf8");
+
+    const compiledHtml = ejs.render(htmlTemplate, data);
+
+    const mailOptions = {
+      from: `"CRRESCITA" <contact@crrescita.com>`,
+      to: data.email,
+      subject: `Follow-Up Reminder: ${data.type} Request #${data.request_id}`,
+      html: compiledHtml,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Followup reminder email sent:", info.messageId);
+  } catch (error) {
+    console.error("Followup reminder email error:", error.message);
+  }
+}
+
 module.exports = {
   sendEmailToEmp,
   sendEmailToCompany,
@@ -341,5 +364,6 @@ module.exports = {
   sendReimbursementCreated,
   sendReimbursementStatusUpdate,
   sendTaskAssignedEmail,
-  sendTaskStatusUpdate
+  sendTaskStatusUpdate,
+  sendFollowupReminder,
 };

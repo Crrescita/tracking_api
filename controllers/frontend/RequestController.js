@@ -1569,7 +1569,7 @@ exports.updateRemindMeFlag = async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      message: "Remind me count updated",
+      message: "Remind me status updated",
       remind_me: (visit.remind_me || 0) + 1,
     });
   } catch (err) {

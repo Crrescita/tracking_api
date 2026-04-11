@@ -70,7 +70,7 @@ exports.checkStationaryEmployees = async () => {
 
     for (const [key, history] of grouped.entries()) {
       const [emp_id, company_id] = key.split("_");
-      
+
       try {
         if (history.length < 5) {
           console.log(`[SKIP] Emp ${emp_id}: Not enough points (${history.length}/5)`);
@@ -154,7 +154,7 @@ exports.checkStationaryEmployees = async () => {
 
           /* Notification */
           const [empRow] = await sqlModel.select("employees", ["fcm_token", "name"], { id: emp_id });
-          
+
           if (empRow?.fcm_token) {
             console.log(`[NOTIF] Sending FCM notification to ${empRow.name}...`);
             const notifTitle = "Visit Log Reminder";
@@ -170,7 +170,7 @@ exports.checkStationaryEmployees = async () => {
                   source: "visit_reminder",
                   title: notifTitle,
                   body: notifBody,
-                  visitId: visitResult.insertId.toString(),
+                  visit_id: visitResult.insertId.toString(),
                 },
                 android: {
                   priority: "high",
@@ -181,6 +181,10 @@ exports.checkStationaryEmployees = async () => {
                   headers: { "apns-priority": "10" },
                 },
               });
+              await sqlModel.customQuery(
+                `UPDATE visits SET notify = COALESCE(notify, 0) + 1 WHERE id = ?`,
+                [visitResult.insertId]
+              );
               console.log(`✅ Notification sent successfully to Emp ${emp_id}. MessageID: ${res}`);
             } catch (notifErr) {
               console.error(`❌ Notification FAILED for Emp ${emp_id}:`, notifErr.message);
